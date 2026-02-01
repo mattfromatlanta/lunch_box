@@ -1,0 +1,9 @@
+prompts/
+build/
+
+# Test audio files (keep directory structure, ignore WAV files)
+test_audio/**/*.wav
+test_audio/**/*.WAV
+
+# Log files
+logs/*.txt
