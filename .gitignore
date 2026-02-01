@@ -1,9 +1,17 @@
+.claude/
+.vscode/
 prompts/
 build/
 
 # Test audio files (keep directory structure, ignore WAV files)
 test_audio/**/*.wav
 test_audio/**/*.WAV
+test_audio/sononym.*
 
 # Log files
 logs/*.txt
+
+# Converted audio files (keep directory structure, ignore WAV files)
+converted/**/*.wav
+converted/**/*.WAV
+converted/sononym.*

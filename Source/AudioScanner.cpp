@@ -1,10 +1,28 @@
 #include "AudioScanner.h"
 
+static void displayUsage(Logger& logger)
+{
+    logger.logLine("Usage: chompi_pack [OPTIONS]");
+    logger.logLine("");
+    logger.logLine("CHOMPI Mode (process samples for CHOMPI sampler):");
+    logger.logLine("  --cubbi, --c <path>    Process cubbi samples (percussive/loop/SFX)");
+    logger.logLine("  --jammi, --j <path>    Process jammi samples (tuned/chromatic)");
+    logger.logLine("  --output, --o <path>   Output directory (default: converted/)");
+    logger.logLine("");
+    logger.logLine("Examples:");
+    logger.logLine("  chompi_pack --cubbi /samples/cubbi --jammi /samples/jammi");
+    logger.logLine("  chompi_pack --c /samples/cubbi --o /my/output");
+    logger.logLine("  chompi_pack --j /samples/jammi");
+    logger.logLine("");
+    logger.logLine("Legacy Modes:");
+    logger.logLine("  chompi_pack <folder>              Scan only");
+    logger.logLine("  chompi_pack --convert <folder>    Convert without CHOMPI naming");
+}
+
 bool initializeApplication(int argc, char* argv[],
                           Logger& logger,
                           juce::AudioFormatManager& formatManager,
-                          juce::File& targetFolder,
-                          juce::Array<juce::File>& wavFiles)
+                          AudioConfiguration& config)
 {
     logger.logLine("==================================");
     logger.logLine("Chompi Pack - Audio File Scanner");
@@ -18,54 +36,207 @@ bool initializeApplication(int argc, char* argv[],
     logger.logLine("Registered audio formats: " + juce::String(formatManager.getNumKnownFormats()));
     logger.logLine("");
 
-    // Check command-line arguments
+    // Check for minimum arguments
     if (argc < 2)
     {
-        logger.logLine("Usage: chompi_pack <folder_path>");
-        logger.logLine("Example: chompi_pack /path/to/audio/folder");
+        displayUsage(logger);
         return false;
     }
 
-    juce::String folderPath = argv[1];
-    logger.logLine("Target folder: " + folderPath);
+    // Parse command-line arguments
+    juce::String legacyFolderPath;
+    juce::String cubbiPath;
+    juce::String jammiPath;
+    juce::String outputPath;
+    bool hasConvertFlag = false;
 
-    // Verify folder exists
-    targetFolder = juce::File(folderPath);
-    if (!targetFolder.exists())
+    for (int i = 1; i < argc; ++i)
     {
-        logger.logLine("Error: Folder does not exist: " + folderPath);
-        return false;
+        juce::String arg = argv[i];
+
+        if (arg == "--cubbi" || arg == "--c")
+        {
+            if (i + 1 < argc)
+            {
+                cubbiPath = argv[++i];
+                config.hasCubbi = true;
+            }
+            else
+            {
+                logger.logLine("Error: --cubbi (--c) requires a folder path");
+                return false;
+            }
+        }
+        else if (arg == "--jammi" || arg == "--j")
+        {
+            if (i + 1 < argc)
+            {
+                jammiPath = argv[++i];
+                config.hasJammi = true;
+            }
+            else
+            {
+                logger.logLine("Error: --jammi (--j) requires a folder path");
+                return false;
+            }
+        }
+        else if (arg == "--output" || arg == "--o")
+        {
+            if (i + 1 < argc)
+            {
+                outputPath = argv[++i];
+            }
+            else
+            {
+                logger.logLine("Error: --output (--o) requires a folder path");
+                return false;
+            }
+        }
+        else if (arg == "--convert")
+        {
+            hasConvertFlag = true;
+        }
+        else if (!arg.startsWith("-"))
+        {
+            // This is a legacy folder path
+            legacyFolderPath = arg;
+        }
+        else
+        {
+            logger.logLine("Warning: Unknown option: " + arg);
+        }
     }
 
-    if (!targetFolder.isDirectory())
+    // Determine operation mode
+    if (config.hasCubbi || config.hasJammi)
     {
-        logger.logLine("Error: Path is not a directory: " + folderPath);
-        return false;
+        // CHOMPI mode
+        config.mode = OperationMode::Chompi;
+        logger.logLine("Mode: CHOMPI Sample Processing");
+        logger.logLine("");
+
+        // Validate at least one category specified
+        if (!config.hasCubbi && !config.hasJammi)
+        {
+            logger.logLine("Error: At least one of --cubbi or --jammi must be specified");
+            return false;
+        }
+
+        // Set output folder (use specified or default)
+        if (!outputPath.isEmpty())
+        {
+            config.outputFolder = juce::File(outputPath);
+        }
+        else
+        {
+            config.outputFolder = juce::File::getCurrentWorkingDirectory().getChildFile("converted");
+        }
+
+        logger.logLine("Output folder: " + config.outputFolder.getFullPathName());
+        logger.logLine("");
+
+        // Validate cubbi folder if specified
+        if (config.hasCubbi)
+        {
+            config.cubbiFolder = juce::File(cubbiPath);
+            if (!config.cubbiFolder.exists())
+            {
+                logger.logLine("Error: Cubbi folder does not exist: " + cubbiPath);
+                return false;
+            }
+            if (!config.cubbiFolder.isDirectory())
+            {
+                logger.logLine("Error: Cubbi path is not a directory: " + cubbiPath);
+                return false;
+            }
+            logger.logLine("Cubbi folder: " + config.cubbiFolder.getFullPathName());
+        }
+
+        // Validate jammi folder if specified
+        if (config.hasJammi)
+        {
+            config.jammiFolder = juce::File(jammiPath);
+            if (!config.jammiFolder.exists())
+            {
+                logger.logLine("Error: Jammi folder does not exist: " + jammiPath);
+                return false;
+            }
+            if (!config.jammiFolder.isDirectory())
+            {
+                logger.logLine("Error: Jammi path is not a directory: " + jammiPath);
+                return false;
+            }
+            logger.logLine("Jammi folder: " + config.jammiFolder.getFullPathName());
+        }
+
+        logger.logLine("");
+        return true;
     }
-
-    logger.logLine("Folder validated successfully!");
-    logger.logLine("");
-
-    // Scan for WAV files recursively
-    logger.logLine("Scanning for WAV files...");
-    logger.logLine("");
-
-    targetFolder.findChildFiles(wavFiles,
-                                juce::File::findFiles,
-                                true,  // search recursively
-                                "*.wav");
-
-    // Check if any files were found
-    if (wavFiles.isEmpty())
+    else if (!legacyFolderPath.isEmpty())
     {
-        logger.logLine("No WAV files found in the specified directory.");
+        // Legacy mode (scan or convert)
+        config.mode = hasConvertFlag ? OperationMode::Convert : OperationMode::Scan;
+
+        if (hasConvertFlag)
+        {
+            logger.logLine("Mode: Legacy Conversion (16-bit 48kHz)");
+            logger.logLine("");
+        }
+        else
+        {
+            logger.logLine("Mode: Scan Only");
+            logger.logLine("");
+        }
+
+        logger.logLine("Target folder: " + legacyFolderPath);
+        logger.logLine("");
+
+        // Verify folder exists
+        config.targetFolder = juce::File(legacyFolderPath);
+        if (!config.targetFolder.exists())
+        {
+            logger.logLine("Error: Folder does not exist: " + legacyFolderPath);
+            return false;
+        }
+
+        if (!config.targetFolder.isDirectory())
+        {
+            logger.logLine("Error: Path is not a directory: " + legacyFolderPath);
+            return false;
+        }
+
+        logger.logLine("Folder validated successfully!");
+        logger.logLine("");
+
+        // Scan for WAV files recursively
+        logger.logLine("Scanning for WAV files...");
+        logger.logLine("");
+
+        config.targetFolder.findChildFiles(config.wavFiles,
+                                    juce::File::findFiles,
+                                    true,  // search recursively
+                                    "*.wav");
+
+        // Check if any files were found
+        if (config.wavFiles.isEmpty())
+        {
+            logger.logLine("No WAV files found in the specified directory.");
+            return false;
+        }
+
+        logger.logLine("Found " + juce::String(config.wavFiles.size()) + " WAV file(s):");
+        logger.logLine("");
+
+        return true;
+    }
+    else
+    {
+        // No valid mode specified
+        logger.logLine("Error: No valid operation mode specified");
+        logger.logLine("");
+        displayUsage(logger);
         return false;
     }
-
-    logger.logLine("Found " + juce::String(wavFiles.size()) + " WAV file(s):");
-    logger.logLine("");
-
-    return true;
 }
 
 void processAudioFiles(const juce::Array<juce::File>& wavFiles,
