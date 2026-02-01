@@ -26,7 +26,9 @@ target_sources(chompi_pack
         Source/AudioConverter.h
         Source/AudioConverter.cpp
         Source/ChompiNamer.h
-        Source/ChompiNamer.cpp)
+        Source/ChompiNamer.cpp
+        Source/ChompiProcessor.h
+        Source/ChompiProcessor.cpp)
 
 # Link required JUCE modules
 target_link_libraries(chompi_pack
