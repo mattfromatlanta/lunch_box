@@ -1,4 +1,4 @@
-# Chompi Pack - How to Use
+c# Chompi Pack - How to Use
 
 **Chompi Pack** is a command-line tool for processing audio samples for the CHOMPI sampler. It converts audio files to the CHOMPI standard format (16-bit 48kHz WAV) and organizes them into the CHOMPI naming convention.
 
