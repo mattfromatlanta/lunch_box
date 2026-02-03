@@ -2,12 +2,14 @@
 
 **Audio sample processor for the CHOMPI sampler**
 
-Chompi Pack is a command-line tool that converts audio files to the CHOMPI sampler format (16-bit 48kHz WAV) and organizes them using the CHOMPI naming convention.
+Chompi Pack is a dual-mode application (GUI and CLI) that converts audio files to the CHOMPI sampler format (16-bit 48kHz WAV) and organizes them using the CHOMPI naming convention.
 
 ---
 
 ## Features
 
+- ✓ **GUI Application:** User-friendly graphical interface with folder selection
+- ✓ **CLI Support:** Full command-line interface for scripting and automation
 - ✓ **CHOMPI Mode:** Automatic bank assignment and naming for CHOMPI sampler
 - ✓ **Audio Conversion:** Convert any WAV file to 16-bit 48kHz format
 - ✓ **Dual Categories:** Process cubbi (percussive/loop/SFX) and jammi (tuned/chromatic) samples
@@ -34,24 +36,40 @@ make
 
 ### Usage
 
+#### GUI Mode (Default)
+
+```bash
+# Launch GUI application (double-click or run without arguments)
+open "chompi_pack_artefacts/Chompi Pack.app"
+```
+
+The GUI provides:
+- Folder selection buttons for cubbi and jammi samples
+- Output folder selection (optional, defaults to `converted/`)
+- Visual feedback showing selected paths
+- Process button to convert samples
+- Status display with progress and results
+
+#### CLI Mode (With Arguments)
+
 ```bash
 # Process samples for CHOMPI sampler
-./chompi_pack_artefacts/chompi_pack \
+"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" \
   --cubbi /path/to/cubbi/samples \
   --jammi /path/to/jammi/samples \
   --output /path/to/output
 
 # Using shorthand flags (--c, --j, --o)
-./chompi_pack_artefacts/chompi_pack \
+"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" \
   --c /path/to/cubbi/samples \
   --j /path/to/jammi/samples \
   --o /path/to/output
 
 # Scan audio files (no conversion)
-./chompi_pack_artefacts/chompi_pack /path/to/samples
+"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" /path/to/samples
 
 # Convert without CHOMPI naming
-./chompi_pack_artefacts/chompi_pack --convert /path/to/samples
+"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" --convert /path/to/samples
 ```
 
 ### Output
@@ -147,20 +165,28 @@ Examples:
 ```
 chompi_pack/
 ├── Source/              # C++ source files
-│   ├── Main.cpp
-│   ├── AudioScanner.cpp/.h
-│   ├── AudioConverter.cpp/.h
-│   ├── ChompiNamer.cpp/.h
-│   ├── Logger.cpp/.h
-│   └── FileSystemHelper.cpp/.h
+│   ├── Main.cpp                    # Application entry point
+│   ├── AudioConfiguration.h        # Shared configuration types
+│   ├── CLI/                        # Command-line interface
+│   │   ├── CliProcessor.h/cpp
+│   ├── GUI/                        # Graphical interface
+│   │   ├── MainWindow.h/cpp
+│   │   ├── MainComponent.h/cpp
+│   │   └── GuiProcessor.h/cpp
+│   ├── AudioConverter.h/cpp        # Audio format conversion
+│   ├── ChompiNamer.h/cpp           # CHOMPI naming logic
+│   ├── ChompiProcessor.h/cpp       # Processing orchestrator
+│   ├── Logger.h/cpp                # Logging system
+│   └── FileSystemHelper.h/cpp      # File utilities
 ├── build/               # Build directory (CMake)
 │   ├── chompi_pack_artefacts/
-│   │   └── chompi_pack  # Executable
+│   │   └── Chompi Pack.app         # macOS GUI application
 │   └── test_chompi_namer_artefacts/
-│       └── test_chompi_namer  # Unit tests
+│       └── test_chompi_namer       # Unit tests
 ├── converted/           # Default output directory
 ├── logs/                # Operation logs
 ├── test_audio/          # Test samples
+├── prompts/             # Milestone planning documents
 ├── CMakeLists.txt       # Build configuration
 ├── README.md            # This file
 ├── HOW_TO.md            # User guide
@@ -233,6 +259,7 @@ make
 ✅ **Milestone 1:** Audio file scanner with metadata reporting
 ✅ **Milestone 2:** Audio format conversion (16-bit 48kHz)
 ✅ **Milestone 3:** CHOMPI sampler naming schema and bank organization
+✅ **Milestone 4:** GUI application with folder selection and processing
 
 ---
 
@@ -400,5 +427,5 @@ For issues, questions, or feature requests:
 
 ---
 
-**Version:** 1.0.0 (Milestone 3 Complete)
+**Version:** 1.1.0 (Milestone 4 Complete - GUI Application)
 **Status:** Production Ready ✓

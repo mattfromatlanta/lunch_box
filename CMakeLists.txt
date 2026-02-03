@@ -9,9 +9,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add JUCE
 add_subdirectory(/Users/matthewfishel/Repos/JUCE ${CMAKE_BINARY_DIR}/JUCE)
 
-# Create the console application
-juce_add_console_app(chompi_pack
-    PRODUCT_NAME "Chompi Pack")
+# Create the GUI application
+juce_add_gui_app(chompi_pack
+    PRODUCT_NAME "Chompi Pack"
+    COMPANY_NAME "Matt from Atlanta"
+    BUNDLE_ID "com.mattfromatlanta.chompipack")
 
 # Add source files
 target_sources(chompi_pack
@@ -19,8 +21,15 @@ target_sources(chompi_pack
         Source/Main.cpp
         Source/Logger.h
         Source/Logger.cpp
-        Source/AudioScanner.h
-        Source/AudioScanner.cpp
+        Source/AudioConfiguration.h
+        Source/CLI/CliProcessor.h
+        Source/CLI/CliProcessor.cpp
+        Source/GUI/MainWindow.h
+        Source/GUI/MainWindow.cpp
+        Source/GUI/MainComponent.h
+        Source/GUI/MainComponent.cpp
+        Source/GUI/GuiProcessor.h
+        Source/GUI/GuiProcessor.cpp
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/AudioConverter.h
@@ -36,6 +45,8 @@ target_link_libraries(chompi_pack
         juce::juce_core
         juce::juce_audio_formats
         juce::juce_audio_basics
+        juce::juce_gui_basics
+        juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

@@ -1,6 +1,5 @@
 .claude/
 .vscode/
-prompts/
 build/
 
 # Test audio files (keep directory structure, ignore WAV files)

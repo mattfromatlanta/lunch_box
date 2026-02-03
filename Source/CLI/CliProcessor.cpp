@@ -1,6 +1,55 @@
-#include "AudioScanner.h"
+#include "CliProcessor.h"
+#include "../AudioConverter.h"
+#include "../FileSystemHelper.h"
+#include "../ChompiProcessor.h"
 
-static void displayUsage(Logger& logger)
+CliProcessor::CliProcessor()
+{
+}
+
+int CliProcessor::run(int argc, char* argv[])
+{
+    // Initialize application and parse arguments
+    if (!initializeApplication(argc, argv))
+    {
+        return 1;
+    }
+
+    // Handle different operation modes
+    if (config.mode == OperationMode::Scan)
+    {
+        // Legacy scan-only mode
+        processAudioFiles(config.wavFiles, config.targetFolder);
+        logger.logLine("Scan complete!");
+    }
+    else if (config.mode == OperationMode::Convert)
+    {
+        // Legacy conversion mode
+        processAudioFiles(config.wavFiles, config.targetFolder);
+        logger.logLine("Scan complete!");
+
+        juce::File outputFolder = FileSystemHelper::getDefaultOutputDirectory();
+        AudioConverter converter(logger);
+        converter.convertFiles(config.wavFiles, config.targetFolder, outputFolder, formatManager);
+    }
+    else if (config.mode == OperationMode::Chompi)
+    {
+        // CHOMPI mode - process cubbi and jammi samples
+        ChompiProcessor processor(logger);
+
+        if (!processor.processSamples(config, formatManager))
+        {
+            return 1;
+        }
+    }
+
+    logger.logLine("");
+    logger.logLine("All operations complete!");
+
+    return 0;
+}
+
+void CliProcessor::displayUsage()
 {
     logger.logLine("Usage: chompi_pack [OPTIONS]");
     logger.logLine("");
@@ -19,10 +68,7 @@ static void displayUsage(Logger& logger)
     logger.logLine("  chompi_pack --convert <folder>    Convert without CHOMPI naming");
 }
 
-bool initializeApplication(int argc, char* argv[],
-                          Logger& logger,
-                          juce::AudioFormatManager& formatManager,
-                          AudioConfiguration& config)
+bool CliProcessor::initializeApplication(int argc, char* argv[])
 {
     logger.logLine("==================================");
     logger.logLine("Chompi Pack - Audio File Scanner");
@@ -39,7 +85,7 @@ bool initializeApplication(int argc, char* argv[],
     // Check for minimum arguments
     if (argc < 2)
     {
-        displayUsage(logger);
+        displayUsage();
         return false;
     }
 
@@ -234,15 +280,13 @@ bool initializeApplication(int argc, char* argv[],
         // No valid mode specified
         logger.logLine("Error: No valid operation mode specified");
         logger.logLine("");
-        displayUsage(logger);
+        displayUsage();
         return false;
     }
 }
 
-void processAudioFiles(const juce::Array<juce::File>& wavFiles,
-                      const juce::File& targetFolder,
-                      juce::AudioFormatManager& formatManager,
-                      Logger& logger)
+void CliProcessor::processAudioFiles(const juce::Array<juce::File>& wavFiles,
+                                     const juce::File& targetFolder)
 {
     for (int i = 0; i < wavFiles.size(); ++i)
     {

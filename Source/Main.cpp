@@ -1,57 +1,77 @@
-#include <juce_core/juce_core.h>
-#include <juce_audio_formats/juce_audio_formats.h>
-#include "Logger.h"
-#include "AudioScanner.h"
-#include "AudioConverter.h"
-#include "FileSystemHelper.h"
-#include "ChompiProcessor.h"
+#include <juce_gui_basics/juce_gui_basics.h>
+#include "CLI/CliProcessor.h"
+#include "GUI/MainWindow.h"
 
 //==============================================================================
-int main(int argc, char* argv[])
+// ChompiPackApplication - JUCE application wrapper
+//==============================================================================
+
+class ChompiPackApplication : public juce::JUCEApplication
 {
-    // Initialize logger
-    Logger logger;
+public:
+    ChompiPackApplication() {}
 
-    // Initialize application and audio format manager
-    juce::AudioFormatManager formatManager;
-    AudioConfiguration config;
+    const juce::String getApplicationName() override { return "Chompi Pack"; }
+    const juce::String getApplicationVersion() override { return "0.1.0"; }
+    bool moreThanOneInstanceAllowed() override { return true; }
 
-    // Run initialization - exit early if it fails
-    if (!initializeApplication(argc, argv, logger, formatManager, config))
+    void initialise(const juce::String& commandLine) override
     {
-        return 1;
-    }
+        // Check if CLI arguments were provided
+        auto args = getCommandLineParameterArray();
 
-    // Handle different operation modes
-    if (config.mode == OperationMode::Scan)
-    {
-        // Legacy scan-only mode
-        processAudioFiles(config.wavFiles, config.targetFolder, formatManager, logger);
-        logger.logLine("Scan complete!");
-    }
-    else if (config.mode == OperationMode::Convert)
-    {
-        // Legacy conversion mode
-        processAudioFiles(config.wavFiles, config.targetFolder, formatManager, logger);
-        logger.logLine("Scan complete!");
-
-        juce::File outputFolder = FileSystemHelper::getDefaultOutputDirectory();
-        AudioConverter converter(logger);
-        converter.convertFiles(config.wavFiles, config.targetFolder, outputFolder, formatManager);
-    }
-    else if (config.mode == OperationMode::Chompi)
-    {
-        // CHOMPI mode - process cubbi and jammi samples
-        ChompiProcessor processor(logger);
-
-        if (!processor.processSamples(config, formatManager))
+        if (args.size() > 0)
         {
-            return 1;
+            // CLI mode - process arguments and quit
+            runCliMode(args);
+            quit();
+        }
+        else
+        {
+            // GUI mode - create window
+            mainWindow = std::make_unique<MainWindow>(getApplicationName());
         }
     }
 
-    logger.logLine("");
-    logger.logLine("All operations complete!");
+    void shutdown() override
+    {
+        mainWindow = nullptr;
+    }
 
-    return 0;
-}
+    void systemRequestedQuit() override
+    {
+        quit();
+    }
+
+    void anotherInstanceStarted(const juce::String& commandLine) override
+    {
+    }
+
+private:
+    std::unique_ptr<MainWindow> mainWindow;
+
+    void runCliMode(const juce::StringArray& args)
+    {
+        // Convert StringArray to argc/argv format
+        std::vector<juce::String> argStrings;
+        argStrings.push_back("chompi_pack");  // Program name
+
+        for (const auto& arg : args)
+            argStrings.push_back(arg);
+
+        // Create argv-style array
+        std::vector<char*> argv;
+        for (auto& str : argStrings)
+            argv.push_back(const_cast<char*>(str.toRawUTF8()));
+
+        int argc = static_cast<int>(argv.size());
+
+        // Run CLI processor
+        CliProcessor cliProcessor;
+        cliProcessor.run(argc, argv.data());
+    }
+};
+
+//==============================================================================
+// This macro generates the main() routine that launches the app.
+START_JUCE_APPLICATION(ChompiPackApplication)

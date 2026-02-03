@@ -1,11 +1,12 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
-#include <juce_audio_formats/juce_audio_formats.h>
-#include "Logger.h"
 
 //==============================================================================
-// AudioScanner - Functions for scanning and analyzing audio files
+// Shared audio processing configuration structures
+//==============================================================================
+// These data structures are used across CLI and processing modules
+// to pass configuration and state between components.
 //==============================================================================
 
 // Operation mode
@@ -32,16 +33,3 @@ struct AudioConfiguration
     bool hasCubbi = false;
     bool hasJammi = false;
 };
-
-// Initialize application, validate arguments, and scan for files
-// Returns false if program should exit early
-bool initializeApplication(int argc, char *argv[],
-                           Logger &logger,
-                           juce::AudioFormatManager &formatManager,
-                           AudioConfiguration& config);
-
-// Process and analyze all audio files
-void processAudioFiles(const juce::Array<juce::File>& wavFiles,
-                      const juce::File& targetFolder,
-                      juce::AudioFormatManager& formatManager,
-                      Logger& logger);

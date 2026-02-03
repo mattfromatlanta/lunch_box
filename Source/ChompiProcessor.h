@@ -5,7 +5,7 @@
 #include "Logger.h"
 #include "ChompiNamer.h"
 #include "AudioConverter.h"
-#include "AudioScanner.h"
+#include "AudioConfiguration.h"
 
 //==============================================================================
 // ChompiProcessor - High-level CHOMPI sample processing
