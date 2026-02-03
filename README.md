@@ -76,17 +76,29 @@ The GUI provides:
 
 ```
 output/
-├── cubbi_a1.wav      # Bank A, Slot 1
-├── cubbi_a2.wav      # Bank A, Slot 2
+├── cubbi_a1.wav            # Bank A, Slot 1 (base sample)
+├── cubbi_a1_double.wav     # Bank A, Slot 1 (optimized - pitched up)
+├── cubbi_a2.wav            # Bank A, Slot 2 (base sample)
+├── cubbi_a2_double.wav     # Bank A, Slot 2 (optimized - pitched up)
 ├── ...
-├── cubbi_a14.wav     # Bank A, Slot 14
-├── cubbi_b1.wav      # Bank B, Slot 1
+├── cubbi_a14.wav           # Bank A, Slot 14 (base sample)
+├── cubbi_a14_double.wav    # Bank A, Slot 14 (optimized - pitched up)
+├── cubbi_b1.wav            # Bank B, Slot 1 (base sample)
+├── cubbi_b1_double.wav     # Bank B, Slot 1 (optimized - pitched up)
 ├── ...
-├── cubbi_e14.wav     # Bank E, Slot 14 (70th file)
-├── jammi_a1.wav
+├── cubbi_e14.wav           # Bank E, Slot 14 - 70th slot (base sample)
+├── cubbi_e14_double.wav    # Bank E, Slot 14 (optimized - pitched up)
+├── jammi_a1.wav            # Jammi base sample
+├── jammi_a1_double.wav     # Jammi optimized sample
 ├── jammi_a2.wav
+├── jammi_a2_double.wav
 └── ...
 ```
+
+**Note:** Each input sample generates TWO output files:
+- **Base sample:** Standard CHOMPI naming (e.g., `cubbi_a1.wav`)
+- **Optimized sample:** Pitched up one octave with `_double` suffix (e.g., `cubbi_a1_double.wav`)
+- Total output: 140 files per category (70 base + 70 optimized)
 
 ---
 
@@ -124,18 +136,30 @@ Tuned samples designed to be played chromatically
 ### Bank Structure
 - **5 banks per category:** A, B, C, D, E
 - **14 slots per bank:** Numbered 1-14
-- **Total capacity:** 70 samples per category
+- **Total capacity:** 70 samples per category (hardware limit)
+- **Output files:** 140 per category (70 base + 70 optimized `_double` versions)
 
 ### Naming Convention
 ```
-{category}_{bank}{slot}.wav
+{category}_{bank}{slot}.wav              # Base sample
+{category}_{bank}{slot}_double.wav       # Optimized sample (pitched up)
 
 Examples:
-  cubbi_a1.wav   # Cubbi, Bank A, Slot 1
-  cubbi_a14.wav  # Cubbi, Bank A, Slot 14
-  cubbi_b1.wav   # Cubbi, Bank B, Slot 1
-  jammi_e14.wav  # Jammi, Bank E, Slot 14
+  cubbi_a1.wav          # Cubbi, Bank A, Slot 1 (base)
+  cubbi_a1_double.wav   # Cubbi, Bank A, Slot 1 (optimized)
+  cubbi_a14.wav         # Cubbi, Bank A, Slot 14 (base)
+  cubbi_a14_double.wav  # Cubbi, Bank A, Slot 14 (optimized)
+  cubbi_b1.wav          # Cubbi, Bank B, Slot 1 (base)
+  cubbi_b1_double.wav   # Cubbi, Bank B, Slot 1 (optimized)
+  jammi_e14.wav         # Jammi, Bank E, Slot 14 (base)
+  jammi_e14_double.wav  # Jammi, Bank E, Slot 14 (optimized)
 ```
+
+**Optimized Samples:**
+- CHOMPI hardware automatically creates `_double` files if not present
+- Chompi Pack generates them proactively for complete libraries
+- Optimized = pitched up one octave (double playback speed, half duration)
+- Both base and optimized files are loaded into CHOMPI's library
 
 ---
 
@@ -146,12 +170,16 @@ Examples:
 - **Bit depth:** Any (8-bit, 16-bit, 24-bit, 32-bit)
 - **Sample rate:** Any (44.1kHz, 48kHz, 96kHz, etc.)
 - **Channels:** Mono or Stereo (files with >2 channels are skipped)
+- **Duration:** Maximum 2 minutes (120 seconds) per sample
 
 ### Output
-- **Format:** WAV
-- **Bit depth:** 16-bit
-- **Sample rate:** 48kHz
+- **Format:** WAV (two files per input)
+- **Bit depth:** 16-bit (both base and optimized)
+- **Sample rate:** 48kHz (both base and optimized)
 - **Channels:** Preserved from source (mono→mono, stereo→stereo)
+- **Base sample:** Standard conversion to 16-bit 48kHz
+- **Optimized sample:** Pitched up one octave (half duration), appends `_double` suffix
+- **Total files:** 2× input count (e.g., 35 inputs → 70 outputs per category)
 
 ### Performance
 - **Speed:** ~44 MB/sec conversion throughput
@@ -309,14 +337,17 @@ Found 42 WAV files in Cubbi folder
 Bank A (14/14 slots filled)
 Bank B (14/14 slots filled)
 Bank C (14/14 slots filled)
+Generated 84 files (42 base + 42 optimized)
 
 Processing Jammi samples...
 Found 12 WAV files in Jammi folder
 
 === Jammi Bank Assignment ===
 Bank A (12/14 slots filled)
+Generated 24 files (12 base + 12 optimized)
 
 CHOMPI processing complete!
+Total output: 108 files (54 base + 54 optimized)
 ```
 
 ### Example 2: Custom Output Directory
@@ -378,10 +409,12 @@ See [HOW_TO.md](HOW_TO.md) for detailed troubleshooting.
 
 ## Known Limitations
 
-1. **File Format:** Only WAV files supported (no AIFF, FLAC, MP3, etc.)
+1. **File Format:** Only WAV files supported currently (AIFF, FLAC, MP3 support planned in Milestone 5)
 2. **Channel Count:** Maximum 2 channels (mono or stereo)
-3. **70-File Limit:** Maximum 70 samples per category (by CHOMPI design)
-4. **Recursive Search:** All .wav files in subdirectories are included
+3. **Sample Duration:** Maximum 2 minutes per sample (optimized versions will be 1 minute)
+4. **70-Slot Limit:** Maximum 70 samples per category (by CHOMPI hardware design)
+5. **Output Volume:** 140 files per category (70 base + 70 optimized)
+6. **Recursive Search:** All .wav files in subdirectories are included
 
 ---
 

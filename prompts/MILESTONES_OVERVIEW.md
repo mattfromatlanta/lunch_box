@@ -27,10 +27,10 @@
 
 ## Planned Milestones 📋
 
-### Milestone 5: Additional Input Format Support
+### Milestone 5: Additional Input Format Support + Optimized Sample Generation
 **Priority:** High
-**Estimated Effort:** 2-3 days
-**Description:** Expand input support beyond WAV to include AIFF, MP3, and FLAC formats.
+**Estimated Effort:** 3-5 days
+**Description:** Expand input support beyond WAV to include AIFF, MP3, and FLAC formats, and automatically generate CHOMPI-optimized samples (pitched up one octave) for complete library creation.
 
 **Key Features:**
 - AIFF (.aiff, .aif) support
@@ -38,17 +38,30 @@
 - FLAC (.flac) lossless support
 - Automatic format detection
 - Mixed format batch processing
+- **Optimized sample generation** (pitched up one octave, `_double` suffix)
+- Duration validation (max 2 minutes per sample)
+- Complete CHOMPI library output (base + optimized versions)
 
 **Technical Changes:**
 - CMakeLists.txt: Enable FLAC and MP3 in JUCE
 - FileSystemHelper: Update file search patterns
-- Minimal code changes (format-agnostic architecture)
+- AudioConverter: Add optimized sample generation and duration validation
+- ChompiProcessor: Generate both base and `_double` versions
+- Format-agnostic architecture maintained
+
+**Output Changes:**
+- Previous: 70 files per category (70 cubbi + 70 jammi = 140 total)
+- New: 140 files per category (70 base + 70 optimized = 280 total)
+- Input limit unchanged: 70 samples per category (hardware constraint)
 
 **Benefits:**
-- Eliminates pre-conversion step
+- Eliminates pre-conversion step for multiple formats
 - Supports diverse audio sources
+- Generates complete CHOMPI libraries automatically
+- No manual _double file creation needed
+- CHOMPI hardware doesn't need to generate optimized files
 - Maintains quality appropriately
-- Improves workflow efficiency
+- Significantly improves workflow efficiency
 
 ---
 

@@ -109,14 +109,25 @@ cd chompi_pack/build
 **Output:**
 ```
 output/
-├── cubbi_a1.wav
-├── cubbi_a2.wav
+├── cubbi_a1.wav            # Base sample
+├── cubbi_a1_double.wav     # Optimized (pitched up 1 octave)
+├── cubbi_a2.wav            # Base sample
+├── cubbi_a2_double.wav     # Optimized (pitched up 1 octave)
 ├── ...
-├── cubbi_e14.wav
-├── jammi_a1.wav
+├── cubbi_e14.wav           # Base sample (70th slot)
+├── cubbi_e14_double.wav    # Optimized (70th slot)
+├── jammi_a1.wav            # Base sample
+├── jammi_a1_double.wav     # Optimized (pitched up 1 octave)
 ├── jammi_a2.wav
+├── jammi_a2_double.wav
 └── ...
 ```
+
+**Note:** Each input sample generates TWO files:
+- **Base sample:** Standard CHOMPI name (e.g., `cubbi_a1.wav`)
+- **Optimized sample:** Pitched up one octave with `_double` suffix (e.g., `cubbi_a1_double.wav`)
+
+The optimized samples enable pitch-shifting features on the CHOMPI hardware.
 
 ---
 
@@ -199,13 +210,24 @@ The CHOMPI sampler organizes samples into **banks** and **slots**:
 
 ### Naming Convention
 
+**Base samples:**
 Format: `{category}_{bank}{slot}.wav`
 
+**Optimized samples:**
+Format: `{category}_{bank}{slot}_double.wav` (pitched up one octave)
+
 **Examples:**
-- `cubbi_a1.wav` - Cubbi, Bank A, Slot 1
-- `cubbi_a14.wav` - Cubbi, Bank A, Slot 14
-- `cubbi_b1.wav` - Cubbi, Bank B, Slot 1
-- `jammi_e14.wav` - Jammi, Bank E, Slot 14
+- `cubbi_a1.wav` - Cubbi, Bank A, Slot 1 (base)
+- `cubbi_a1_double.wav` - Cubbi, Bank A, Slot 1 (optimized)
+- `cubbi_a14.wav` - Cubbi, Bank A, Slot 14 (base)
+- `cubbi_a14_double.wav` - Cubbi, Bank A, Slot 14 (optimized)
+- `cubbi_b1.wav` - Cubbi, Bank B, Slot 1 (base)
+- `cubbi_b1_double.wav` - Cubbi, Bank B, Slot 1 (optimized)
+- `jammi_e14.wav` - Jammi, Bank E, Slot 14 (base)
+- `jammi_e14_double.wav` - Jammi, Bank E, Slot 14 (optimized)
+
+**What are optimized samples?**
+The CHOMPI hardware can pitch samples up or down. Optimized samples (`_double`) are pre-generated versions pitched up one octave (double playback speed, half duration). The hardware automatically creates these if not present, but Chompi Pack generates them proactively for complete libraries.
 
 ### File Assignment
 
@@ -230,7 +252,15 @@ Bank A (14/14 slots filled)
 Bank B (14/14 slots filled)
 Bank C (14/14 slots filled)
 Bank D (0/14 slots) - incomplete
+
+Generated 84 files (42 base + 42 optimized)
 ```
+
+**Output Explanation:**
+- **Input:** 42 files
+- **Output:** 84 files (42 base samples + 42 optimized `_double` versions)
+- **Banks Used:** A (full), B (full), C (full)
+- **Bank D Status:** Incomplete (0 out of 14 slots)
 
 ---
 
@@ -249,35 +279,51 @@ Bank D (0/14 slots) - incomplete
 
 This ensures they appear in your desired order in the CHOMPI banks.
 
-### 2. Managing the 70-File Limit
+### 2. Managing the 70-Slot Limit
 
-Each category (cubbi/jammi) can hold **maximum 70 samples**. If you have more:
+Each category (cubbi/jammi) has **70 slots** (CHOMPI hardware limit). However, each slot produces **2 files**:
+- 1 base sample
+- 1 optimized sample (`_double` suffix)
 
+**Capacity:**
+- Maximum input: 70 samples per category
+- Output files: 140 per category (70 base + 70 optimized)
+- Total output: 280 files maximum (140 cubbi + 140 jammi)
+
+**If you have more than 70 files:**
 - Chompi Pack will process only the first 70 files (alphabetically)
 - A warning will display: "Found 83 files. Only first 70 will be processed."
 - Files 71+ will be skipped
+- Output: 140 files (70 slots × 2 versions each)
 
 **Strategy:** Organize samples into multiple batches:
 ```bash
-# Batch 1: Drums
+# Batch 1: Drums (70 files → 140 output files)
 chompi_pack --cubbi ~/drums_batch1 --output ~/output/batch1
 
-# Batch 2: Synths
+# Batch 2: Synths (70 files → 140 output files)
 chompi_pack --cubbi ~/synths_batch1 --output ~/output/batch2
 ```
 
 ### 3. Audio Format Recommendations
 
 **Input formats supported:**
-- WAV files only (*.wav)
+- WAV files only (*.wav) - AIFF, MP3, FLAC support coming in Milestone 5
 - Any bit depth (8-bit, 16-bit, 24-bit, 32-bit)
 - Any sample rate (44.1kHz, 48kHz, 96kHz, etc.)
 - Mono or stereo (multi-channel files >2 channels are skipped)
+- **Maximum duration:** 2 minutes (120 seconds) per sample
 
 **Output format (automatic):**
-- 16-bit WAV
-- 48kHz sample rate
+- **Base samples:** 16-bit WAV at 48kHz
+- **Optimized samples:** 16-bit WAV at 48kHz, pitched up one octave (half duration)
 - Channel count preserved (mono stays mono, stereo stays stereo)
+- Two files per input: base + `_double` (optimized)
+
+**Duration limits:**
+- Input samples must be under 2 minutes
+- Optimized versions will be under 1 minute (half of base duration)
+- Files exceeding 2 minutes are skipped with warning
 
 ### 4. Checking Before Processing
 

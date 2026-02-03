@@ -1,7 +1,7 @@
-# Milestone 5: Additional Input Format Support
+# Milestone 5: Additional Input Format Support + Optimized Sample Generation
 
 ## Objective
-Expand input format support beyond WAV to include AIFF, MP3, and FLAC formats, enabling users to process audio files from diverse sources without pre-conversion.
+Expand input format support beyond WAV to include AIFF, MP3, and FLAC formats, and automatically generate CHOMPI-optimized samples (pitched up one octave) for all outputs, enabling users to process audio files from diverse sources and create complete CHOMPI libraries.
 
 ## Requirements
 
@@ -15,9 +15,25 @@ Expand input format support beyond WAV to include AIFF, MP3, and FLAC formats, e
 - **MP3 (.mp3)** - MPEG Audio Layer 3 (compressed)
 - **FLAC (.flac)** - Free Lossless Audio Codec
 
-### Output Format (Unchanged)
+### Output Format
+
+**Base Samples:**
 - WAV, 16-bit, 48kHz
 - Mono or stereo preserved
+- Standard CHOMPI naming: `cubbi_a1.wav`, `jammi_b5.wav`, etc.
+
+**Optimized Samples (New):**
+- WAV, 16-bit, 48kHz
+- Pitched up one octave (double speed)
+- Appends `_double` suffix: `cubbi_a1_double.wav`, `jammi_b5_double.wav`, etc.
+- Automatically generated for every input sample
+- CHOMPI hardware creates these if absent; we generate them proactively
+
+**Output Volume:**
+- Previous: 70 files per category max (70 cubbi + 70 jammi = 140 total)
+- New: 140 files per category max (70 base + 70 optimized per category = 280 total)
+- Input limit: 70 samples per category (hardware bank limit unchanged)
+- Output ratio: 2 files per input sample (base + optimized)
 
 ### Processing Requirements
 
@@ -31,12 +47,27 @@ Expand input format support beyond WAV to include AIFF, MP3, and FLAC formats, e
    - Lossy formats (MP3) → accept quality as-is
    - All formats → convert to 16-bit 48kHz WAV output
 
-3. **Error Handling**
+3. **Duration Validation**
+   - Maximum duration: 2 minutes (120 seconds) for base samples
+   - Rationale: Optimized samples will be 1 minute (60 seconds) at double speed
+   - Samples exceeding limit → skip with warning
+   - Report duration in validation logs
+
+4. **Optimized Sample Generation**
+   - For each input sample, generate TWO output files:
+     - Base sample: `{category}_{bank}{slot}.wav` (e.g., `cubbi_a1.wav`)
+     - Optimized sample: `{category}_{bank}{slot}_double.wav` (e.g., `cubbi_a1_double.wav`)
+   - Optimized sample = pitched up one octave (double playback speed)
+   - Both files: 16-bit 48kHz WAV format
+   - Preserves mono/stereo configuration in both versions
+
+5. **Error Handling**
    - Invalid/corrupted files → skip with warning
    - Unsupported bit rates → skip with warning
    - DRM-protected files → skip with warning
+   - Samples exceeding duration limit → skip with warning
 
-4. **File Discovery**
+6. **File Discovery**
    - Update recursive search to find: *.wav, *.aiff, *.aif, *.mp3, *.flac
    - Sort all formats together alphabetically
    - No format-based prioritization
@@ -78,6 +109,66 @@ target_compile_definitions(chompi_pack
 )
 ```
 
+### Optimized Sample Generation Architecture
+
+**Pitch-Shifting Approach:**
+
+Pitching up one octave = doubling playback speed = halving sample count while preserving pitch relationship.
+
+**Implementation using JUCE ResamplingAudioSource:**
+
+```cpp
+// Pseudo-code for optimized sample generation
+void generateOptimizedSample(const juce::File& baseFile,
+                             const juce::File& optimizedFile,
+                             juce::AudioFormatManager& formatManager)
+{
+    // 1. Read base sample
+    auto reader = formatManager.createReaderFor(baseFile);
+
+    // 2. Create resampler with 2.0 ratio (double speed = octave up)
+    juce::ResamplingAudioSource resampler(reader, false, 2);
+    resampler.setResamplingRatio(2.0); // Double speed
+
+    // 3. Prepare output buffer (half the length of original)
+    int numSamples = reader->lengthInSamples / 2;
+    juce::AudioBuffer<float> buffer(reader->numChannels, numSamples);
+
+    // 4. Process through resampler
+    resampler.prepareToPlay(numSamples, 48000.0);
+    juce::AudioSourceChannelInfo info(&buffer, 0, numSamples);
+    resampler.getNextAudioBlock(info);
+
+    // 5. Write to output file with _double suffix
+    writeWavFile(optimizedFile, buffer, 48000.0, 16);
+}
+```
+
+**Alternative Approach (Simpler):**
+
+Since we're already converting to 48kHz, we can:
+1. Read source at 48kHz
+2. For optimized version: Write every other sample (decimate by 2)
+3. Result: Halved duration, doubled perceived pitch
+
+**Duration Validation:**
+
+```cpp
+bool validateSampleDuration(juce::AudioFormatReader* reader)
+{
+    double durationSeconds = reader->lengthInSamples / reader->sampleRate;
+    const double MAX_DURATION = 120.0; // 2 minutes
+
+    if (durationSeconds > MAX_DURATION)
+    {
+        logger.logWarning("Sample exceeds 2-minute limit: " +
+                         juce::String(durationSeconds, 1) + "s");
+        return false;
+    }
+    return true;
+}
+```
+
 ### Code Changes Required
 
 **1. FileSystemHelper Updates**
@@ -91,8 +182,10 @@ target_compile_definitions(chompi_pack
 - Add format-specific warnings
 
 **3. AudioConverter Updates**
-- No changes needed (format-agnostic)
-- AudioFormatReader handles all formats
+- Add `generateOptimizedSample()` method for creating _double versions
+- Add duration validation before processing
+- Modify main conversion loop to generate both base and optimized samples
+- AudioFormatReader remains format-agnostic for reading
 
 **4. GUI Updates**
 - Update file validation to check all formats
@@ -174,11 +267,101 @@ target_compile_definitions(chompi_pack
    - Warn if FLAC file is very large
    - Inform about lossy → lossless conversion
 
-### Phase 4: Testing
+### Phase 4: Optimized Sample Generation
+
+1. **Add Duration Validation**
+   ```cpp
+   // In AudioConverter or ChompiProcessor
+   bool validateSampleDuration(juce::AudioFormatReader* reader,
+                              const juce::File& file,
+                              juce::String& errorMessage)
+   {
+       const double MAX_DURATION_SECONDS = 120.0;
+       double duration = reader->lengthInSamples / reader->sampleRate;
+
+       if (duration > MAX_DURATION_SECONDS)
+       {
+           errorMessage = juce::String("Sample exceeds 2-minute limit: ") +
+                         file.getFileName() + " (" +
+                         juce::String(duration, 1) + "s)";
+           return false;
+       }
+       return true;
+   }
+   ```
+
+2. **Implement Pitch-Shifting Function**
+   ```cpp
+   bool generateOptimizedSample(const juce::File& baseFile,
+                               const juce::File& optimizedFile,
+                               juce::AudioFormatManager& formatManager)
+   {
+       // Read base file
+       std::unique_ptr<juce::AudioFormatReader> reader(
+           formatManager.createReaderFor(baseFile));
+
+       if (reader == nullptr)
+           return false;
+
+       // Create buffer for optimized version (half length)
+       int optimizedSamples = reader->lengthInSamples / 2;
+       juce::AudioBuffer<float> buffer(reader->numChannels, optimizedSamples);
+
+       // Read and resample (simple decimation approach)
+       juce::AudioBuffer<float> tempBuffer(reader->numChannels,
+                                          reader->lengthInSamples);
+       reader->read(&tempBuffer, 0, reader->lengthInSamples, 0, true, true);
+
+       // Decimate by 2 (take every other sample)
+       for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+       {
+           for (int i = 0; i < optimizedSamples; ++i)
+           {
+               buffer.setSample(ch, i, tempBuffer.getSample(ch, i * 2));
+           }
+       }
+
+       // Write optimized file
+       return writeWavFile(optimizedFile, buffer, 48000.0, 16);
+   }
+   ```
+
+3. **Update ChompiProcessor Conversion Loop**
+   ```cpp
+   // For each input file, generate both base and optimized
+   for (const auto& assignment : assignments)
+   {
+       // Generate base sample
+       juce::File baseOutput = outputFolder.getChildFile(assignment.outputName);
+       bool baseSuccess = convertFile(assignment.sourceFile, baseOutput);
+
+       if (baseSuccess)
+       {
+           // Generate optimized sample with _double suffix
+           juce::String optimizedName = assignment.outputName.replace(".wav",
+                                                                      "_double.wav");
+           juce::File optimizedOutput = outputFolder.getChildFile(optimizedName);
+           bool optSuccess = generateOptimizedSample(baseOutput,
+                                                    optimizedOutput,
+                                                    formatManager);
+
+           logger.log("Generated: " + assignment.outputName +
+                     " + optimized version");
+       }
+   }
+   ```
+
+4. **Update Logging**
+   - Log both base and optimized file creation
+   - Report total output count (2x input count)
+   - Show duration for samples approaching limit
+
+### Phase 5: Testing
 
 1. **Create Test Files**
-   - Prepare sample files in each format
+   - Prepare sample files in each format (WAV, AIFF, MP3, FLAC)
    - Various bit depths and sample rates
+   - Various durations: 10s, 60s, 119s, 121s (over limit)
    - Include edge cases (very large, very small)
 
 2. **Test Format Reading**
@@ -187,23 +370,43 @@ target_compile_definitions(chompi_pack
    - Verify sample data is correct
 
 3. **Test Conversion Pipeline**
-   - Convert AIFF → WAV
-   - Convert MP3 → WAV
-   - Convert FLAC → WAV
-   - Verify output quality
+   - Convert AIFF → WAV (base + _double)
+   - Convert MP3 → WAV (base + _double)
+   - Convert FLAC → WAV (base + _double)
+   - Verify output quality for both versions
 
-4. **Test Mixed Format Processing**
+4. **Test Optimized Sample Generation**
+   - Verify _double files created for all inputs
+   - Verify _double files are half the duration
+   - Verify _double files playback at higher pitch
+   - Verify both mono and stereo preserved correctly
+   - Verify 16-bit 48kHz format maintained
+
+5. **Test Duration Validation**
+   - Process 119-second sample → should succeed
+   - Process 121-second sample → should be skipped with warning
+   - Verify log messages for rejected files
+   - Verify duration reported accurately
+
+6. **Test Mixed Format Processing**
    - Process folder with multiple formats
    - Verify alphabetical sorting across formats
-   - Verify all formats converted correctly
+   - Verify all formats converted to base + _double
+   - Verify output count = 2x input count
 
-5. **Test Error Handling**
+7. **Test Error Handling**
    - Corrupted AIFF files
    - Invalid MP3 files
    - Truncated FLAC files
+   - Over-duration files
    - Verify graceful failure
 
-### Phase 5: Documentation
+8. **Test Capacity Limits**
+   - Process 70 input files → expect 140 output files per category
+   - Verify bank assignment correct with doubled output
+   - Verify logs report correct file counts
+
+### Phase 6: Documentation
 
 1. **Update README.md**
    - List all supported formats
@@ -274,7 +477,8 @@ target_compile_definitions(chompi_pack
 
 ## Success Criteria
 
-- [ ] JUCE format configuration updated
+**Format Support:**
+- [ ] JUCE format configuration updated (FLAC and MP3 enabled)
 - [ ] AIFF files can be read and converted
 - [ ] MP3 files can be read and converted
 - [ ] FLAC files can be read and converted
@@ -282,11 +486,28 @@ target_compile_definitions(chompi_pack
 - [ ] Format detection works correctly
 - [ ] Files sorted alphabetically regardless of format
 - [ ] Format reported in logs and status
+
+**Optimized Sample Generation:**
+- [ ] Base samples generated with standard naming (e.g., `cubbi_a1.wav`)
+- [ ] Optimized samples generated with _double suffix (e.g., `cubbi_a1_double.wav`)
+- [ ] Optimized samples are half duration of base samples
+- [ ] Optimized samples playback at higher pitch (one octave up)
+- [ ] Both base and optimized files are 16-bit 48kHz WAV
+- [ ] Mono/stereo preserved in both versions
+- [ ] Output count = 2x input count (verified in logs)
+
+**Duration Validation:**
+- [ ] Samples under 2 minutes processed successfully
+- [ ] Samples over 2 minutes skipped with warning
+- [ ] Duration reported in validation logs
+- [ ] Appropriate error messages for rejected files
+
+**General:**
 - [ ] Error handling works for all formats
-- [ ] GUI shows format information
-- [ ] CLI processes all formats
-- [ ] Documentation updated
-- [ ] Test files processed successfully
+- [ ] GUI shows format information and output count
+- [ ] CLI processes all formats and generates both versions
+- [ ] Documentation updated (README, HOW_TO, CLAUDE.MD)
+- [ ] Test files processed successfully (all formats + durations)
 
 ## Testing Plan
 
@@ -299,10 +520,12 @@ target_compile_definitions(chompi_pack
 - Verify metadata extraction
 
 **Conversion Tests:**
-- AIFF → WAV (16-bit 48kHz)
-- MP3 → WAV (16-bit 48kHz)
-- FLAC → WAV (16-bit 48kHz)
-- Verify output playable
+- AIFF → WAV base + _double (16-bit 48kHz each)
+- MP3 → WAV base + _double (16-bit 48kHz each)
+- FLAC → WAV base + _double (16-bit 48kHz each)
+- Verify both outputs playable
+- Verify _double version is half duration
+- Verify _double version sounds pitched up
 
 **Mixed Format Tests:**
 - Folder with WAV + AIFF + MP3 + FLAC
@@ -319,8 +542,11 @@ target_compile_definitions(chompi_pack
 **CHOMPI Mode Tests:**
 - Process cubbi with mixed formats
 - Process jammi with mixed formats
-- Verify 70-file limit with mixed formats
-- Verify output naming correct
+- Process 35 input files → expect 70 output files (35 base + 35 _double)
+- Process 70 input files (max) → expect 140 output files (70 base + 70 _double)
+- Verify output naming correct (base and _double suffix)
+- Verify bank assignments correct
+- Verify _double files have correct suffix
 
 ## Dependencies
 
@@ -340,30 +566,57 @@ target_compile_definitions(chompi_pack
 
 ## Notes
 
+**Format Support:**
 - Focus on common formats (AIFF, MP3, FLAC)
 - Maintain 16-bit 48kHz WAV output (unchanged)
 - No need to support output to other formats
-- Processing logic remains the same
-- Only input reading changes
 - Quality considerations important for user expectations
 - MP3 → WAV doesn't improve quality (inform users)
 
+**Optimized Sample Generation:**
+- CHOMPI hardware automatically creates _double files if not present
+- We generate them proactively to create complete libraries
+- Optimized = pitched up one octave (double playback speed)
+- Both base and _double files go into CHOMPI library
+- Halves duration: 2-minute base → 1-minute optimized
+- Total storage: doubles output file count but maintains 70 slot limit
+
+**Capacity:**
+- Input limit: 70 samples per category (CHOMPI hardware bank structure)
+- Output per category: 140 files (70 base + 70 _double)
+- Total output: 280 files maximum (140 cubbi + 140 jammi)
+- Bank structure unchanged: 5 banks × 14 slots = 70 per category
+
+**Duration Limits:**
+- Maximum input duration: 2 minutes (120 seconds)
+- Resulting optimized duration: 1 minute (60 seconds)
+- Files exceeding limit skipped with warning
+- Rationale: Keep sample loading and memory reasonable on hardware
+
 ## Estimated Impact
 
-**Code Changes:** Minimal
-- CMakeLists.txt: 2 lines
-- FileSystemHelper: ~20 lines
-- Logger: ~10 lines
-- Documentation: ~50 lines
-- Tests: ~100 lines
+**Code Changes:** Moderate
+- CMakeLists.txt: 2 lines (format support)
+- FileSystemHelper: ~20 lines (multi-format search)
+- AudioConverter: ~100 lines (optimized sample generation + duration validation)
+- ChompiProcessor: ~30 lines (dual-output logic)
+- Logger: ~20 lines (enhanced logging)
+- Documentation: ~150 lines (formats + optimized samples + limits)
+- Tests: ~200 lines (formats + duration + optimized outputs)
 
-**Testing:** Moderate
+**Testing:** Significant
 - Need sample files for each format
+- Need various duration test files
 - Need to verify quality preservation
+- Need to verify _double generation
 - Need to test error cases
+- Need to validate pitch-shifting quality
 
-**User Benefit:** High
+**User Benefit:** Very High
 - Eliminates pre-conversion step
 - Supports common audio sources
-- Simplifies workflow
+- Generates complete CHOMPI libraries (base + optimized)
+- No manual _double file creation needed
+- Simplifies workflow significantly
 - Maintains quality appropriately
+- Ensures CHOMPI hardware doesn't need to generate files

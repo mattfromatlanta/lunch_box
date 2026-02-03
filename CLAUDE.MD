@@ -93,18 +93,37 @@ Folder selections → GuiProcessor → AudioConfiguration → ChompiProcessor �
 - **2 categories:** cubbi (percussive), jammi (chromatic)
 - **5 banks per category:** A, B, C, D, E
 - **14 slots per bank:** Numbered 1-14
-- **Total capacity:** 70 samples per category
+- **Total capacity:** 70 samples per category (hardware limit)
+- **Output files per category:** 140 (70 base + 70 optimized)
 
 ### Naming Convention
 ```
-{category}_{bank}{slot}.wav
+{category}_{bank}{slot}.wav              # Base sample
+{category}_{bank}{slot}_double.wav       # Optimized sample (pitched up)
 
 Examples:
-  cubbi_a1.wav    (Cubbi, Bank A, Slot 1)
-  cubbi_a14.wav   (Cubbi, Bank A, Slot 14)
-  cubbi_b1.wav    (Cubbi, Bank B, Slot 1)
-  jammi_e14.wav   (Jammi, Bank E, Slot 14)
+  cubbi_a1.wav          (Cubbi, Bank A, Slot 1 - base)
+  cubbi_a1_double.wav   (Cubbi, Bank A, Slot 1 - optimized)
+  cubbi_a14.wav         (Cubbi, Bank A, Slot 14 - base)
+  cubbi_a14_double.wav  (Cubbi, Bank A, Slot 14 - optimized)
+  cubbi_b1.wav          (Cubbi, Bank B, Slot 1 - base)
+  cubbi_b1_double.wav   (Cubbi, Bank B, Slot 1 - optimized)
+  jammi_e14.wav         (Jammi, Bank E, Slot 14 - base)
+  jammi_e14_double.wav  (Jammi, Bank E, Slot 14 - optimized)
 ```
+
+### Optimized Samples
+**Critical CHOMPI Feature:** The CHOMPI hardware automatically creates "optimized" versions of samples if not present in the library. An optimized sample is:
+- Pitched up one octave (double playback speed)
+- Half the duration of the base sample
+- Saved with `_double` suffix
+- Generated to enable pitch-shifting on the hardware
+
+**Chompi Pack Behavior:** As of Milestone 5, Chompi Pack proactively generates both base and optimized versions for every input sample, creating complete CHOMPI libraries without requiring the hardware to generate files.
+
+**Duration Limits:**
+- Base samples: Maximum 2 minutes (120 seconds)
+- Optimized samples: Maximum 1 minute (60 seconds) - automatically half of base
 
 ### Audio Requirements
 - **Format:** WAV (uncompressed)
@@ -211,7 +230,9 @@ make
 - Always 16-bit 48kHz WAV output
 - Always CHOMPI naming convention
 - Always 14 slots per bank, 5 banks
+- Always generate both base and optimized (_double) versions
 - Never compromise quality for speed
+- Maximum 2-minute duration per sample
 
 **File safety:**
 - Never modify input files
@@ -455,11 +476,14 @@ prompts/milestone_X_plan.md        # Feature plans
 
 ### Key Constants
 ```cpp
-MAX_FILES_PER_CATEGORY = 70        // CHOMPI limit
+MAX_SLOTS_PER_CATEGORY = 70        // CHOMPI hardware bank limit
 SLOTS_PER_BANK = 14                // CHOMPI structure
 NUM_BANKS = 5                      // A, B, C, D, E
 TARGET_SAMPLE_RATE = 48000.0       // CHOMPI requirement
 TARGET_BIT_DEPTH = 16              // CHOMPI requirement
+MAX_DURATION_SECONDS = 120.0       // Maximum 2 minutes per sample
+OUTPUT_FILES_PER_INPUT = 2         // Base + optimized (_double)
+MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 ```
 
 ---
