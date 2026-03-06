@@ -1,10 +1,8 @@
 #include "GuiProcessor.h"
 #include "../FileSystemHelper.h"
 
-GuiProcessor::GuiProcessor(std::function<void(juce::String)> statusCallback)
-    : statusCallback(statusCallback)
+GuiProcessor::GuiProcessor()
 {
-    // Register audio formats
     formatManager.registerBasicFormats();
 }
 

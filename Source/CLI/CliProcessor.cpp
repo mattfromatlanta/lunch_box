@@ -7,10 +7,10 @@ CliProcessor::CliProcessor()
 {
 }
 
-int CliProcessor::run(int argc, char* argv[])
+int CliProcessor::run(const juce::StringArray& args)
 {
     // Initialize application and parse arguments
-    if (!initializeApplication(argc, argv))
+    if (!initializeApplication(args))
     {
         return 1;
     }
@@ -68,7 +68,7 @@ void CliProcessor::displayUsage()
     logger.logLine("  chompi_pack --convert <folder>    Convert without CHOMPI naming");
 }
 
-bool CliProcessor::initializeApplication(int argc, char* argv[])
+bool CliProcessor::initializeApplication(const juce::StringArray& args)
 {
     logger.logLine("==================================");
     logger.logLine("Chompi Pack - Audio File Scanner");
@@ -83,7 +83,7 @@ bool CliProcessor::initializeApplication(int argc, char* argv[])
     logger.logLine("");
 
     // Check for minimum arguments
-    if (argc < 2)
+    if (args.isEmpty())
     {
         displayUsage();
         return false;
@@ -96,15 +96,15 @@ bool CliProcessor::initializeApplication(int argc, char* argv[])
     juce::String outputPath;
     bool hasConvertFlag = false;
 
-    for (int i = 1; i < argc; ++i)
+    for (int i = 0; i < args.size(); ++i)
     {
-        juce::String arg = argv[i];
+        juce::String arg = args[i];
 
         if (arg == "--cubbi" || arg == "--c")
         {
-            if (i + 1 < argc)
+            if (i + 1 < args.size())
             {
-                cubbiPath = argv[++i];
+                cubbiPath = args[++i];
                 config.hasCubbi = true;
             }
             else
@@ -115,9 +115,9 @@ bool CliProcessor::initializeApplication(int argc, char* argv[])
         }
         else if (arg == "--jammi" || arg == "--j")
         {
-            if (i + 1 < argc)
+            if (i + 1 < args.size())
             {
-                jammiPath = argv[++i];
+                jammiPath = args[++i];
                 config.hasJammi = true;
             }
             else
@@ -128,9 +128,9 @@ bool CliProcessor::initializeApplication(int argc, char* argv[])
         }
         else if (arg == "--output" || arg == "--o")
         {
-            if (i + 1 < argc)
+            if (i + 1 < args.size())
             {
-                outputPath = argv[++i];
+                outputPath = args[++i];
             }
             else
             {
@@ -160,13 +160,6 @@ bool CliProcessor::initializeApplication(int argc, char* argv[])
         config.mode = OperationMode::Chompi;
         logger.logLine("Mode: CHOMPI Sample Processing");
         logger.logLine("");
-
-        // Validate at least one category specified
-        if (!config.hasCubbi && !config.hasJammi)
-        {
-            logger.logLine("Error: At least one of --cubbi or --jammi must be specified");
-            return false;
-        }
 
         // Set output folder (use specified or default)
         if (!outputPath.isEmpty())

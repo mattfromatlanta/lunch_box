@@ -22,71 +22,7 @@ AudioConverter::ConversionResult AudioConverter::convertFile(
     const juce::File& outputFolder,
     juce::AudioFormatManager& formatManager)
 {
-    ConversionResult result;
-    result.success = false;
-    result.skipped = false;
-    result.message = "";
-
-    // Log conversion attempt with format name
-    juce::String formatName = FileSystemHelper::getAudioFormatName(sourceFile);
-    logger.logLine("Converting: " + sourceFile.getFileName() + " (" + formatName + ")");
-
-    // Read source file
-    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(sourceFile));
-
-    if (reader == nullptr)
-    {
-        result.message = "Error: Unable to read source file";
-        logger.logLine("   " + result.message);
-        return result;
-    }
-
-    // Extract source properties
-    int numChannels = static_cast<int>(reader->numChannels);
-    int bitsPerSample = static_cast<int>(reader->bitsPerSample);
-    double sampleRate = reader->sampleRate;
-    double durationSeconds = reader->lengthInSamples / sampleRate;
-
-    // Log source properties
-    logger.logLine("   Original: " +
-                   juce::String(numChannels) + " channel(s), " +
-                   juce::String(bitsPerSample) + "-bit, " +
-                   juce::String((int)sampleRate) + " Hz, " +
-                   juce::String(durationSeconds, 1) + "s");
-
-    // Check channel count - skip if more than 2 channels
-    if (numChannels > MAX_CHANNELS)
-    {
-        result.skipped = true;
-        result.message = "Skipped: Multi-channel audio (" + juce::String(numChannels) + " channels) - not supported";
-        logger.logLine("   " + result.message);
-        return result;
-    }
-
-    // Check duration limit
-    if (durationSeconds > MAX_DURATION_SECONDS)
-    {
-        result.skipped = true;
-        result.message = "Skipped: Duration " + juce::String(durationSeconds, 1) +
-                         "s exceeds 2-minute limit";
-        logger.logLine("   " + result.message);
-        return result;
-    }
-
-    // Generate output path
-    juce::File outputFile = outputFolder.getChildFile(sourceFile.getFileName());
-
-    // Log target properties
-    logger.logLine("   Target:   " +
-                   juce::String(numChannels) + " channel(s), " +
-                   juce::String(TARGET_BIT_DEPTH) + "-bit, " +
-                   juce::String((int)TARGET_SAMPLE_RATE) + " Hz");
-    logger.logLine("   Output:   " + outputFile.getRelativePathFrom(juce::File::getCurrentWorkingDirectory()));
-
-    // Perform the conversion
-    result = performConversion(sourceFile, outputFile, reader.get(), formatManager);
-
-    return result;
+    return convertFileWithName(sourceFile, outputFolder, sourceFile.getFileName(), formatManager);
 }
 
 AudioConverter::ConversionResult AudioConverter::convertFileWithName(

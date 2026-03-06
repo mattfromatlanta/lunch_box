@@ -2,7 +2,6 @@
 
 #include <juce_core/juce_core.h>
 #include <juce_audio_formats/juce_audio_formats.h>
-#include <functional>
 #include "../AudioConfiguration.h"
 #include "../Logger.h"
 #include "../ChompiProcessor.h"
@@ -18,8 +17,7 @@
 class GuiProcessor
 {
 public:
-    // Constructor with optional status callback
-    GuiProcessor(std::function<void(juce::String)> statusCallback = nullptr);
+    GuiProcessor();
 
     // Result of processing operation
     struct ProcessingResult
@@ -37,7 +35,6 @@ public:
                                   const juce::File& outputFolder);
 
 private:
-    std::function<void(juce::String)> statusCallback;
     Logger logger;
     juce::AudioFormatManager formatManager;
 };

@@ -18,29 +18,33 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
         return false;
     }
 
+    bool overallSuccess = true;
+
     // Process cubbi samples if specified
     if (config.hasCubbi)
     {
-        processCategory(config.cubbiFolder,
-                       config.outputFolder,
-                       ChompiNamer::Category::Cubbi,
-                       formatManager,
-                       converter);
+        auto result = processCategory(config.cubbiFolder,
+                                      config.outputFolder,
+                                      ChompiNamer::Category::Cubbi,
+                                      formatManager,
+                                      converter);
+        if (!result.success) overallSuccess = false;
     }
 
     // Process jammi samples if specified
     if (config.hasJammi)
     {
-        processCategory(config.jammiFolder,
-                       config.outputFolder,
-                       ChompiNamer::Category::Jammi,
-                       formatManager,
-                       converter);
+        auto result = processCategory(config.jammiFolder,
+                                      config.outputFolder,
+                                      ChompiNamer::Category::Jammi,
+                                      formatManager,
+                                      converter);
+        if (!result.success) overallSuccess = false;
     }
 
     logger.logLine("CHOMPI processing complete!");
 
-    return true;
+    return overallSuccess;
 }
 
 ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
@@ -53,7 +57,7 @@ ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     ProcessingResult result;
 
     // Get category name for logging
-    juce::String categoryName = getCategoryName(category);
+    juce::String categoryName = ChompiNamer::categoryToString(category);
 
     // Log start of processing
     logger.logLine("Processing " + categoryName + " samples...");
@@ -135,7 +139,3 @@ ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     return result;
 }
 
-juce::String ChompiProcessor::getCategoryName(ChompiNamer::Category category) const
-{
-    return ChompiNamer::categoryToString(category);
-}

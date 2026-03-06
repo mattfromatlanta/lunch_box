@@ -79,9 +79,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(statusTextEditor);
 
     // Processing bridge
-    processor = std::make_unique<GuiProcessor>([this](const juce::String& message) {
-        appendStatus(message);
-    });
+    processor = std::make_unique<GuiProcessor>();
 
     // Preview panel (M10)
     addAndMakeVisible(previewPanel);
@@ -187,52 +185,39 @@ void MainComponent::handleOutputFolderSelected(juce::File folder)
 
 // ─── File browser launchers ───────────────────────────────────────────────────
 
-void MainComponent::selectCubbiFolder()
+void MainComponent::selectFolderFor(const juce::String& title,
+                                    std::function<void(juce::File)> handler)
 {
     fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Cubbi Folder",
+        title,
         juce::File::getSpecialLocation(juce::File::userHomeDirectory),
         "", true);
 
     auto flags = juce::FileBrowserComponent::openMode
                | juce::FileBrowserComponent::canSelectDirectories;
 
-    fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser) {
+    fileChooser->launchAsync(flags, [handler](const juce::FileChooser& chooser) {
         auto f = chooser.getResult();
-        if (f != juce::File{}) handleCubbiFolderSelected(f);
+        if (f != juce::File{}) handler(f);
     });
+}
+
+void MainComponent::selectCubbiFolder()
+{
+    selectFolderFor("Select Cubbi Folder",
+                    [this](juce::File f) { handleCubbiFolderSelected(f); });
 }
 
 void MainComponent::selectJammiFolder()
 {
-    fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Jammi Folder",
-        juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-        "", true);
-
-    auto flags = juce::FileBrowserComponent::openMode
-               | juce::FileBrowserComponent::canSelectDirectories;
-
-    fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser) {
-        auto f = chooser.getResult();
-        if (f != juce::File{}) handleJammiFolderSelected(f);
-    });
+    selectFolderFor("Select Jammi Folder",
+                    [this](juce::File f) { handleJammiFolderSelected(f); });
 }
 
 void MainComponent::selectOutputFolder()
 {
-    fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Output Folder",
-        juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-        "", true);
-
-    auto flags = juce::FileBrowserComponent::openMode
-               | juce::FileBrowserComponent::canSelectDirectories;
-
-    fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser) {
-        auto f = chooser.getResult();
-        if (f != juce::File{}) handleOutputFolderSelected(f);
-    });
+    selectFolderFor("Select Output Folder",
+                    [this](juce::File f) { handleOutputFolderSelected(f); });
 }
 
 // ─── Processing ───────────────────────────────────────────────────────────────
@@ -295,7 +280,7 @@ void MainComponent::appendStatus(const juce::String& message)
 int MainComponent::countAudioFiles(const juce::File& folder)
 {
     juce::Array<juce::File> files;
-    for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
+    for (const auto& pattern : FileSystemHelper::getSupportedAudioExtensions())
         folder.findChildFiles(files, juce::File::findFiles, true, pattern);
     return files.size();
 }
@@ -303,7 +288,7 @@ int MainComponent::countAudioFiles(const juce::File& folder)
 void MainComponent::previewFirstAudioFile(const juce::File& folder)
 {
     juce::Array<juce::File> files;
-    for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
+    for (const auto& pattern : FileSystemHelper::getSupportedAudioExtensions())
     {
         folder.findChildFiles(files, juce::File::findFiles, true, pattern);
         if (!files.isEmpty()) break;

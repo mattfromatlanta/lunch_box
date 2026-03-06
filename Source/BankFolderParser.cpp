@@ -1,4 +1,5 @@
 #include "BankFolderParser.h"
+#include "FileSystemHelper.h"
 
 BankFolderParser::BankFolderParser(Logger& logger)
     : logger(logger)
@@ -207,10 +208,8 @@ void BankFolderParser::findAudioFiles(const juce::File& folder,
                                       juce::Array<juce::File>& results,
                                       bool recursive)
 {
-    for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
-    {
+    for (const auto& pattern : FileSystemHelper::getSupportedAudioExtensions())
         folder.findChildFiles(results, juce::File::findFiles, recursive, pattern);
-    }
 }
 
 void BankFolderParser::sortFilesAlphabetically(juce::Array<juce::File>& files)

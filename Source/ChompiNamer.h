@@ -46,11 +46,6 @@ public:
     // index: 0-69 (0 = a1, 13 = a14, 14 = b1, 69 = e14)
     juce::String generateFileName(Category category, int fileIndex) const;
 
-    // Process a category folder and return mapping of source files to output names
-    // Returns first 70 .wav files in alphabetical order with CHOMPI names assigned
-    juce::Array<FileMapping> processCategory(const juce::File& sourceFolder,
-                                             Category category);
-
     // Convert file index (0-69) to bank and slot
     static BankSlot indexToBankSlot(int index);
 
@@ -68,6 +63,4 @@ private:
     static constexpr int SLOTS_PER_BANK = 14;
     static constexpr int NUM_BANKS = 5;
 
-    // Helper: Sort files alphabetically (case-insensitive)
-    static void sortFilesAlphabetically(juce::Array<juce::File>& files);
 };

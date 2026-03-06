@@ -19,9 +19,6 @@ namespace FileSystemHelper
                                    const juce::File& sourceFolder,
                                    const juce::File& outputFolder);
 
-    // Check if output file already exists
-    bool outputFileExists(const juce::File& outputPath);
-
     // Validate that directory is writable
     bool isDirectoryWritable(const juce::File& directory);
 

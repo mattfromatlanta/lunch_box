@@ -48,7 +48,4 @@ public:
 
 private:
     Logger& logger;
-
-    // Get category name as string
-    juce::String getCategoryName(ChompiNamer::Category category) const;
 };

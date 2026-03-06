@@ -58,11 +58,6 @@ namespace FileSystemHelper
         return outputPath;
     }
 
-    bool outputFileExists(const juce::File& outputPath)
-    {
-        return outputPath.exists();
-    }
-
     bool isDirectoryWritable(const juce::File& directory)
     {
         // Directory must exist

@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <functional>
 #include "GuiProcessor.h"
 #include "FolderDropZone.h"
 #include "PreviewPanel.h"
@@ -60,6 +61,7 @@ private:
     void handleOutputFolderSelected(juce::File folder);
 
     // File browser launchers (called by drop zone buttons)
+    void selectFolderFor(const juce::String& title, std::function<void(juce::File)> handler);
     void selectCubbiFolder();
     void selectJammiFolder();
     void selectOutputFolder();

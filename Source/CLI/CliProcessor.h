@@ -22,7 +22,7 @@ public:
 
     // Main entry point for CLI mode
     // Returns exit code (0 = success, 1 = error)
-    int run(int argc, char* argv[]);
+    int run(const juce::StringArray& args);
 
 private:
     Logger logger;
@@ -31,7 +31,7 @@ private:
 
     // Initialize application and parse arguments
     // Returns false if program should exit early
-    bool initializeApplication(int argc, char* argv[]);
+    bool initializeApplication(const juce::StringArray& args);
 
     // Process and analyze audio files (legacy scan mode)
     void processAudioFiles(const juce::Array<juce::File>& wavFiles,

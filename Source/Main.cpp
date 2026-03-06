@@ -52,23 +52,8 @@ private:
 
     void runCliMode(const juce::StringArray& args)
     {
-        // Convert StringArray to argc/argv format
-        std::vector<juce::String> argStrings;
-        argStrings.push_back("chompi_pack");  // Program name
-
-        for (const auto& arg : args)
-            argStrings.push_back(arg);
-
-        // Create argv-style array
-        std::vector<char*> argv;
-        for (auto& str : argStrings)
-            argv.push_back(const_cast<char*>(str.toRawUTF8()));
-
-        int argc = static_cast<int>(argv.size());
-
-        // Run CLI processor
         CliProcessor cliProcessor;
-        cliProcessor.run(argc, argv.data());
+        cliProcessor.run(args);
     }
 };
 
