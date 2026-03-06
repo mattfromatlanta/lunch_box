@@ -338,7 +338,7 @@ chompi_pack/
 │   ├── Logger.h/cpp                   # Logging system
 │   └── FileSystemHelper.h/cpp         # File utilities
 │
-├── test_audio/                        # Test samples
+├── dev_assets/                        # Test samples
 └── logs/                              # Operation logs
 ```
 
@@ -383,8 +383,8 @@ open "chompi_pack_artefacts/Chompi Pack.app"
 
 # Test CLI
 "chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" \
-  --cubbi ../test_audio/cubbi \
-  --jammi ../test_audio/jammi
+  --cubbi ../dev_assets/cubbi \
+  --jammi ../dev_assets/jammi
 # Verify: same output as GUI
 
 # Run unit tests

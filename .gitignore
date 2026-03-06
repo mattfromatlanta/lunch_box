@@ -1,11 +1,9 @@
 .claude/
 .vscode/
 build/
-
-# Test audio files (keep directory structure, ignore WAV files)
-test_audio/**/*.wav
-test_audio/**/*.WAV
-test_audio/sononym.*
+test_builds/
+dev_assets/
+.DS_Store
 
 # Log files
 logs/*.txt

@@ -28,9 +28,10 @@ MainComponent::MainComponent()
     addAndMakeVisible(headerLabel);
 
     // Section labels
-    styleSectionLabel(cubbiSectionLabel,  "CUBBI SAMPLES");
-    styleSectionLabel(jammiSectionLabel,  "JAMMI SAMPLES");
-    styleSectionLabel(outputSectionLabel, "OUTPUT FOLDER");
+    styleSectionLabel(cubbiSectionLabel,   "CUBBI SAMPLES");
+    styleSectionLabel(jammiSectionLabel,   "JAMMI SAMPLES");
+    styleSectionLabel(outputSectionLabel,  "OUTPUT FOLDER");
+    styleSectionLabel(previewSectionLabel, "");  // text set dynamically
     addAndMakeVisible(cubbiSectionLabel);
     addAndMakeVisible(jammiSectionLabel);
     addAndMakeVisible(outputSectionLabel);
@@ -82,8 +83,11 @@ MainComponent::MainComponent()
         appendStatus(message);
     });
 
+    // Preview panel (M10)
+    addAndMakeVisible(previewPanel);
+
     // Set size last — triggers resized(), all components must exist by this point
-    setSize(600, 620);
+    setSize(600, 740);
 }
 
 MainComponent::~MainComponent() {}
@@ -128,6 +132,10 @@ void MainComponent::resized()
     processButton.setBounds(btnArea.withSizeKeepingCentre(200, 32));
     area.removeFromTop(sectionGap);
 
+    // Preview panel (M10)
+    previewPanel.setBounds(area.removeFromTop(100));
+    area.removeFromTop(sectionGap);
+
     // Status (remaining space)
     statusTextEditor.setBounds(area);
 }
@@ -147,6 +155,7 @@ void MainComponent::handleCubbiFolderSelected(juce::File folder)
     else
         appendStatus("Cubbi folder selected: " + juce::String(count) + " audio files found");
 
+    previewFirstAudioFile(folder);
     updateProcessButtonState();
 }
 
@@ -163,6 +172,7 @@ void MainComponent::handleJammiFolderSelected(juce::File folder)
     else
         appendStatus("Jammi folder selected: " + juce::String(count) + " audio files found");
 
+    previewFirstAudioFile(folder);
     updateProcessButtonState();
 }
 
@@ -288,4 +298,20 @@ int MainComponent::countAudioFiles(const juce::File& folder)
     for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
         folder.findChildFiles(files, juce::File::findFiles, true, pattern);
     return files.size();
+}
+
+void MainComponent::previewFirstAudioFile(const juce::File& folder)
+{
+    juce::Array<juce::File> files;
+    for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
+    {
+        folder.findChildFiles(files, juce::File::findFiles, true, pattern);
+        if (!files.isEmpty()) break;
+    }
+
+    if (!files.isEmpty())
+    {
+        files.sort();
+        previewPanel.loadFile(files[0]);
+    }
 }

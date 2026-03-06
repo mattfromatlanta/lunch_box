@@ -32,6 +32,12 @@ target_sources(chompi_pack
         Source/GUI/GuiProcessor.cpp
         Source/GUI/FolderDropZone.h
         Source/GUI/FolderDropZone.cpp
+        Source/GUI/AudioPreviewPlayer.h
+        Source/GUI/AudioPreviewPlayer.cpp
+        Source/GUI/WaveformDisplay.h
+        Source/GUI/WaveformDisplay.cpp
+        Source/GUI/PreviewPanel.h
+        Source/GUI/PreviewPanel.cpp
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/AudioConverter.h
@@ -49,6 +55,8 @@ target_link_libraries(chompi_pack
         juce::juce_core
         juce::juce_audio_formats
         juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_utils
         juce::juce_gui_basics
         juce::juce_gui_extra
     PUBLIC

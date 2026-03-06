@@ -115,7 +115,7 @@ Comprehensive guide covering:
 - Troubleshooting
 - Example workflows
 
-📋 **[Testing Summary (test_audio/TESTING_SUMMARY.md)](test_audio/TESTING_SUMMARY.md)**
+📋 **[Testing Summary (dev_assets/TESTING_SUMMARY.md)](dev_assets/TESTING_SUMMARY.md)**
 
 Complete test results and validation report
 
@@ -213,7 +213,7 @@ chompi_pack/
 │       └── test_chompi_namer       # Unit tests
 ├── converted/           # Default output directory
 ├── logs/                # Operation logs
-├── test_audio/          # Test samples
+├── dev_assets/          # Test samples
 ├── prompts/             # Milestone planning documents
 ├── CMakeLists.txt       # Build configuration
 ├── README.md            # This file
@@ -279,7 +279,7 @@ make
 ./test_chompi_namer_artefacts/test_chompi_namer
 
 # Integration tests
-./chompi_pack_artefacts/chompi_pack --cubbi ../test_audio/cubbi
+./chompi_pack_artefacts/chompi_pack --cubbi ../dev_assets/cubbi
 ```
 
 ### Project Milestones
@@ -454,7 +454,7 @@ Built with [JUCE Framework](https://juce.com/)
 
 For issues, questions, or feature requests:
 - Check the [HOW_TO guide](HOW_TO.md)
-- Review [test results](test_audio/TESTING_SUMMARY.md)
+- Review [test results](dev_assets/TESTING_SUMMARY.md)
 - Examine logs in `logs/` directory
 - Check planning documents in `prompts/` directory
 

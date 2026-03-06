@@ -4,6 +4,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "GuiProcessor.h"
 #include "FolderDropZone.h"
+#include "PreviewPanel.h"
 
 //==============================================================================
 // MainComponent - Main GUI component for Chompi Pack
@@ -28,6 +29,7 @@ private:
     juce::Label cubbiSectionLabel;
     juce::Label jammiSectionLabel;
     juce::Label outputSectionLabel;
+    juce::Label previewSectionLabel;
 
     // Folder drop zones (M7 drag-drop)
     std::unique_ptr<FolderDropZone> cubbiDropZone;
@@ -42,6 +44,9 @@ private:
     // Process button and status
     juce::TextButton processButton;
     juce::TextEditor statusTextEditor;
+
+    // Sample preview (M10)
+    PreviewPanel previewPanel;
 
     // File chooser (kept alive through async callback)
     std::unique_ptr<juce::FileChooser> fileChooser;
@@ -65,6 +70,9 @@ private:
 
     // Count all supported audio files in a folder
     static int countAudioFiles(const juce::File& folder);
+
+    // Auto-preview the first audio file found in a folder
+    void previewFirstAudioFile(const juce::File& folder);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

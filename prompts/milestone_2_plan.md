@@ -107,7 +107,7 @@ chompi_pack/
 │   ├── AudioScanner.h/cpp          # (Existing)
 │   └── AudioConverter.h/cpp        # NEW - Conversion logic
 ├── converted/                      # NEW - Output directory for converted files
-└── test_audio/unsorted/            # (Existing test files)
+└── dev_assets/unsorted/            # (Existing test files)
 ```
 
 ### New AudioConverter Module
