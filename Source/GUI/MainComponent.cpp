@@ -1,155 +1,195 @@
 #include "MainComponent.h"
 
+// M9 color palette
+namespace
+{
+    const juce::Colour bgColour        { 0xff1a1f2e };  // dark navy
+    const juce::Colour sectionColour   { 0xff8899aa };  // muted blue-grey
+    const juce::Colour headerColour    { 0xffe0e8f0 };  // near-white
+    const juce::Colour statusBgColour  { 0xff151a26 };  // darker than bg
+    const juce::Colour statusFgColour  { 0xffaabbcc };
+    const juce::Colour accentColour    { 0xff4caf50 };  // green for process button
+}
+
+static void styleSectionLabel(juce::Label& label, const juce::String& text)
+{
+    label.setText(text, juce::dontSendNotification);
+    label.setFont(juce::Font(11.0f, juce::Font::bold));
+    label.setColour(juce::Label::textColourId, sectionColour);
+}
+
 MainComponent::MainComponent()
 {
-    // Set window size (increased to accommodate output folder section)
-    setSize(600, 580);
-
-    // Setup header label
-    headerLabel.setText("chompi pack by matt from atlanta", juce::dontSendNotification);
-    headerLabel.setFont(juce::Font(24.0f, juce::Font::bold));
+    // Header
+    headerLabel.setText("chompi pack  |  by matt from atlanta", juce::dontSendNotification);
+    headerLabel.setFont(juce::Font(20.0f, juce::Font::bold));
     headerLabel.setJustificationType(juce::Justification::centred);
+    headerLabel.setColour(juce::Label::textColourId, headerColour);
     addAndMakeVisible(headerLabel);
 
-    // Setup cubbi folder button
-    selectCubbiButton.setButtonText("Select Cubbi Folder...");
-    selectCubbiButton.onClick = [this] { selectCubbiFolder(); };
-    addAndMakeVisible(selectCubbiButton);
+    // Section labels
+    styleSectionLabel(cubbiSectionLabel,  "CUBBI SAMPLES");
+    styleSectionLabel(jammiSectionLabel,  "JAMMI SAMPLES");
+    styleSectionLabel(outputSectionLabel, "OUTPUT FOLDER");
+    addAndMakeVisible(cubbiSectionLabel);
+    addAndMakeVisible(jammiSectionLabel);
+    addAndMakeVisible(outputSectionLabel);
 
-    // Setup cubbi path label
-    cubbiPathLabel.setText("no cubbi folder selected", juce::dontSendNotification);
-    cubbiPathLabel.setFont(juce::Font(14.0f));
-    cubbiPathLabel.setColour(juce::Label::textColourId, juce::Colours::grey);
-    addAndMakeVisible(cubbiPathLabel);
+    // Cubbi drop zone
+    cubbiDropZone = std::make_unique<FolderDropZone>("Select Cubbi Folder...",
+                                                      "no cubbi folder selected");
+    cubbiDropZone->onButtonClicked  = [this] { selectCubbiFolder(); };
+    cubbiDropZone->onFolderSelected = [this](juce::File f) { handleCubbiFolderSelected(f); };
+    addAndMakeVisible(cubbiDropZone.get());
 
-    // Setup jammi folder button
-    selectJammiButton.setButtonText("Select Jammi Folder...");
-    selectJammiButton.onClick = [this] { selectJammiFolder(); };
-    addAndMakeVisible(selectJammiButton);
+    // Jammi drop zone
+    jammiDropZone = std::make_unique<FolderDropZone>("Select Jammi Folder...",
+                                                      "no jammi folder selected");
+    jammiDropZone->onButtonClicked  = [this] { selectJammiFolder(); };
+    jammiDropZone->onFolderSelected = [this](juce::File f) { handleJammiFolderSelected(f); };
+    addAndMakeVisible(jammiDropZone.get());
 
-    // Setup jammi path label
-    jammiPathLabel.setText("no jammi folder selected", juce::dontSendNotification);
-    jammiPathLabel.setFont(juce::Font(14.0f));
-    jammiPathLabel.setColour(juce::Label::textColourId, juce::Colours::grey);
-    addAndMakeVisible(jammiPathLabel);
+    // Output drop zone
+    outputDropZone = std::make_unique<FolderDropZone>("Select Output Folder...",
+                                                       "default: converted/");
+    outputDropZone->onButtonClicked  = [this] { selectOutputFolder(); };
+    outputDropZone->onFolderSelected = [this](juce::File f) { handleOutputFolderSelected(f); };
+    addAndMakeVisible(outputDropZone.get());
 
-    // Setup output folder button
-    selectOutputButton.setButtonText("Select Output Folder...");
-    selectOutputButton.onClick = [this] { selectOutputFolder(); };
-    addAndMakeVisible(selectOutputButton);
-
-    // Setup output path label (default to 'converted' folder)
-    outputPathLabel.setText("default: converted/", juce::dontSendNotification);
-    outputPathLabel.setFont(juce::Font(14.0f));
-    outputPathLabel.setColour(juce::Label::textColourId, juce::Colours::grey);
-    addAndMakeVisible(outputPathLabel);
-
-    // Setup process button
+    // Process button (styled with accent color)
     processButton.setButtonText("Process Samples");
+    processButton.setColour(juce::TextButton::buttonColourId,  accentColour);
+    processButton.setColour(juce::TextButton::buttonOnColourId, accentColour.darker(0.2f));
+    processButton.setColour(juce::TextButton::textColourOffId,  juce::Colours::white);
     processButton.onClick = [this] { processFiles(); };
-    processButton.setEnabled(false);  // Disabled until folder selected
+    processButton.setEnabled(false);
     addAndMakeVisible(processButton);
 
-    // Setup status text editor
+    // Status text editor
     statusTextEditor.setMultiLine(true);
     statusTextEditor.setReadOnly(true);
     statusTextEditor.setScrollbarsShown(true);
     statusTextEditor.setCaretVisible(false);
     statusTextEditor.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain));
+    statusTextEditor.setColour(juce::TextEditor::backgroundColourId, statusBgColour);
+    statusTextEditor.setColour(juce::TextEditor::textColourId,       statusFgColour);
+    statusTextEditor.setColour(juce::TextEditor::outlineColourId,    juce::Colour(0xff2a3a4a));
     statusTextEditor.setText("Ready to process samples...");
     addAndMakeVisible(statusTextEditor);
 
-    // Create processor
+    // Processing bridge
     processor = std::make_unique<GuiProcessor>([this](const juce::String& message) {
         appendStatus(message);
     });
+
+    // Set size last — triggers resized(), all components must exist by this point
+    setSize(600, 620);
 }
 
-MainComponent::~MainComponent()
-{
-}
+MainComponent::~MainComponent() {}
 
 void MainComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
+    g.fillAll(bgColour);
 }
 
 void MainComponent::resized()
 {
     auto area = getLocalBounds().reduced(20);
+    const int sectionLabelH = 18;
+    const int zoneH         = 62;
+    const int sectionGap    = 14;
+    const int itemGap       = 6;
 
     // Header
-    headerLabel.setBounds(area.removeFromTop(40));
-    area.removeFromTop(20);  // Spacing
+    headerLabel.setBounds(area.removeFromTop(44));
+    area.removeFromTop(sectionGap);
 
-    // Cubbi section
-    auto cubbiArea = area.removeFromTop(60);
-    selectCubbiButton.setBounds(cubbiArea.removeFromTop(30).removeFromLeft(200));
-    cubbiArea.removeFromTop(5);  // Small spacing
-    cubbiPathLabel.setBounds(cubbiArea);
-    area.removeFromTop(20);  // Spacing
+    // Cubbi
+    cubbiSectionLabel.setBounds(area.removeFromTop(sectionLabelH));
+    area.removeFromTop(itemGap);
+    cubbiDropZone->setBounds(area.removeFromTop(zoneH));
+    area.removeFromTop(sectionGap);
 
-    // Jammi section
-    auto jammiArea = area.removeFromTop(60);
-    selectJammiButton.setBounds(jammiArea.removeFromTop(30).removeFromLeft(200));
-    jammiArea.removeFromTop(5);  // Small spacing
-    jammiPathLabel.setBounds(jammiArea);
-    area.removeFromTop(20);  // Spacing
+    // Jammi
+    jammiSectionLabel.setBounds(area.removeFromTop(sectionLabelH));
+    area.removeFromTop(itemGap);
+    jammiDropZone->setBounds(area.removeFromTop(zoneH));
+    area.removeFromTop(sectionGap);
 
-    // Output section
-    auto outputArea = area.removeFromTop(60);
-    selectOutputButton.setBounds(outputArea.removeFromTop(30).removeFromLeft(200));
-    outputArea.removeFromTop(5);  // Small spacing
-    outputPathLabel.setBounds(outputArea);
-    area.removeFromTop(20);  // Spacing
+    // Output
+    outputSectionLabel.setBounds(area.removeFromTop(sectionLabelH));
+    area.removeFromTop(itemGap);
+    outputDropZone->setBounds(area.removeFromTop(zoneH));
+    area.removeFromTop(sectionGap);
 
     // Process button (centered)
-    auto processArea = area.removeFromTop(40);
-    auto buttonWidth = 200;
-    auto buttonX = (processArea.getWidth() - buttonWidth) / 2;
-    processButton.setBounds(processArea.getX() + buttonX, processArea.getY(), buttonWidth, 30);
-    area.removeFromTop(20);  // Spacing
+    auto btnArea = area.removeFromTop(36);
+    processButton.setBounds(btnArea.withSizeKeepingCentre(200, 32));
+    area.removeFromTop(sectionGap);
 
-    // Status text editor (remaining space)
+    // Status (remaining space)
     statusTextEditor.setBounds(area);
 }
+
+// ─── Unified folder handlers ─────────────────────────────────────────────────
+
+void MainComponent::handleCubbiFolderSelected(juce::File folder)
+{
+    if (!folder.isDirectory()) return;
+
+    selectedCubbiFolder = folder;
+    cubbiDropZone->setSelectedFolder(folder);
+
+    int count = countAudioFiles(folder);
+    if (count == 0)
+        appendStatus("Warning: Cubbi folder contains no supported audio files");
+    else
+        appendStatus("Cubbi folder selected: " + juce::String(count) + " audio files found");
+
+    updateProcessButtonState();
+}
+
+void MainComponent::handleJammiFolderSelected(juce::File folder)
+{
+    if (!folder.isDirectory()) return;
+
+    selectedJammiFolder = folder;
+    jammiDropZone->setSelectedFolder(folder);
+
+    int count = countAudioFiles(folder);
+    if (count == 0)
+        appendStatus("Warning: Jammi folder contains no supported audio files");
+    else
+        appendStatus("Jammi folder selected: " + juce::String(count) + " audio files found");
+
+    updateProcessButtonState();
+}
+
+void MainComponent::handleOutputFolderSelected(juce::File folder)
+{
+    if (!folder.isDirectory()) return;
+
+    selectedOutputFolder = folder;
+    outputDropZone->setSelectedFolder(folder);
+    appendStatus("Output folder selected: " + folder.getFullPathName());
+}
+
+// ─── File browser launchers ───────────────────────────────────────────────────
 
 void MainComponent::selectCubbiFolder()
 {
     fileChooser = std::make_unique<juce::FileChooser>(
         "Select Cubbi Folder",
         juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-        "",
-        true);
+        "", true);
 
-    auto folderChooserFlags = juce::FileBrowserComponent::openMode
-                            | juce::FileBrowserComponent::canSelectDirectories;
+    auto flags = juce::FileBrowserComponent::openMode
+               | juce::FileBrowserComponent::canSelectDirectories;
 
-    fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
-    {
-        auto folder = chooser.getResult();
-        if (folder != juce::File{})
-        {
-            selectedCubbiFolder = folder;
-            cubbiPathLabel.setText(folder.getFullPathName(), juce::dontSendNotification);
-            cubbiPathLabel.setColour(juce::Label::textColourId, juce::Colours::white);
-
-            // Check if folder contains WAV files
-            juce::Array<juce::File> wavFiles;
-            folder.findChildFiles(wavFiles, juce::File::findFiles, true, "*.wav");
-
-            if (wavFiles.isEmpty())
-            {
-                appendStatus("Warning: Cubbi folder contains no WAV files");
-                cubbiPathLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
-            }
-            else
-            {
-                appendStatus("Cubbi folder selected: " + juce::String(wavFiles.size()) + " WAV files found");
-            }
-
-            updateProcessButtonState();
-        }
+    fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser) {
+        auto f = chooser.getResult();
+        if (f != juce::File{}) handleCubbiFolderSelected(f);
     });
 }
 
@@ -158,37 +198,14 @@ void MainComponent::selectJammiFolder()
     fileChooser = std::make_unique<juce::FileChooser>(
         "Select Jammi Folder",
         juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-        "",
-        true);
+        "", true);
 
-    auto folderChooserFlags = juce::FileBrowserComponent::openMode
-                            | juce::FileBrowserComponent::canSelectDirectories;
+    auto flags = juce::FileBrowserComponent::openMode
+               | juce::FileBrowserComponent::canSelectDirectories;
 
-    fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
-    {
-        auto folder = chooser.getResult();
-        if (folder != juce::File{})
-        {
-            selectedJammiFolder = folder;
-            jammiPathLabel.setText(folder.getFullPathName(), juce::dontSendNotification);
-            jammiPathLabel.setColour(juce::Label::textColourId, juce::Colours::white);
-
-            // Check if folder contains WAV files
-            juce::Array<juce::File> wavFiles;
-            folder.findChildFiles(wavFiles, juce::File::findFiles, true, "*.wav");
-
-            if (wavFiles.isEmpty())
-            {
-                appendStatus("Warning: Jammi folder contains no WAV files");
-                jammiPathLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
-            }
-            else
-            {
-                appendStatus("Jammi folder selected: " + juce::String(wavFiles.size()) + " WAV files found");
-            }
-
-            updateProcessButtonState();
-        }
+    fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser) {
+        auto f = chooser.getResult();
+        if (f != juce::File{}) handleJammiFolderSelected(f);
     });
 }
 
@@ -197,58 +214,45 @@ void MainComponent::selectOutputFolder()
     fileChooser = std::make_unique<juce::FileChooser>(
         "Select Output Folder",
         juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-        "",
-        true);
+        "", true);
 
-    auto folderChooserFlags = juce::FileBrowserComponent::openMode
-                            | juce::FileBrowserComponent::canSelectDirectories;
+    auto flags = juce::FileBrowserComponent::openMode
+               | juce::FileBrowserComponent::canSelectDirectories;
 
-    fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
-    {
-        auto folder = chooser.getResult();
-        if (folder != juce::File{})
-        {
-            selectedOutputFolder = folder;
-            outputPathLabel.setText(folder.getFullPathName(), juce::dontSendNotification);
-            outputPathLabel.setColour(juce::Label::textColourId, juce::Colours::white);
-            appendStatus("Output folder selected: " + folder.getFullPathName());
-        }
+    fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser) {
+        auto f = chooser.getResult();
+        if (f != juce::File{}) handleOutputFolderSelected(f);
     });
 }
 
+// ─── Processing ───────────────────────────────────────────────────────────────
+
 void MainComponent::processFiles()
 {
-    // Disable process button during processing
     processButton.setEnabled(false);
     appendStatus("\n=== Starting CHOMPI Processing ===");
 
-    // Determine output folder (use selected folder or default to 'converted')
     juce::File outputFolder = (selectedOutputFolder != juce::File{})
         ? selectedOutputFolder
         : juce::File::getCurrentWorkingDirectory().getChildFile("converted");
 
-    // Process files
-    auto result = processor->processFiles(
-        selectedCubbiFolder,
-        selectedJammiFolder,
-        outputFolder
-    );
+    auto result = processor->processFiles(selectedCubbiFolder, selectedJammiFolder, outputFolder);
 
-    // Show results
     if (result.success)
     {
         appendStatus("\n=== Processing Complete ===");
-        appendStatus("Total files processed: " + juce::String(result.cubbiFilesProcessed + result.jammiFilesProcessed));
+        appendStatus("Total files: " + juce::String(result.cubbiFilesProcessed + result.jammiFilesProcessed));
         appendStatus("  Cubbi: " + juce::String(result.cubbiFilesProcessed));
         appendStatus("  Jammi: " + juce::String(result.jammiFilesProcessed));
-        appendStatus("Output: " + outputFolder.getFullPathName());
+        appendStatus("Output:  " + outputFolder.getFullPathName());
 
         juce::AlertWindow::showMessageBoxAsync(
             juce::AlertWindow::InfoIcon,
             "Processing Complete",
-            "Successfully processed " + juce::String(result.cubbiFilesProcessed + result.jammiFilesProcessed) + " samples!",
-            "OK"
-        );
+            "Successfully processed " +
+                juce::String(result.cubbiFilesProcessed + result.jammiFilesProcessed) +
+                " samples!\n\nOutput: " + outputFolder.getFullPathName(),
+            "OK");
     }
     else
     {
@@ -259,19 +263,16 @@ void MainComponent::processFiles()
             juce::AlertWindow::WarningIcon,
             "Processing Failed",
             result.message,
-            "OK"
-        );
+            "OK");
     }
 
-    // Re-enable process button
     processButton.setEnabled(true);
 }
 
 void MainComponent::updateProcessButtonState()
 {
-    // Enable process button if at least one folder is selected
-    bool hasValidFolder = (selectedCubbiFolder != juce::File{}) || (selectedJammiFolder != juce::File{});
-    processButton.setEnabled(hasValidFolder);
+    bool ready = (selectedCubbiFolder != juce::File{}) || (selectedJammiFolder != juce::File{});
+    processButton.setEnabled(ready);
 }
 
 void MainComponent::appendStatus(const juce::String& message)
@@ -279,4 +280,12 @@ void MainComponent::appendStatus(const juce::String& message)
     statusTextEditor.moveCaretToEnd();
     statusTextEditor.insertTextAtCaret(message + "\n");
     statusTextEditor.moveCaretToEnd();
+}
+
+int MainComponent::countAudioFiles(const juce::File& folder)
+{
+    juce::Array<juce::File> files;
+    for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
+        folder.findChildFiles(files, juce::File::findFiles, true, pattern);
+    return files.size();
 }

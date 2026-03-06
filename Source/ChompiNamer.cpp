@@ -37,37 +37,41 @@ juce::Array<ChompiNamer::FileMapping> ChompiNamer::processCategory(
         return mappings;
     }
 
-    // Scan for WAV files
-    juce::Array<juce::File> wavFiles;
-    sourceFolder.findChildFiles(wavFiles,
-                                juce::File::findFiles,
-                                true,  // recursive
-                                "*.wav");
+    // Scan for all supported audio formats
+    juce::Array<juce::File> audioFiles;
+    for (const auto& pattern : juce::StringArray{"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"})
+    {
+        sourceFolder.findChildFiles(audioFiles,
+                                    juce::File::findFiles,
+                                    true,  // recursive
+                                    pattern);
+    }
 
     // Log initial count
-    logger.logLine("Found " + juce::String(wavFiles.size()) + " WAV files in " +
+    logger.logLine("Found " + juce::String(audioFiles.size()) + " audio files in " +
                    categoryToString(category) + " folder");
 
     // Check if any files found
-    if (wavFiles.isEmpty())
+    if (audioFiles.isEmpty())
     {
-        logger.logLine("Warning: No WAV files found in " + categoryToString(category) + " folder");
+        logger.logLine("Warning: No audio files found in " + categoryToString(category) +
+                       " folder (supported: WAV, AIFF, MP3, FLAC)");
         return mappings;
     }
 
-    // Sort alphabetically
-    sortFilesAlphabetically(wavFiles);
+    // Sort alphabetically across all formats
+    sortFilesAlphabetically(audioFiles);
 
     // Determine how many files to process
-    int filesToProcess = juce::jmin(wavFiles.size(), MAX_FILES_PER_CATEGORY);
+    int filesToProcess = juce::jmin(audioFiles.size(), MAX_FILES_PER_CATEGORY);
 
     // Warn if more than 70 files
-    if (wavFiles.size() > MAX_FILES_PER_CATEGORY)
+    if (audioFiles.size() > MAX_FILES_PER_CATEGORY)
     {
         logger.logLine("Warning: " + categoryToString(category) + " has " +
-                       juce::String(wavFiles.size()) + " files. Only first " +
+                       juce::String(audioFiles.size()) + " files. Only first " +
                        juce::String(MAX_FILES_PER_CATEGORY) + " will be processed.");
-        logger.logLine("Skipping " + juce::String(wavFiles.size() - MAX_FILES_PER_CATEGORY) +
+        logger.logLine("Skipping " + juce::String(audioFiles.size() - MAX_FILES_PER_CATEGORY) +
                        " files (beyond 70-file limit)");
     }
 
@@ -75,7 +79,7 @@ juce::Array<ChompiNamer::FileMapping> ChompiNamer::processCategory(
     for (int i = 0; i < filesToProcess; ++i)
     {
         FileMapping mapping;
-        mapping.sourceFile = wavFiles[i];
+        mapping.sourceFile = audioFiles[i];
         mapping.outputFileName = generateFileName(category, i);
         mapping.bankSlot = indexToBankSlot(i);
         mapping.sourceIndex = i;

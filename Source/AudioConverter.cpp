@@ -27,8 +27,9 @@ AudioConverter::ConversionResult AudioConverter::convertFile(
     result.skipped = false;
     result.message = "";
 
-    // Log conversion attempt
-    logger.logLine("Converting: " + sourceFile.getFileName());
+    // Log conversion attempt with format name
+    juce::String formatName = FileSystemHelper::getAudioFormatName(sourceFile);
+    logger.logLine("Converting: " + sourceFile.getFileName() + " (" + formatName + ")");
 
     // Read source file
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(sourceFile));
@@ -44,18 +45,30 @@ AudioConverter::ConversionResult AudioConverter::convertFile(
     int numChannels = static_cast<int>(reader->numChannels);
     int bitsPerSample = static_cast<int>(reader->bitsPerSample);
     double sampleRate = reader->sampleRate;
+    double durationSeconds = reader->lengthInSamples / sampleRate;
 
     // Log source properties
     logger.logLine("   Original: " +
                    juce::String(numChannels) + " channel(s), " +
                    juce::String(bitsPerSample) + "-bit, " +
-                   juce::String((int)sampleRate) + " Hz");
+                   juce::String((int)sampleRate) + " Hz, " +
+                   juce::String(durationSeconds, 1) + "s");
 
     // Check channel count - skip if more than 2 channels
     if (numChannels > MAX_CHANNELS)
     {
         result.skipped = true;
         result.message = "Skipped: Multi-channel audio (" + juce::String(numChannels) + " channels) - not supported";
+        logger.logLine("   " + result.message);
+        return result;
+    }
+
+    // Check duration limit
+    if (durationSeconds > MAX_DURATION_SECONDS)
+    {
+        result.skipped = true;
+        result.message = "Skipped: Duration " + juce::String(durationSeconds, 1) +
+                         "s exceeds 2-minute limit";
         logger.logLine("   " + result.message);
         return result;
     }
@@ -87,8 +100,9 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     result.skipped = false;
     result.message = "";
 
-    // Log conversion attempt
-    logger.logLine("Converting: " + sourceFile.getFileName() + " → " + outputFileName);
+    // Log conversion attempt with format name
+    juce::String formatName = FileSystemHelper::getAudioFormatName(sourceFile);
+    logger.logLine("Converting: " + sourceFile.getFileName() + " (" + formatName + ") → " + outputFileName);
 
     // Read source file
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(sourceFile));
@@ -104,18 +118,30 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     int numChannels = static_cast<int>(reader->numChannels);
     int bitsPerSample = static_cast<int>(reader->bitsPerSample);
     double sampleRate = reader->sampleRate;
+    double durationSeconds = reader->lengthInSamples / sampleRate;
 
     // Log source properties
     logger.logLine("   Original: " +
                    juce::String(numChannels) + " channel(s), " +
                    juce::String(bitsPerSample) + "-bit, " +
-                   juce::String((int)sampleRate) + " Hz");
+                   juce::String((int)sampleRate) + " Hz, " +
+                   juce::String(durationSeconds, 1) + "s");
 
     // Check channel count - skip if more than 2 channels
     if (numChannels > MAX_CHANNELS)
     {
         result.skipped = true;
         result.message = "Skipped: Multi-channel audio (" + juce::String(numChannels) + " channels) - not supported";
+        logger.logLine("   " + result.message);
+        return result;
+    }
+
+    // Check duration limit
+    if (durationSeconds > MAX_DURATION_SECONDS)
+    {
+        result.skipped = true;
+        result.message = "Skipped: Duration " + juce::String(durationSeconds, 1) +
+                         "s exceeds 2-minute limit";
         logger.logLine("   " + result.message);
         return result;
     }
@@ -308,4 +334,83 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
     logger.logLine("   " + result.message);
 
     return result;
+}
+
+bool AudioConverter::generateOptimizedSample(const juce::File& baseFile,
+                                             const juce::File& optimizedFile,
+                                             juce::AudioFormatManager& formatManager)
+{
+    logger.logLine("   Generating optimized: " + optimizedFile.getFileName());
+
+    // Read the base WAV file (already 16-bit 48kHz)
+    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(baseFile));
+
+    if (reader == nullptr)
+    {
+        logger.logLine("   Error: Could not read base file for optimization");
+        return false;
+    }
+
+    int numChannels = static_cast<int>(reader->numChannels);
+    int sourceSamples = static_cast<int>(reader->lengthInSamples);
+    int optimizedSamples = sourceSamples / 2;
+
+    if (optimizedSamples <= 0)
+    {
+        logger.logLine("   Error: Base sample too short for optimization");
+        return false;
+    }
+
+    // Read all source samples into buffer
+    juce::AudioBuffer<float> sourceBuffer(numChannels, sourceSamples);
+    reader->read(&sourceBuffer, 0, sourceSamples, 0, true, true);
+    reader.reset();
+
+    // Decimate by 2: take every other sample (double speed = one octave up)
+    juce::AudioBuffer<float> optimizedBuffer(numChannels, optimizedSamples);
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        for (int i = 0; i < optimizedSamples; ++i)
+        {
+            optimizedBuffer.setSample(ch, i, sourceBuffer.getSample(ch, i * 2));
+        }
+    }
+
+    // Write optimized file
+    if (optimizedFile.exists())
+        optimizedFile.deleteFile();
+
+    std::unique_ptr<juce::FileOutputStream> outputStream(optimizedFile.createOutputStream());
+    if (outputStream == nullptr || outputStream->failedToOpen())
+    {
+        logger.logLine("   Error: Could not create optimized output file");
+        return false;
+    }
+
+    juce::WavAudioFormat wavFormat;
+    std::unique_ptr<juce::AudioFormatWriter> writer(
+        wavFormat.createWriterFor(outputStream.get(),
+                                  TARGET_SAMPLE_RATE,
+                                  numChannels,
+                                  TARGET_BIT_DEPTH,
+                                  {},
+                                  0));
+
+    if (writer == nullptr)
+    {
+        logger.logLine("   Error: Could not create optimized file writer");
+        return false;
+    }
+
+    outputStream.release(); // Writer takes ownership
+
+    if (!writer->writeFromAudioSampleBuffer(optimizedBuffer, 0, optimizedSamples))
+    {
+        logger.logLine("   Error: Failed to write optimized audio data");
+        return false;
+    }
+
+    writer.reset();
+    logger.logLine("   Status: ✓ Optimized version generated");
+    return true;
 }

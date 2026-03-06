@@ -6,6 +6,7 @@
 #include "ChompiNamer.h"
 #include "AudioConverter.h"
 #include "AudioConfiguration.h"
+#include "BankFolderParser.h"
 
 //==============================================================================
 // ChompiProcessor - High-level CHOMPI sample processing
@@ -27,6 +28,7 @@ public:
         int filesConverted = 0;
         int filesSkipped = 0;
         int errors = 0;
+        int optimizedGenerated = 0;
         bool success = true;
     };
 
@@ -42,7 +44,6 @@ public:
                                      const juce::File& outputFolder,
                                      ChompiNamer::Category category,
                                      juce::AudioFormatManager& formatManager,
-                                     ChompiNamer& namer,
                                      AudioConverter& converter);
 
 private:

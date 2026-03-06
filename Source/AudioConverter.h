@@ -40,6 +40,13 @@ public:
                      const juce::File& outputFolder,
                      juce::AudioFormatManager& formatManager);
 
+    // Generate optimized (one octave up) sample from an already-converted base WAV file.
+    // Output is half the duration of the input (double speed = one octave up).
+    // Returns true on success.
+    bool generateOptimizedSample(const juce::File& baseFile,
+                                 const juce::File& optimizedFile,
+                                 juce::AudioFormatManager& formatManager);
+
 private:
     Logger& logger;
 
@@ -47,6 +54,7 @@ private:
     static constexpr int TARGET_BIT_DEPTH = 16;
     static constexpr double TARGET_SAMPLE_RATE = 48000.0;
     static constexpr int MAX_CHANNELS = 2;
+    static constexpr double MAX_DURATION_SECONDS = 120.0;  // 2-minute limit per CHOMPI spec
 
     // Helper methods
     bool needsConversion(const juce::AudioFormatReader* reader) const;

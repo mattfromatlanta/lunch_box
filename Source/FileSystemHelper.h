@@ -27,4 +27,10 @@ namespace FileSystemHelper
 
     // Get default output directory (converted/ in working directory)
     juce::File getDefaultOutputDirectory();
+
+    // Get human-readable format name from file extension (e.g., "MP3", "FLAC", "WAV")
+    juce::String getAudioFormatName(const juce::File& file);
+
+    // Get all supported audio file extensions as glob patterns
+    juce::StringArray getSupportedAudioExtensions();
 }

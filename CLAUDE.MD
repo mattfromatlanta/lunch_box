@@ -32,6 +32,20 @@
 
 ---
 
+## Audio Dev MCP
+
+Workspace-wide conventions are managed by the `audio-dev-mcp` MCP server. Query these tools before making decisions about toolchain, dependencies, or build destinations:
+
+| Tool | Use for |
+|------|---------|
+| `get_workflow` | JUCE location, CMake-only policy, toolchain setup |
+| `get_approved_dependencies` (stack: `cpp`) | Approved libraries and versions |
+| `get_build_rules` | Where test builds live; where to copy stable releases |
+| `get_media_storage` | dev_assets conventions; Dropbox library paths |
+| `get_project_structure` (type: `juce_app`) | Canonical folder layout and gitignore entries |
+
+---
+
 ## Architecture
 
 ### Core Design Principle

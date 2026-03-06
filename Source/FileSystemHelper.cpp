@@ -87,4 +87,19 @@ namespace FileSystemHelper
     {
         return juce::File::getCurrentWorkingDirectory().getChildFile("converted");
     }
+
+    juce::String getAudioFormatName(const juce::File& file)
+    {
+        auto ext = file.getFileExtension().toLowerCase();
+        if (ext == ".wav")               return "WAV";
+        if (ext == ".aiff" || ext == ".aif") return "AIFF";
+        if (ext == ".mp3")               return "MP3";
+        if (ext == ".flac")              return "FLAC";
+        return "Unknown";
+    }
+
+    juce::StringArray getSupportedAudioExtensions()
+    {
+        return {"*.wav", "*.aiff", "*.aif", "*.mp3", "*.flac"};
+    }
 }

@@ -30,6 +30,8 @@ target_sources(chompi_pack
         Source/GUI/MainComponent.cpp
         Source/GUI/GuiProcessor.h
         Source/GUI/GuiProcessor.cpp
+        Source/GUI/FolderDropZone.h
+        Source/GUI/FolderDropZone.cpp
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/AudioConverter.h
@@ -37,7 +39,9 @@ target_sources(chompi_pack
         Source/ChompiNamer.h
         Source/ChompiNamer.cpp
         Source/ChompiProcessor.h
-        Source/ChompiProcessor.cpp)
+        Source/ChompiProcessor.cpp
+        Source/BankFolderParser.h
+        Source/BankFolderParser.cpp)
 
 # Link required JUCE modules
 target_link_libraries(chompi_pack
@@ -57,7 +61,9 @@ target_compile_definitions(chompi_pack
     PRIVATE
         JUCE_USE_CURL=0
         JUCE_WEB_BROWSER=0
-        JUCE_USE_CAMERA=0)
+        JUCE_USE_CAMERA=0
+        JUCE_USE_FLAC=1
+        JUCE_USE_MP3AUDIOFORMAT=1)
 
 # Create test executable for ChompiNamer unit tests
 juce_add_console_app(test_chompi_namer

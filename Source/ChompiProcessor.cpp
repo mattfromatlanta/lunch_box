@@ -9,8 +9,6 @@ ChompiProcessor::ChompiProcessor(Logger& logger)
 bool ChompiProcessor::processSamples(const AudioConfiguration& config,
                                      juce::AudioFormatManager& formatManager)
 {
-    // Create CHOMPI processing components
-    ChompiNamer namer(logger);
     AudioConverter converter(logger);
 
     // Ensure output folder exists
@@ -27,7 +25,6 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
                        config.outputFolder,
                        ChompiNamer::Category::Cubbi,
                        formatManager,
-                       namer,
                        converter);
     }
 
@@ -38,7 +35,6 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
                        config.outputFolder,
                        ChompiNamer::Category::Jammi,
                        formatManager,
-                       namer,
                        converter);
     }
 
@@ -52,7 +48,6 @@ ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     const juce::File& outputFolder,
     ChompiNamer::Category category,
     juce::AudioFormatManager& formatManager,
-    ChompiNamer& namer,
     AudioConverter& converter)
 {
     ProcessingResult result;
@@ -64,36 +59,53 @@ ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     logger.logLine("Processing " + categoryName + " samples...");
     logger.logLine("");
 
-    // Generate file mappings using ChompiNamer
-    juce::Array<ChompiNamer::FileMapping> mappings =
-        namer.processCategory(sourceFolder, category);
+    // Use BankFolderParser to discover files and assign to banks
+    BankFolderParser parser(logger);
+    juce::Array<BankFolderParser::BankAssignment> assignments =
+        parser.parseFolderStructure(sourceFolder, category);
 
-    result.filesProcessed = mappings.size();
+    result.filesProcessed = assignments.size();
 
     // If no files found, return early
-    if (mappings.isEmpty())
+    if (assignments.isEmpty())
     {
         logger.logLine("");
         return result;
     }
 
     // Log conversion phase
-    logger.logLine("");
     logger.logLine("=== Converting " + categoryName + " Files ===");
     logger.logLine("");
 
-    // Convert each file with CHOMPI naming
-    for (const auto& mapping : mappings)
+    juce::String categoryPrefix = categoryName.toLowerCase();
+
+    // Convert each file with CHOMPI naming derived from bank assignment
+    for (const auto& assignment : assignments)
     {
+        // Build CHOMPI output filename: e.g. cubbi_a1.wav
+        juce::String outputFileName = categoryPrefix + "_" +
+                                      juce::String::charToString(assignment.bankLetter) +
+                                      juce::String(assignment.slotNumber) + ".wav";
+
         AudioConverter::ConversionResult conversionResult =
-            converter.convertFileWithName(mapping.sourceFile,
+            converter.convertFileWithName(assignment.sourceFile,
                                          outputFolder,
-                                         mapping.outputFileName,
+                                         outputFileName,
                                          formatManager);
 
         if (conversionResult.success)
         {
             result.filesConverted++;
+
+            // Generate optimized (_double) version from the converted base file
+            juce::File baseOutput = outputFolder.getChildFile(outputFileName);
+            juce::String doubleName = outputFileName.replace(".wav", "_double.wav");
+            juce::File doubleOutput = outputFolder.getChildFile(doubleName);
+
+            if (converter.generateOptimizedSample(baseOutput, doubleOutput, formatManager))
+            {
+                result.optimizedGenerated++;
+            }
         }
         else if (conversionResult.skipped)
         {
@@ -110,6 +122,7 @@ ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     // Log completion summary
     logger.logLine(categoryName + " conversion complete: " +
                   juce::String(result.filesConverted) + " files converted, " +
+                  juce::String(result.optimizedGenerated) + " optimized versions generated, " +
                   juce::String(result.errors) + " errors");
     logger.logLine("");
 

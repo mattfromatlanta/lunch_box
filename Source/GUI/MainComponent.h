@@ -3,17 +3,12 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "GuiProcessor.h"
+#include "FolderDropZone.h"
 
 //==============================================================================
 // MainComponent - Main GUI component for Chompi Pack
 //==============================================================================
-// Contains all UI elements:
-// - Header label
-// - Cubbi folder selection
-// - Jammi folder selection
-// - Output folder selection
-// - Process button
-// - Status display
+// Dark-themed layout with drag-and-drop folder selection (M7 + M9).
 //==============================================================================
 
 class MainComponent : public juce::Component
@@ -26,43 +21,50 @@ public:
     void resized() override;
 
 private:
-    // Header label
+    // Header
     juce::Label headerLabel;
 
-    // Cubbi folder selection
-    juce::TextButton selectCubbiButton;
-    juce::Label cubbiPathLabel;
+    // Section labels (M9 typography)
+    juce::Label cubbiSectionLabel;
+    juce::Label jammiSectionLabel;
+    juce::Label outputSectionLabel;
+
+    // Folder drop zones (M7 drag-drop)
+    std::unique_ptr<FolderDropZone> cubbiDropZone;
+    std::unique_ptr<FolderDropZone> jammiDropZone;
+    std::unique_ptr<FolderDropZone> outputDropZone;
+
+    // Currently selected folders
     juce::File selectedCubbiFolder;
-
-    // Jammi folder selection
-    juce::TextButton selectJammiButton;
-    juce::Label jammiPathLabel;
     juce::File selectedJammiFolder;
-
-    // Output folder selection
-    juce::TextButton selectOutputButton;
-    juce::Label outputPathLabel;
     juce::File selectedOutputFolder;
 
-    // Processing
+    // Process button and status
     juce::TextButton processButton;
-
-    // Status/output
     juce::TextEditor statusTextEditor;
 
-    // File chooser
+    // File chooser (kept alive through async callback)
     std::unique_ptr<juce::FileChooser> fileChooser;
 
     // Processing bridge
     std::unique_ptr<GuiProcessor> processor;
 
-    // Callbacks
+    // Unified folder selection handlers (called by both button and drag-drop)
+    void handleCubbiFolderSelected(juce::File folder);
+    void handleJammiFolderSelected(juce::File folder);
+    void handleOutputFolderSelected(juce::File folder);
+
+    // File browser launchers (called by drop zone buttons)
     void selectCubbiFolder();
     void selectJammiFolder();
     void selectOutputFolder();
+
     void processFiles();
     void updateProcessButtonState();
     void appendStatus(const juce::String& message);
+
+    // Count all supported audio files in a folder
+    static int countAudioFiles(const juce::File& folder);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

@@ -27,7 +27,8 @@
 
 ## Planned Milestones 📋
 
-### Milestone 5: Additional Input Format Support + Optimized Sample Generation
+### Milestone 5: Additional Input Format Support + Optimized Sample Generation ✅
+**Status:** Complete
 **Priority:** High
 **Estimated Effort:** 3-5 days
 **Description:** Expand input support beyond WAV to include AIFF, MP3, and FLAC formats, and automatically generate CHOMPI-optimized samples (pitched up one octave) for complete library creation.
@@ -65,7 +66,8 @@
 
 ---
 
-### Milestone 6: Bank-Specific Folder Organization
+### Milestone 6: Bank-Specific Folder Organization ✅
+**Status:** Complete
 **Priority:** High
 **Estimated Effort:** 3-5 days
 **Description:** Recognize bank subfolders (A, B, C, D, E) and automatically assign samples to corresponding banks.
@@ -345,8 +347,9 @@ M1 → M2 → M3 → M4 (Done)
 
 ## Version Roadmap
 
-- **v1.1.0:** Current (M1-M4 complete)
-- **v1.2.0:** M5 (Format support)
+- **v1.1.0:** M1-M4 complete
+- **v1.2.0:** M5 complete (format support + optimized sample generation)
+- **v1.3.0:** Current (M6 complete — bank folder organization)
 - **v1.3.0:** M6 (Bank folders)
 - **v1.4.0:** M7 + M9 (Drag-drop + Polish)
 - **v2.0.0:** M8 + M10 (Advanced mode + Preview)
