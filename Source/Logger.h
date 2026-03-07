@@ -2,6 +2,7 @@
 
 #include <juce_core/juce_core.h>
 #include <iostream>
+#include <functional>
 #include <memory>
 
 //==============================================================================
@@ -18,6 +19,9 @@ public:
 
     // Convenience method for logging with newline
     void logLine(const juce::String& message);
+
+    // Optional callback invoked for every log message (used by GUI runtime log)
+    std::function<void(const juce::String&)> onLog;
 
 private:
     juce::File logFile;

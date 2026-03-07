@@ -22,6 +22,16 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
 
+    // Public interface for menu bar actions
+    void selectCubbiFolder();
+    void selectJammiFolder();
+    void selectOutputFolder();
+    void processFiles();
+    void showLogFolder();
+    void clearStatusLog();
+    void setShowRuntimeLogs(bool shouldShow);
+    bool getShowRuntimeLogs() const { return showRuntimeLogs; }
+
 private:
     // Header
     juce::Label headerLabel;
@@ -55,6 +65,8 @@ private:
     // Processing bridge
     std::unique_ptr<GuiProcessor> processor;
 
+    bool showRuntimeLogs = false;
+
     // Unified folder selection handlers (called by both button and drag-drop)
     void handleCubbiFolderSelected(juce::File folder);
     void handleJammiFolderSelected(juce::File folder);
@@ -62,11 +74,7 @@ private:
 
     // File browser launchers (called by drop zone buttons)
     void selectFolderFor(const juce::String& title, std::function<void(juce::File)> handler);
-    void selectCubbiFolder();
-    void selectJammiFolder();
-    void selectOutputFolder();
 
-    void processFiles();
     void updateProcessButtonState();
     void appendStatus(const juce::String& message);
 

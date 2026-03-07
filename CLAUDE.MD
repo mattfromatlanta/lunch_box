@@ -34,6 +34,8 @@
 
 ## Audio Dev MCP
 
+**At the start of every session, load all `audio-dev-mcp` tools using ToolSearch before doing any work.** Use `select:mcp__audio-dev-mcp__get_workspace,mcp__audio-dev-mcp__get_workflow,mcp__audio-dev-mcp__get_approved_dependencies,mcp__audio-dev-mcp__get_build_rules,mcp__audio-dev-mcp__get_media_storage,mcp__audio-dev-mcp__get_project_structure` to load them all at once.
+
 Workspace-wide conventions are managed by the `audio-dev-mcp` MCP server. Query these tools before making decisions about toolchain, dependencies, or build destinations:
 
 | Tool | Use for |

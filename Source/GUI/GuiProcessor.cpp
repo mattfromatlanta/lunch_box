@@ -6,6 +6,11 @@ GuiProcessor::GuiProcessor()
     formatManager.registerBasicFormats();
 }
 
+void GuiProcessor::setLogCallback(std::function<void(const juce::String&)> callback)
+{
+    logger.onLog = std::move(callback);
+}
+
 GuiProcessor::ProcessingResult GuiProcessor::processFiles(
     const juce::File& cubbiFolder,
     const juce::File& jammiFolder,

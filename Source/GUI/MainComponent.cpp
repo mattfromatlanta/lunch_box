@@ -277,6 +277,40 @@ void MainComponent::appendStatus(const juce::String& message)
     statusTextEditor.moveCaretToEnd();
 }
 
+void MainComponent::setShowRuntimeLogs(bool shouldShow)
+{
+    showRuntimeLogs = shouldShow;
+
+    if (showRuntimeLogs)
+    {
+        processor->setLogCallback([this](const juce::String& msg)
+        {
+            juce::MessageManager::callAsync([this, msg]
+            {
+                appendStatus("[log] " + msg.trimEnd());
+            });
+        });
+    }
+    else
+    {
+        processor->setLogCallback(nullptr);
+    }
+}
+
+void MainComponent::showLogFolder()
+{
+    juce::File logsDir = juce::File::getCurrentWorkingDirectory().getChildFile("logs");
+    if (!logsDir.exists())
+        logsDir.createDirectory();
+    logsDir.revealToUser();
+}
+
+void MainComponent::clearStatusLog()
+{
+    statusTextEditor.clear();
+    statusTextEditor.setText("Status log cleared.");
+}
+
 int MainComponent::countAudioFiles(const juce::File& folder)
 {
     juce::Array<juce::File> files;

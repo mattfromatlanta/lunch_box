@@ -47,6 +47,10 @@ void Logger::log(const juce::String& message)
         logStream->writeText(message, false, false, nullptr);
         logStream->flush();
     }
+
+    // Forward to GUI callback if set
+    if (onLog)
+        onLog(message);
 }
 
 void Logger::logLine(const juce::String& message)

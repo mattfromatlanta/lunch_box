@@ -1,6 +1,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "CLI/CliProcessor.h"
 #include "GUI/MainWindow.h"
+#include "GUI/AppMenuBar.h"
 
 //==============================================================================
 // ChompiPackApplication - JUCE application wrapper
@@ -30,11 +31,20 @@ public:
         {
             // GUI mode - create window
             mainWindow = std::make_unique<MainWindow>(getApplicationName());
+
+           #if JUCE_MAC
+            menuBar = std::make_unique<AppMenuBar>(mainWindow->getMainComponent());
+            juce::MenuBarModel::setMacMainMenu(menuBar.get());
+           #endif
         }
     }
 
     void shutdown() override
     {
+       #if JUCE_MAC
+        juce::MenuBarModel::setMacMainMenu(nullptr);
+        menuBar = nullptr;
+       #endif
         mainWindow = nullptr;
     }
 
@@ -49,6 +59,9 @@ public:
 
 private:
     std::unique_ptr<MainWindow> mainWindow;
+   #if JUCE_MAC
+    std::unique_ptr<AppMenuBar> menuBar;
+   #endif
 
     void runCliMode(const juce::StringArray& args)
     {

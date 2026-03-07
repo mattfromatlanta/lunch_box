@@ -2,6 +2,7 @@
 
 #include <juce_core/juce_core.h>
 #include <juce_audio_formats/juce_audio_formats.h>
+#include <functional>
 #include "../AudioConfiguration.h"
 #include "../Logger.h"
 #include "../ChompiProcessor.h"
@@ -33,6 +34,10 @@ public:
     ProcessingResult processFiles(const juce::File& cubbiFolder,
                                   const juce::File& jammiFolder,
                                   const juce::File& outputFolder);
+
+    // Set a callback to receive all Logger output (for GUI runtime log)
+    // Pass nullptr to disable
+    void setLogCallback(std::function<void(const juce::String&)> callback);
 
 private:
     Logger logger;

@@ -15,6 +15,8 @@ public:
 
     void closeButtonPressed() override;
 
+    MainComponent* getMainComponent() { return mainComponent.get(); }
+
 private:
     std::unique_ptr<MainComponent> mainComponent;
 

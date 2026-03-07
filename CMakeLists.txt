@@ -26,6 +26,8 @@ target_sources(chompi_pack
         Source/CLI/CliProcessor.cpp
         Source/GUI/MainWindow.h
         Source/GUI/MainWindow.cpp
+        Source/GUI/AppMenuBar.h
+        Source/GUI/AppMenuBar.cpp
         Source/GUI/MainComponent.h
         Source/GUI/MainComponent.cpp
         Source/GUI/GuiProcessor.h
