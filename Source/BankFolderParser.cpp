@@ -106,15 +106,21 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
         const auto& files = bankFiles.at(bank);
         int count = 0;
 
+        int overflow = files.size() - SLOTS_PER_BANK;
+        if (overflow > 0)
+        {
+            logger.logLine("Warning: Bank " + juce::String::charToString(bank).toUpperCase() +
+                          " has " + juce::String(files.size()) + " files, only " +
+                          juce::String(SLOTS_PER_BANK) + " slots available. " +
+                          juce::String(overflow) + " ignored:");
+            for (int i = SLOTS_PER_BANK; i < files.size(); ++i)
+                logger.logLine("  Ignored: " + files[i].getFileName());
+        }
+
         for (const auto& file : files)
         {
             if (count >= SLOTS_PER_BANK)
-            {
-                logger.logLine("Warning: Bank " + juce::String::charToString(bank).toUpperCase() +
-                              " has more than " + juce::String(SLOTS_PER_BANK) +
-                              " files. Extras skipped.");
                 break;
-            }
 
             BankAssignment a;
             a.sourceFile = file;
@@ -128,10 +134,30 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
         slotsUsed[bank] = count;
     }
 
-    // Step 4: Fill remaining slots with unsorted files (bank A first, then B, C, D, E)
+    // Step 4a: Fill empty banks (no input folder) with unsorted files first
     int unsortedIndex = 0;
     for (char bank = 'a'; bank <= 'e' && unsortedIndex < unsortedFiles.size(); ++bank)
     {
+        if (bankFiles.count(bank) > 0) continue; // skip banks that had folders
+
+        for (int s = 0; s < SLOTS_PER_BANK && unsortedIndex < unsortedFiles.size(); ++s)
+        {
+            BankAssignment a;
+            a.sourceFile = unsortedFiles[unsortedIndex];
+            a.bankLetter = bank;
+            a.slotNumber = s + 1;
+            a.fromBankFolder = false;
+            assignments.add(a);
+            slotsUsed[bank]++;
+            unsortedIndex++;
+        }
+    }
+
+    // Step 4b: Fill remaining space in banks that had folders
+    for (char bank = 'a'; bank <= 'e' && unsortedIndex < unsortedFiles.size(); ++bank)
+    {
+        if (bankFiles.count(bank) == 0) continue; // skip empty banks (already handled)
+
         int used = slotsUsed[bank];
         int available = SLOTS_PER_BANK - used;
 
@@ -147,12 +173,14 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
         }
     }
 
-    // Warn if unsorted files exceeded capacity
+    // Log any unsorted files that couldn't be placed
     if (unsortedIndex < unsortedFiles.size())
     {
         int skipped = unsortedFiles.size() - unsortedIndex;
         logger.logLine("Warning: " + juce::String(skipped) +
-                      " files skipped (" + juce::String(MAX_FILES) + " file limit reached)");
+                      " unsorted files ignored (no remaining slots):");
+        for (int i = unsortedIndex; i < unsortedFiles.size(); ++i)
+            logger.logLine("  Ignored: " + unsortedFiles[i].getFileName());
     }
 
     // Log bank assignment summary

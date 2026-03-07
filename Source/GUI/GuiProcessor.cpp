@@ -59,19 +59,31 @@ GuiProcessor::ProcessingResult GuiProcessor::processFiles(
 
     if (success)
     {
-        // Count processed files
+        // Count base files only (exclude _double versions)
         if (config.hasCubbi)
         {
             juce::Array<juce::File> cubbiFiles;
             outputFolder.findChildFiles(cubbiFiles, juce::File::findFiles, false, "cubbi_*.wav");
-            result.cubbiFilesProcessed = cubbiFiles.size();
+            for (const auto& f : cubbiFiles)
+            {
+                if (f.getFileName().contains("_double"))
+                    result.cubbiOptimized++;
+                else
+                    result.cubbiFilesProcessed++;
+            }
         }
 
         if (config.hasJammi)
         {
             juce::Array<juce::File> jammiFiles;
             outputFolder.findChildFiles(jammiFiles, juce::File::findFiles, false, "jammi_*.wav");
-            result.jammiFilesProcessed = jammiFiles.size();
+            for (const auto& f : jammiFiles)
+            {
+                if (f.getFileName().contains("_double"))
+                    result.jammiOptimized++;
+                else
+                    result.jammiFilesProcessed++;
+            }
         }
 
         result.success = true;

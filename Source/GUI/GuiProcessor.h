@@ -26,6 +26,8 @@ public:
         bool success = false;
         int cubbiFilesProcessed = 0;
         int jammiFilesProcessed = 0;
+        int cubbiOptimized = 0;
+        int jammiOptimized = 0;
         juce::String message;
     };
 
