@@ -7,6 +7,7 @@
 #include "FolderDropZone.h"
 #include "PreviewPanel.h"
 #include "BankEditorPanel.h"
+#include "BankFocusPanel.h"
 
 //==============================================================================
 // MainComponent - Main GUI component for Chompi Pack
@@ -39,10 +40,13 @@ private:
     // Header
     juce::Label headerLabel;
 
-    // Mode toggle (Simple / Advanced)
+    // Mode toggle (Simple / Advanced / Bank)
+    enum class ViewMode { Simple, Advanced, Bank };
+    ViewMode viewMode = ViewMode::Simple;
+
     juce::TextButton simpleModeButton;
     juce::TextButton advancedModeButton;
-    bool isAdvancedMode = false;
+    juce::TextButton bankModeButton;
 
     // ── Simple mode ────────────────────────────────────────
     juce::Label cubbiSectionLabel;
@@ -62,6 +66,10 @@ private:
 
     std::unique_ptr<BankEditorPanel> cubbiEditor;
     std::unique_ptr<BankEditorPanel> jammiEditor;
+
+    // ── Bank focus mode ────────────────────────────────────
+    std::unique_ptr<BankFocusPanel> bankFocusPanel;
+    juce::Label bankStatusLabel;
 
     // ── Output folder (shared) ────────────────────────────
     juce::Label        outputSectionLabel;
@@ -87,9 +95,13 @@ private:
     bool showRuntimeLogs = false;
 
     // Mode switching
-    void setMode(bool advanced);
+    void setViewMode(ViewMode mode);
     void setCategoryTab(bool showCubbi);
     void styleTabButton(juce::TextButton& btn, bool active);
+
+    // Cross-tab data sync
+    void syncAdvancedToBankFocus();
+    void syncBankFocusToAdvanced();
 
     // Helpers
     juce::File getResolvedOutputFolder();

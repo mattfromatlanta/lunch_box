@@ -42,13 +42,48 @@
 **Status:** Complete
 **Description:** WaveformDisplay (AudioThumbnail), AudioPreviewPlayer (AudioTransportSource + AudioDeviceManager), PreviewPanel with play/pause/stop controls and file info. Auto-previews first file when a folder is selected.
 
-### Out-of-Plan Work Completed (2026-03-08 session)
-- **Milestone 8 (Individual Sample Management):** Advanced mode with 5-bank × 14-slot grid (BankSlotComponent, BankRowComponent, BankEditorPanel). External file drop, internal slot-to-slot drag-reorder, right-click context menu, browse-for-file, clear, sort A-Z, auto-fill from folder. Mode toggle (Simple / Advanced). Category tabs (Cubbi / Jammi).
+### Milestone 8: Individual Sample Management
+**Status:** Complete (out-of-plan, 2026-03-08 session)
+**Description:** Advanced mode with 5-bank × 14-slot grid (BankSlotComponent, BankRowComponent, BankEditorPanel). External file drop, internal slot-to-slot drag-reorder, right-click context menu, browse-for-file, clear, sort A-Z, auto-fill from folder. Mode toggle (Simple / Advanced). Category tabs (Cubbi / Jammi).
+
+**Also completed in this session (out-of-plan):**
 - **Output folder redesign:** Default `~/Desktop/chompis`, editable name field, decompose selected path into base+name, clean-before-export toggle.
 - **Open Output button:** Activates after successful export; opens output folder in Finder (inside the folder).
 - **Persistent folder memory:** Last cubbi, jammi, and output folders remembered across sessions via `ApplicationProperties`. Advanced-mode file pickers recall last cubbi/jammi location and start inside the folder.
 - **Auto-Fill from Folder uses BankFolderParser:** Same bank-subfolder detection and overflow logging logic as the exporter. Overflow files reported to the status log.
 - **Future note (not yet implemented):** Chompi Pack should eventually let the user select a default application for opening the output folder (e.g. Finder, a DAW, a file manager). This should be added as a dedicated future milestone or sub-task under M9 polish.
+
+### Bank Focus View (unplanned addition, completed 2026-03-08)
+**Status:** Complete
+**Branch:** 0.3
+**Description:** A third tab alongside Simple and Advanced. Shows one bank at a time as a vertical list of 14 slot rows, each rendering the sample's waveform. Cubbi/Jammi toggle and A–E bank selector sit above and to the left of the slot list respectively.
+
+**Key design decisions:**
+- Bank selector (A-E) is a left column (~36px)
+- Cubbi/Jammi tabs are shared with Advanced mode — no re-render on switch; selection persists across mode changes
+- No scrolling — 14 rows sized to fit on a 14" M1 MacBook Pro (820px window, ~12% vertical spare)
+- Window grows to 820px when Bank tab is active (740px for other tabs)
+- Status log hidden in Bank mode; replaced by single-line `bankStatusLabel`
+- Each `FocusedSlotRow` owns a static `juce::AudioThumbnail`; shares `AudioFormatManager`/`AudioThumbnailCache` from `PreviewPanel`
+- Drag-to-reorder within the active bank (no cross-bank drag)
+- Clicking a filled slot starts preview playback; clicking empty stops it
+- Data sync: Bank ↔ Advanced panels sync on tab switch via `getAssignments()` / `setSlot()`; export reuses `processFilesAdvanced()` after sync
+- Re-entrant flush bug fixed: `isPopulating` flag prevents `flushRowsToStorage()` from overwriting new bank storage during `populateRowsFromStorage()`
+
+**New files:**
+- `Source/GUI/FocusedSlotRow.h/.cpp` — single 34px slot with waveform thumbnail, file drop, right-click menu, drag-to-reorder callbacks
+- `Source/GUI/BankFocusPanel.h/.cpp` — full panel: bank selector, 14 rows, sort/fill/clear, internal `slots[2][5][14]` storage
+
+**Modified files:**
+- `Source/GUI/MainComponent.h/.cpp` — ViewMode enum (Simple/Advanced/Bank), third tab, shared category tabs, window resize, sync logic, `bankStatusLabel`
+- `Source/GUI/BankEditorPanel.h/.cpp` — `onPreviewStop` callback, `notifyPreviewForSelection()`, `setSlotFile()`
+- `Source/GUI/PreviewPanel.h/.cpp` — exposed `getFormatManager()` / `getThumbnailCache()`
+- `CMakeLists.txt` — 4 new source files
+
+**Not yet supported (future work):**
+- Drag between banks in Bank mode
+
+---
 
 ### Out-of-Plan Work Completed (2026-03-07 session)
 - **macOS menu bar:** File menu (Open Cubbi/Jammi/Output folders, Process Samples) and Settings menu (Show Runtime Logs toggle, Show Log Folder in Finder, Clear Status Log) via AppMenuBar / MenuBarModel.
@@ -57,9 +92,31 @@
 - **Processing result improvements:** Output count now reflects source samples processed (not base + double). Doubles verified and reported. Modal confirmation dialogs removed; all results go to the status log.
 - **audio_dev_mcp tools:** Added `build_project`, `launch_project`, `get_repos` tools. Approved melatonin_inspector as a trusted dependency.
 
+### Milestone 12 (partial): Code Review and Refactoring
+**Status:** Substantially Complete (0.3 branch, 2026-03-07 session)
+**Description:** Proactive code review and refactor pass on the full codebase.
+
+**Completed:**
+- `Source/Processing/` subfolder created; AudioConverter, BankFolderParser, ChompiNamer, ChompiProcessor moved there
+- `SLOTS_PER_BANK`, `NUM_BANKS`, `MAX_FILES_PER_CATEGORY` promoted to `public static constexpr` on ChompiNamer — single source of truth (removed 3 duplicate definitions)
+- `ChompiProcessor::runConversions()` private method extracts ~60-line duplicate conversion loop shared between `processCategory` and `processCategoryFromAssignments`
+- `sortCellsRowMajor()` file-scope helper in BankEditorPanel replaces two identical lambdas
+- `MainComponent::appendProcessingResult()` consolidates duplicate success-status block
+- `BankSlotComponent::isSupportedAudioFile()` now delegates to `FileSystemHelper::getSupportedAudioExtensions()` (no more hardcoded extension list)
+- `GuiProcessor::processFiles()` result counting bug fixed (was scanning output folder; now uses `ProcessingResult` from ChompiProcessor directly)
+- All include paths updated for new folder layout; CMakeLists.txt updated
+
+**Remaining (if desired):**
+- clang-tidy static analysis pass
+- Instruments memory/performance profiling
+- Const-correctness and error-handling completeness audit
+
 ---
 
 ## Remaining Milestones 📋
+
+
+---
 
 ### Milestone 9 (remainder): GUI Polish
 **Priority:** Low-Medium
@@ -77,39 +134,6 @@
 - Drop zone styling and hover highlight
 - Menu bar and settings
 - Monospaced status log
-
----
-
-### Milestone 8: Individual Sample Management
-**Priority:** Medium-High
-**Estimated Effort:** 1-2 weeks
-**Description:** Advanced mode with a visual bank editor for slot-by-slot sample management alongside the existing folder-based simple mode.
-
-**Key Features:**
-- Toggle between Simple Mode (current folder-based) and Advanced Mode (slot editor)
-- Bank editor showing all 70 slots across 5 banks (A–E, 14 slots each)
-- Drag individual audio files from Finder into specific slots
-- Reorder samples within and between banks via drag
-- Browse file into a specific slot via right-click / context menu
-- Auto-fill, clear bank, and sort operations
-- Per-slot waveform thumbnail (reuses WaveformDisplay)
-- Per-slot preview on click (reuses AudioPreviewPlayer)
-
-**UI Structure:**
-```
-Simple Mode (default):    [Cubbi Zone] [Jammi Zone] [Output Zone] → Process
-Advanced Mode:            [Bank Editor Panel — 5 banks × 14 slots per category]
-                          [Preview Panel] → Process
-```
-
-**Technical Changes:**
-- BankSlotComponent — single slot (waveform thumb, filename, drag target)
-- BankRowComponent — 14 slots for one bank
-- BankEditorPanel — 5 banks, tabbed cubbi/jammi
-- Mode toggle button in MainComponent
-- BankEditorPanel feeds directly into ChompiProcessor (same backend)
-
-**Dependencies:** PreviewPanel and WaveformDisplay already complete (M10).
 
 ---
 
@@ -135,22 +159,22 @@ Advanced Mode:            [Bank Editor Panel — 5 banks × 14 slots per categor
 ---
 
 ### Milestone 12: Code Review and Refactoring
-**Priority:** High (before open source)
-**Estimated Effort:** 1-2 weeks
-**Description:** Code review pass for quality, consistency, and maintainability.
+**Priority:** Low (substantially completed in 0.3 refactor)
+**Estimated Effort:** 1-2 days remaining
+**Description:** The structural refactor (0.3 branch) completed the major code-quality pass. Remaining items are optional polish.
 
-**Review Areas:**
-- Naming conventions (consistent PascalCase/camelCase throughout)
-- Const correctness
-- Error handling completeness
-- Memory management (ownership, RAII)
-- Function length and complexity
-- Dead code removal
-- Documentation / inline comments where logic is non-obvious
+**Already done (do not re-do):**
+- Source folder restructuring (Processing/ subfolder)
+- Constants deduplication
+- Duplicate logic extraction
+- Include path consistency
+- Bug fixes surfaced during review
 
-**Tools:**
-- clang-tidy (static analysis)
-- Instruments (memory/performance profiling on macOS)
+**Remaining (optional):**
+- clang-tidy static analysis pass
+- Instruments memory/performance profiling
+- Const-correctness audit
+- Error-handling completeness check
 
 ---
 
@@ -177,26 +201,26 @@ Advanced Mode:            [Bank Editor Panel — 5 banks × 14 slots per categor
 ## Current Status and Next Steps
 
 ```
-DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M10
-                                        ↓
-                                   M9 (base theme done)
+DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major) → Bank Focus View
+                                                   ↓
+                                              M9 (base theme done)
 ```
 
 **Recommended remaining order:**
 1. **M9 finish** — tooltips + animations (quick, 1-2 days)
-2. **M8** — individual sample management (the major remaining feature)
-3. **M11** — unit testing (before adding more complexity)
-4. **M12** — code review and refactor
-5. **M13** — open source release
+2. **M11** — unit testing (before open source)
+3. **M12 finish** — clang-tidy + profiling (optional polish, 1-2 days)
+4. **M13** — open source release
 
 ## Version Roadmap
 
 - **v1.1.0:** M1–M4 complete
 - **v1.2.0:** M5 complete (format support + optimized samples)
 - **v1.3.0:** M6 complete (bank folder organization)
-- **v2.0.0:** Current — M7, M9 (base), M10 complete + menu bar, runtime logs, bank distribution fixes
-- **v2.1.0:** M9 finish + M8 (advanced slot editor)
-- **v2.2.0:** M11 + M12 (testing + review)
+- **v2.0.0:** M7, M8, M9 (base), M10 complete + menu bar, runtime logs, bank distribution fixes
+- **v2.1.0:** M12 structural refactor (0.3 branch); Source/Processing/ layout, constants dedup, bug fixes
+- **v2.2.0:** Current — Bank Focus View complete (third tab, waveform rows, shared category tabs, re-entrant flush fix)
+- **v2.3.0:** M9 finish + M11 (testing)
 - **v3.0.0:** M13 (open source release)
 
 ## Effort Summary (Remaining)
@@ -204,15 +228,14 @@ DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M10
 | Milestone | Effort | Priority | Value |
 |-----------|--------|----------|-------|
 | M9 finish | 1-2 days | Low-Medium | Medium |
-| M8 | 1-2 weeks | Medium-High | Very High |
 | M11 | 1-2 weeks | High | High |
-| M12 | 1-2 weeks | High | High |
+| M12 finish | 1-2 days | Low | Low |
 | M13 | 1-2 weeks | High | High |
 
-**Remaining total:** ~5-9 weeks of development
+**Remaining total:** ~3-5 weeks of development
 
 ---
 
-**Last Updated:** 2026-03-07
-**Current Version:** v2.0.0
-**Next Milestone:** M9 finish (tooltips/animations) → M8 (individual sample management)
+**Last Updated:** 2026-03-08
+**Current Version:** v2.2.0
+**In Progress:** M9 finish → M11 (unit testing)

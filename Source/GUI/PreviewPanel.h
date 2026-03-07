@@ -27,6 +27,10 @@ public:
     bool isPlaying() const;
     juce::File getCurrentFile() const { return currentFile; }
 
+    // Access shared audio resources (used by BankFocusPanel for per-slot thumbnails)
+    juce::AudioFormatManager& getFormatManager();
+    juce::AudioThumbnailCache& getThumbnailCache();
+
     void paint(juce::Graphics& g) override;
     void resized() override;
 

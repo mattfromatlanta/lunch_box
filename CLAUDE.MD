@@ -17,18 +17,26 @@
 
 ## Current Status
 
-**Version:** 1.1.0
-**Completed Milestones:** 1-4 (+ Milestone 4 Addendum)
+**Version:** 2.2.0
+**Completed Milestones:** M1–M8, M10, M12 (major), Bank Focus View
 
 **What Works:**
 - ✅ CLI interface with full CHOMPI processing
-- ✅ GUI application with folder selection
+- ✅ GUI: Simple mode (folder drop zones), Advanced mode (5-bank × 14-slot grid), Bank mode (single-bank focus view)
 - ✅ Audio conversion (16-bit 48kHz WAV output)
 - ✅ Automatic bank assignment (A-E, 14 slots each)
-- ✅ Dual categories (cubbi/jammi)
-- ✅ Drag-drop folder selection (Milestone 4 Addendum)
+- ✅ Dual categories (Cubbi / Jammi)
+- ✅ Drag-drop folder selection and internal slot drag-to-reorder
+- ✅ AIFF, MP3, FLAC input support
+- ✅ Automatic `_double` (octave-up) generation
+- ✅ Bank-subfolder detection (BankFolderParser)
+- ✅ Waveform preview per slot (FocusedSlotRow, AudioThumbnail)
+- ✅ Preview playback (click to play, move focus to stop)
+- ✅ Persistent folder memory across sessions
+- ✅ macOS menu bar (File / Settings menus)
+- ✅ Source/Processing/ module layout; constants deduplication; code review pass
 
-**See:** [MILESTONE_4_SUMMARY.md](MILESTONE_4_SUMMARY.md) and [MILESTONE_4_ADDENDUM.md](MILESTONE_4_ADDENDUM.md)
+**See:** [prompts/MILESTONES_OVERVIEW.md](prompts/MILESTONES_OVERVIEW.md) for full roadmap.
 
 ---
 
@@ -75,14 +83,19 @@ AudioConverter  ChompiNamer  Logger
 
 | Module | Purpose | Key Files |
 |--------|---------|-----------|
-| **ChompiProcessor** | Orchestrates CHOMPI workflow | ChompiProcessor.h/cpp |
-| **AudioConverter** | Format conversion (16-bit 48kHz) | AudioConverter.h/cpp |
-| **ChompiNamer** | CHOMPI naming (cubbi_a1.wav, etc.) | ChompiNamer.h/cpp |
+| **ChompiProcessor** | Orchestrates CHOMPI workflow | Processing/ChompiProcessor.h/cpp |
+| **AudioConverter** | Format conversion (16-bit 48kHz) | Processing/AudioConverter.h/cpp |
+| **ChompiNamer** | CHOMPI naming (cubbi_a1.wav, etc.) | Processing/ChompiNamer.h/cpp |
+| **BankFolderParser** | Bank subfolder detection + assignment | Processing/BankFolderParser.h/cpp |
 | **Logger** | Timestamped log files | Logger.h/cpp |
-| **FileSystemHelper** | File utilities | FileSystemHelper.h/cpp |
+| **FileSystemHelper** | File utilities, format extension list | FileSystemHelper.h/cpp |
 | **CliProcessor** | CLI interface and argument parsing | CLI/CliProcessor.h/cpp |
 | **GuiProcessor** | GUI-processing bridge | GUI/GuiProcessor.h/cpp |
-| **MainComponent** | GUI layout and controls | GUI/MainComponent.h/cpp |
+| **MainComponent** | GUI layout, tabs, mode switching | GUI/MainComponent.h/cpp |
+| **BankEditorPanel** | Advanced: 5×14 grid per category | GUI/BankEditorPanel.h/cpp |
+| **BankFocusPanel** | Bank: single-bank 14-row focus view | GUI/BankFocusPanel.h/cpp |
+| **FocusedSlotRow** | Bank: single slot row with waveform | GUI/FocusedSlotRow.h/cpp |
+| **PreviewPanel** | Waveform + audio playback | GUI/PreviewPanel.h/cpp |
 | **MainWindow** | Application window | GUI/MainWindow.h/cpp |
 
 ### Data Flow
@@ -265,14 +278,14 @@ make
 | Milestone | Plan Document | Status |
 |-----------|---------------|--------|
 | M1-M4 | [milestone_1-4_plan.md](prompts/) | ✅ Complete |
-| M5 | [milestone_5_plan.md](prompts/milestone_5_plan.md) | 📋 Planned |
-| M6 | [milestone_6_plan.md](prompts/milestone_6_plan.md) | 📋 Planned |
-| M7 | [milestone_7_plan.md](prompts/milestone_7_plan.md) | 📋 Planned |
-| M8 | [milestone_8_plan.md](prompts/milestone_8_plan.md) | 📋 Planned |
-| M9 | [milestone_9_plan.md](prompts/milestone_9_plan.md) | 📋 Planned |
-| M10 | [milestone_10_plan.md](prompts/milestone_10_plan.md) | 📋 Planned |
+| M5 | [milestone_5_plan.md](prompts/milestone_5_plan.md) | ✅ Complete |
+| M6 | [milestone_6_plan.md](prompts/milestone_6_plan.md) | ✅ Complete |
+| M7 | [milestone_7_plan.md](prompts/milestone_7_plan.md) | ✅ Complete |
+| M8 | [milestone_8_plan.md](prompts/milestone_8_plan.md) | ✅ Complete |
+| M9 | [milestone_9_plan.md](prompts/milestone_9_plan.md) | 🔄 Base theme done; tooltips/animations remaining |
+| M10 | [milestone_10_plan.md](prompts/milestone_10_plan.md) | ✅ Complete |
 | M11 | [milestone_11_plan.md](prompts/milestone_11_plan.md) | 📋 Planned |
-| M12 | [milestone_12_plan.md](prompts/milestone_12_plan.md) | 📋 Planned |
+| M12 | [milestone_12_plan.md](prompts/milestone_12_plan.md) | 🔄 Major refactor done; clang-tidy remaining |
 | M13 | [milestone_13_plan.md](prompts/milestone_13_plan.md) | 📋 Planned |
 
 **Before implementing any feature:** Read the relevant milestone plan. Each plan includes:
@@ -295,8 +308,10 @@ make
 | [README.md](README.md) | Project overview, quick start | Understanding project scope |
 | [HOW_TO.md](HOW_TO.md) | User guide, examples | Understanding user workflows |
 | [Source/Main.cpp](Source/Main.cpp) | Entry point, mode detection | Understanding app initialization |
-| [Source/ChompiProcessor.cpp](Source/ChompiProcessor.cpp) | Core processing logic | Understanding CHOMPI processing |
+| [Source/Processing/ChompiProcessor.cpp](Source/Processing/ChompiProcessor.cpp) | Core processing logic | Understanding CHOMPI processing |
 | [Source/AudioConfiguration.h](Source/AudioConfiguration.h) | Shared data structures | Understanding data flow |
+| [Source/GUI/MainComponent.cpp](Source/GUI/MainComponent.cpp) | GUI layout, tabs, mode switching | Understanding GUI architecture |
+| [Source/GUI/BankFocusPanel.cpp](Source/GUI/BankFocusPanel.cpp) | Bank focus view | Understanding Bank tab |
 
 ### Documentation Map
 
@@ -304,41 +319,47 @@ make
 chompi_pack/
 ├── README.md                          # User-facing project overview
 ├── HOW_TO.md                          # Comprehensive user guide
-├── CLAUDE.MD                          # This file (AI assistant guide)
-├── MILESTONE_4_SUMMARY.md             # GUI implementation summary
-├── MILESTONE_4_ADDENDUM.md            # Output folder selection addition
+├── CLAUDE.md                          # This file (AI assistant guide)
 │
 ├── prompts/                           # Development planning
-│   ├── MILESTONES_OVERVIEW.md         # Complete roadmap
+│   ├── MILESTONES_OVERVIEW.md         # Complete roadmap (always up to date)
 │   ├── milestone_1_plan.md            # Audio scanner (complete)
 │   ├── milestone_2_plan.md            # Format conversion (complete)
 │   ├── milestone_3_plan.md            # CHOMPI naming (complete)
 │   ├── milestone_4_plan.md            # GUI application (complete)
-│   ├── milestone_5_plan.md            # Format support (AIFF/MP3/FLAC)
-│   ├── milestone_6_plan.md            # Bank folder organization
-│   ├── milestone_7_plan.md            # Drag and drop
-│   ├── milestone_8_plan.md            # Individual sample management
-│   ├── milestone_9_plan.md            # GUI polish
-│   ├── milestone_10_plan.md           # Waveform/preview
-│   ├── milestone_11_plan.md           # Testing review
-│   ├── milestone_12_plan.md           # Code review
-│   └── milestone_13_plan.md           # Open source prep
+│   ├── milestone_5_plan.md            # Format support AIFF/MP3/FLAC (complete)
+│   ├── milestone_6_plan.md            # Bank folder organization (complete)
+│   ├── milestone_7_plan.md            # Drag and drop (complete)
+│   ├── milestone_8_plan.md            # Individual sample management (complete)
+│   ├── milestone_9_plan.md            # GUI polish (base done, tooltips remaining)
+│   ├── milestone_10_plan.md           # Waveform/preview (complete)
+│   ├── milestone_11_plan.md           # Testing (planned)
+│   ├── milestone_12_plan.md           # Code review (major pass done)
+│   └── milestone_13_plan.md           # Open source prep (planned)
 │
 ├── Source/                            # C++ source code
 │   ├── Main.cpp                       # Entry point
 │   ├── AudioConfiguration.h           # Shared config struct
+│   ├── FileSystemHelper.h/cpp         # File utilities, format extension list
+│   ├── Logger.h/cpp                   # Logging system
 │   ├── CLI/                           # CLI interface
-│   │   ├── CliProcessor.h
-│   │   └── CliProcessor.cpp
+│   │   ├── CliProcessor.h/cpp         # CLI argument parsing + processing
 │   ├── GUI/                           # GUI interface
 │   │   ├── MainWindow.h/cpp           # Application window
-│   │   ├── MainComponent.h/cpp        # Main UI
-│   │   └── GuiProcessor.h/cpp         # GUI-processing bridge
-│   ├── AudioConverter.h/cpp           # Format conversion
-│   ├── ChompiNamer.h/cpp              # CHOMPI naming
-│   ├── ChompiProcessor.h/cpp          # Processing orchestrator
-│   ├── Logger.h/cpp                   # Logging system
-│   └── FileSystemHelper.h/cpp         # File utilities
+│   │   ├── MainComponent.h/cpp        # Main UI (tabs, mode switching, sync)
+│   │   ├── GuiProcessor.h/cpp         # GUI-processing bridge
+│   │   ├── BankEditorPanel.h/cpp      # Advanced: 5×14 grid per category
+│   │   ├── BankRowComponent.h/cpp     # Advanced: one bank row (14 slots)
+│   │   ├── BankSlotComponent.h/cpp    # Advanced: individual slot cell
+│   │   ├── BankFocusPanel.h/cpp       # Bank: single-bank focus view
+│   │   ├── FocusedSlotRow.h/cpp       # Bank: single slot row with waveform
+│   │   ├── PreviewPanel.h/cpp         # Waveform + audio playback
+│   │   └── FolderDropZone.h/cpp       # Simple: folder drop zone
+│   └── Processing/                    # Core processing modules
+│       ├── ChompiProcessor.h/cpp      # Processing orchestrator
+│       ├── AudioConverter.h/cpp       # Format conversion
+│       ├── ChompiNamer.h/cpp          # CHOMPI naming + constants
+│       └── BankFolderParser.h/cpp     # Bank subfolder detection
 │
 ├── dev_assets/                        # Test samples
 └── logs/                              # Operation logs
@@ -482,12 +503,15 @@ open "chompi_pack_artefacts/Chompi Pack.app"
 
 ### Common File Paths
 ```
-Source/GUI/MainComponent.cpp       # Main GUI logic
-Source/CLI/CliProcessor.cpp        # CLI logic
-Source/ChompiProcessor.cpp         # Shared processing
-Source/AudioConverter.cpp          # Audio conversion
-Source/ChompiNamer.cpp             # CHOMPI naming
-prompts/milestone_X_plan.md        # Feature plans
+Source/GUI/MainComponent.cpp           # Main GUI logic (tabs, mode switching)
+Source/GUI/BankFocusPanel.cpp          # Bank tab panel
+Source/GUI/BankEditorPanel.cpp         # Advanced tab grid
+Source/CLI/CliProcessor.cpp            # CLI logic
+Source/Processing/ChompiProcessor.cpp  # Shared processing orchestrator
+Source/Processing/AudioConverter.cpp   # Audio conversion
+Source/Processing/ChompiNamer.cpp      # CHOMPI naming + constants
+prompts/MILESTONES_OVERVIEW.md         # Always-current roadmap
+prompts/milestone_X_plan.md            # Individual feature plans
 ```
 
 ### Key Constants
@@ -506,16 +530,19 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ## Version History
 
-- **v1.1.0** (Current) - GUI application with output folder selection
-- **v1.0.0** - Initial release with CLI and CHOMPI processing
-- **Milestones 1-3** - Foundation (scanner, converter, namer)
-- **Milestone 4** - GUI application
+- **v2.2.0** (Current) - Bank Focus View (third tab, waveform rows, shared category tabs)
+- **v2.1.0** - M12 structural refactor: Source/Processing/ layout, constants deduplication, bug fixes
+- **v2.0.0** - M7, M8, M9 (base), M10 complete; menu bar, runtime logs, bank distribution fixes
+- **v1.3.0** - M6: Bank-subfolder detection (BankFolderParser)
+- **v1.2.0** - M5: AIFF/MP3/FLAC support + `_double` generation
+- **v1.1.0** - M4: GUI application with folder selection and output
+- **v1.0.0** - M1–M3: CLI with CHOMPI processing, naming, conversion
 
-**Next:** Milestone 5 (Format support: AIFF, MP3, FLAC)
+**Next:** M9 finish (tooltips/animations) → M11 (unit testing) → M13 (open source)
 
 ---
 
-**Last Updated:** February 2, 2026
+**Last Updated:** 2026-03-08
 **Maintainer:** Matt from Atlanta
 **AI Assistant:** This document is specifically for AI assistants working on the codebase
 

@@ -110,6 +110,12 @@ void BankEditorPanel::clearAllBanks()
         bank->clearAllSlots();
 }
 
+void BankEditorPanel::setSlotFile(int bankIdx, int slotIdx, const juce::File& file)
+{
+    if (bankIdx >= 0 && bankIdx < banks.size())
+        banks[bankIdx]->setSlot(slotIdx, file);
+}
+
 void BankEditorPanel::sortAllAlphabetically()
 {
     for (auto* bank : banks)
@@ -251,6 +257,22 @@ void BankEditorPanel::updateSlotVisuals()
 
 // ─── Selection navigation ─────────────────────────────────────────────────────
 
+void BankEditorPanel::notifyPreviewForSelection()
+{
+    if (selection.size() == 1)
+    {
+        auto* slot = getSlotAt(focusCell.row, focusCell.col);
+        if (slot && slot->hasSample())
+            playFocused();
+        else if (onPreviewStop)
+            onPreviewStop();
+    }
+    else
+    {
+        if (onPreviewStop) onPreviewStop();
+    }
+}
+
 void BankEditorPanel::moveFocus(int dr, int dc)
 {
     Cell anchor = (selection.size() > 1) ? getEarliestSelected() : focusCell;
@@ -262,6 +284,7 @@ void BankEditorPanel::moveFocus(int dr, int dc)
     selection.add(next);
     focusCell = next;
     updateSlotVisuals();
+    notifyPreviewForSelection();
 }
 
 void BankEditorPanel::expandSelection(int dRow, int dCol)
@@ -304,6 +327,8 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
     else if (dCol < 0) focusCell = { focusCell.row, newMinCol };
 
     updateSlotVisuals();
+    // expandSelection always produces >1 cells → stop preview
+    if (onPreviewStop) onPreviewStop();
 }
 
 void BankEditorPanel::tabFocus()
@@ -313,6 +338,7 @@ void BankEditorPanel::tabFocus()
     selection.add(next);
     focusCell = next;
     updateSlotVisuals();
+    notifyPreviewForSelection();
 }
 
 void BankEditorPanel::playFocused()
@@ -349,10 +375,12 @@ void BankEditorPanel::handleSlotMouseDown(BankSlotComponent* src, const juce::Mo
     if (e.mods.isShiftDown())
     {
         selectRange(focusCell, c);
+        notifyPreviewForSelection();
     }
     else if (e.mods.isCommandDown())
     {
         toggleCell(c);
+        notifyPreviewForSelection();
     }
     else if (selection.contains(c))
     {
@@ -363,6 +391,7 @@ void BankEditorPanel::handleSlotMouseDown(BankSlotComponent* src, const juce::Mo
     {
         selectCell(c, true);
         dragAnchor = c;
+        notifyPreviewForSelection();
     }
 
     grabKeyboardFocus();
@@ -433,11 +462,17 @@ void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEve
     if (isSelectionDragging && !dragTargetCells.isEmpty())
     {
         commitSelectionDrag(e.mods.isCommandDown());
+        notifyPreviewForSelection();
+    }
+    else if (isDragSelecting)
+    {
+        notifyPreviewForSelection();  // drag-selected range — likely multi → stop
     }
     else if (mouseDownOnSelected)
     {
         // Simple click on a selected cell — collapse selection to just that cell
         selectCell(mouseDownCell, true);
+        notifyPreviewForSelection();
     }
 
     clearDragState();

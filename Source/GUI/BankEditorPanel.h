@@ -35,6 +35,9 @@ public:
     void sortAllAlphabetically();
     void autoFillFromFolder(const juce::File& folder);
 
+    // Individual slot access (used for cross-tab sync)
+    void setSlotFile(int bankIdx, int slotIdx, const juce::File& file);
+
     // Selection / keyboard navigation (driven by MainComponent::keyPressed)
     int  selectionSize()  const { return selection.size(); }
     void clearSelection();
@@ -47,6 +50,9 @@ public:
 
     // Fired whenever any slot content changes
     std::function<void()> onAssignmentsChanged;
+
+    // Fired when preview should stop (multi-cell selection, empty cell focused, or background click)
+    std::function<void()> onPreviewStop;
 
     // Fired when a slot is previewed — passes the grid cell and file
     std::function<void(Cell, const juce::File&)> onSlotClicked;
@@ -123,6 +129,7 @@ private:
     void clearDragState();                  // clears drag targets + resets drag flags
 
     void wireRowCallbacks(BankRowComponent* row, int bankIdx);
+    void notifyPreviewForSelection();   // play if single filled cell; stop otherwise
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BankEditorPanel)
 };

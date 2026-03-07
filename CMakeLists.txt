@@ -40,6 +40,10 @@ target_sources(chompi_pack
         Source/GUI/BankRowComponent.cpp
         Source/GUI/BankEditorPanel.h
         Source/GUI/BankEditorPanel.cpp
+        Source/GUI/FocusedSlotRow.h
+        Source/GUI/FocusedSlotRow.cpp
+        Source/GUI/BankFocusPanel.h
+        Source/GUI/BankFocusPanel.cpp
         Source/GUI/AudioPreviewPlayer.h
         Source/GUI/AudioPreviewPlayer.cpp
         Source/GUI/WaveformDisplay.h

@@ -121,6 +121,9 @@ void PreviewPanel::stopPlayback()
     updatePlayPauseButton();
 }
 
+juce::AudioFormatManager& PreviewPanel::getFormatManager()  { return player.getFormatManager(); }
+juce::AudioThumbnailCache& PreviewPanel::getThumbnailCache() { return player.getThumbnailCache(); }
+
 bool PreviewPanel::isPlaying() const
 {
     return player.isPlaying();
