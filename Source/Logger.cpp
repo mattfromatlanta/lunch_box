@@ -1,7 +1,11 @@
 #include "Logger.h"
 
-Logger::Logger()
+Logger::Logger() : Logger(true) {}
+
+Logger::Logger(bool createLogFile)
 {
+    if (!createLogFile) return;  // callback-only mode — no file
+
     // Generate timestamp for log filename
     juce::Time now = juce::Time::getCurrentTime();
     juce::String timestamp = now.formatted("%Y%m%d_%H%M%S");

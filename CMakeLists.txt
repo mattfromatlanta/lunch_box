@@ -34,6 +34,12 @@ target_sources(chompi_pack
         Source/GUI/GuiProcessor.cpp
         Source/GUI/FolderDropZone.h
         Source/GUI/FolderDropZone.cpp
+        Source/GUI/BankSlotComponent.h
+        Source/GUI/BankSlotComponent.cpp
+        Source/GUI/BankRowComponent.h
+        Source/GUI/BankRowComponent.cpp
+        Source/GUI/BankEditorPanel.h
+        Source/GUI/BankEditorPanel.cpp
         Source/GUI/AudioPreviewPlayer.h
         Source/GUI/AudioPreviewPlayer.cpp
         Source/GUI/WaveformDisplay.h

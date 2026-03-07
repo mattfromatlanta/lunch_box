@@ -47,6 +47,76 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
     return overallSuccess;
 }
 
+ChompiProcessor::ProcessingResult ChompiProcessor::processCategoryFromAssignments(
+    const juce::Array<BankFolderParser::BankAssignment>& assignments,
+    const juce::File& outputFolder,
+    ChompiNamer::Category category,
+    juce::AudioFormatManager& formatManager,
+    AudioConverter& converter)
+{
+    ProcessingResult result;
+    juce::String categoryName   = ChompiNamer::categoryToString(category);
+    juce::String categoryPrefix = categoryName.toLowerCase();
+
+    logger.logLine("Processing " + categoryName + " samples (advanced mode)...");
+    logger.logLine("");
+
+    result.filesProcessed = assignments.size();
+
+    if (assignments.isEmpty())
+    {
+        logger.logLine("");
+        return result;
+    }
+
+    logger.logLine("=== Converting " + categoryName + " Files ===");
+    logger.logLine("");
+
+    for (const auto& assignment : assignments)
+    {
+        juce::String outputFileName = categoryPrefix + "_" +
+                                      juce::String::charToString(assignment.bankLetter) +
+                                      juce::String(assignment.slotNumber) + ".wav";
+
+        auto convResult = converter.convertFileWithName(assignment.sourceFile,
+                                                        outputFolder,
+                                                        outputFileName,
+                                                        formatManager);
+        if (convResult.success)
+        {
+            result.filesConverted++;
+
+            juce::File baseOutput = outputFolder.getChildFile(outputFileName);
+            juce::String doubleName = outputFileName.replace(".wav", "_double.wav");
+            juce::File doubleOutput = outputFolder.getChildFile(doubleName);
+
+            if (converter.generateOptimizedSample(baseOutput, doubleOutput, formatManager))
+                result.optimizedGenerated++;
+        }
+        else if (convResult.skipped)
+        {
+            result.filesSkipped++;
+        }
+        else
+        {
+            result.errors++;
+        }
+
+        logger.logLine("");
+    }
+
+    logger.logLine(categoryName + " conversion complete: " +
+                  juce::String(result.filesConverted) + " files converted, " +
+                  juce::String(result.optimizedGenerated) + " optimized versions generated, " +
+                  juce::String(result.errors) + " errors");
+    logger.logLine("");
+
+    if (result.errors > 0)
+        result.success = false;
+
+    return result;
+}
+
 ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     const juce::File& sourceFolder,
     const juce::File& outputFolder,

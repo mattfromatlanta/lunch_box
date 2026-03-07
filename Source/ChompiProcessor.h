@@ -39,12 +39,20 @@ public:
     bool processSamples(const AudioConfiguration& config,
                        juce::AudioFormatManager& formatManager);
 
-    // Process a single category (cubbi or jammi)
+    // Process a single category (cubbi or jammi) from a source folder
     ProcessingResult processCategory(const juce::File& sourceFolder,
                                      const juce::File& outputFolder,
                                      ChompiNamer::Category category,
                                      juce::AudioFormatManager& formatManager,
                                      AudioConverter& converter);
+
+    // Process a single category from pre-built bank assignments (advanced mode)
+    ProcessingResult processCategoryFromAssignments(
+        const juce::Array<BankFolderParser::BankAssignment>& assignments,
+        const juce::File& outputFolder,
+        ChompiNamer::Category category,
+        juce::AudioFormatManager& formatManager,
+        AudioConverter& converter);
 
 private:
     Logger& logger;

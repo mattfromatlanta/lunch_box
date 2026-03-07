@@ -107,6 +107,25 @@ void PreviewPanel::resized()
     waveformDisplay.setBounds(area);
 }
 
+void PreviewPanel::playFile(const juce::File& file)
+{
+    loadFile(file);
+    player.play();
+    waveformDisplay.startPositionTracking();
+    updatePlayPauseButton();
+}
+
+void PreviewPanel::stopPlayback()
+{
+    player.stop();
+    updatePlayPauseButton();
+}
+
+bool PreviewPanel::isPlaying() const
+{
+    return player.isPlaying();
+}
+
 void PreviewPanel::changeListenerCallback(juce::ChangeBroadcaster*)
 {
     updatePlayPauseButton();

@@ -8,393 +8,211 @@
 
 ### Milestone 1: Audio File Scanner
 **Status:** Complete
-**Description:** Command-line application that scans folders for WAV files and reports metadata (channels, bit depth, sample rate).
+**Description:** CLI app scanning folders for WAV files and reporting metadata.
 
 ### Milestone 2: Audio Format Conversion
 **Status:** Complete
-**Description:** Convert WAV files to standardized format (16-bit 48kHz) while preserving channel configuration.
+**Description:** Convert WAV files to 16-bit 48kHz while preserving channel configuration.
 
 ### Milestone 3: CHOMPI Sampler Naming Schema
 **Status:** Complete
-**Description:** Implement CHOMPI naming convention (cubbi_a1.wav, jammi_b12.wav, etc.) with automatic bank assignment.
+**Description:** CHOMPI naming convention (cubbi_a1.wav, etc.) with automatic bank assignment.
 
 ### Milestone 4: GUI Application
 **Status:** Complete (+ Addendum)
-**Description:** Graphical interface with folder selection, processing controls, and status display.
-**Addendum:** Output folder selection added.
+**Description:** Graphical interface with folder selection, processing controls, status display, and output folder selection.
 
----
-
-## Planned Milestones 📋
-
-### Milestone 5: Additional Input Format Support + Optimized Sample Generation ✅
+### Milestone 5: Additional Input Format Support + Optimized Sample Generation
 **Status:** Complete
-**Priority:** High
-**Estimated Effort:** 3-5 days
-**Description:** Expand input support beyond WAV to include AIFF, MP3, and FLAC formats, and automatically generate CHOMPI-optimized samples (pitched up one octave) for complete library creation.
+**Description:** AIFF, MP3, FLAC input support. Automatic `_double` (octave-up) generation for every sample. Duration validation (max 2 minutes). Complete CHOMPI library output (base + optimized).
 
-**Key Features:**
-- AIFF (.aiff, .aif) support
-- MP3 (.mp3) support via JUCE decoder
-- FLAC (.flac) lossless support
-- Automatic format detection
-- Mixed format batch processing
-- **Optimized sample generation** (pitched up one octave, `_double` suffix)
-- Duration validation (max 2 minutes per sample)
-- Complete CHOMPI library output (base + optimized versions)
-
-**Technical Changes:**
-- CMakeLists.txt: Enable FLAC and MP3 in JUCE
-- FileSystemHelper: Update file search patterns
-- AudioConverter: Add optimized sample generation and duration validation
-- ChompiProcessor: Generate both base and `_double` versions
-- Format-agnostic architecture maintained
-
-**Output Changes:**
-- Previous: 70 files per category (70 cubbi + 70 jammi = 140 total)
-- New: 140 files per category (70 base + 70 optimized = 280 total)
-- Input limit unchanged: 70 samples per category (hardware constraint)
-
-**Benefits:**
-- Eliminates pre-conversion step for multiple formats
-- Supports diverse audio sources
-- Generates complete CHOMPI libraries automatically
-- No manual _double file creation needed
-- CHOMPI hardware doesn't need to generate optimized files
-- Maintains quality appropriately
-- Significantly improves workflow efficiency
-
----
-
-### Milestone 6: Bank-Specific Folder Organization ✅
+### Milestone 6: Bank-Specific Folder Organization
 **Status:** Complete
-**Priority:** High
-**Estimated Effort:** 3-5 days
-**Description:** Recognize bank subfolders (A, B, C, D, E) and automatically assign samples to corresponding banks.
-
-**Key Features:**
-- Detect bank folders: `A/`, `B/`, `bank_a/`, `Bank C/`, etc.
-- Assign samples in bank folders to specific banks
-- Fill remaining slots with unsorted samples
-- Mixed mode: bank folders + loose files
-
-**Example:**
-```
-cubbi/
-  A/           → Bank A
-    kick.wav
-    snare.wav
-  B/           → Bank B
-    clap.wav
-  tom1.wav     → Unsorted (fills next available)
-  tom2.wav
-```
-
-**Technical Changes:**
-- New BankFolderParser module
-- Update ChompiProcessor assignment logic
-- Enhanced logging
-
-**Benefits:**
-- Organized libraries maintain organization
-- Predictable bank assignments
-- Flexible (supports both approaches)
-- Power user feature
-
----
+**Description:** Detect bank subfolders (A–E, bank_a, Bank A, etc.) and assign samples to matching banks. Unsorted files fill empty banks first, then remaining space in folder-banks. Overflow files logged by name. BankFolderParser module.
 
 ### Milestone 7: Drag and Drop Folder Selection
-**Priority:** Medium
-**Estimated Effort:** 2-3 days
-**Description:** Enable drag-and-drop of folders onto GUI instead of using file browser.
+**Status:** Complete
+**Description:** FolderDropZone component with FileDragAndDropTarget. Folders dragged from Finder populate cubbi, jammi, or output zones with visual hover feedback. Button selection still available.
 
-**Key Features:**
-- Drag folders from Finder onto drop zones
-- Visual feedback (hover highlight)
-- Same validation as button selection
-- Works for cubbi, jammi, and output folders
+### Milestone 9 (partial): GUI Look and Feel — Base Theme
+**Status:** Substantially Complete
+**Description:** Dark navy color palette, monospaced status log, section labels, typography hierarchy, accent-colored process button, styled drop zones. Remaining: tooltips, transition animations.
 
-**Technical Changes:**
-- New FolderDropZone component
-- Implement FileDragAndDropTarget interface
-- Visual hover states
+### Milestone 10: Sample Waveform and Play Preview
+**Status:** Complete
+**Description:** WaveformDisplay (AudioThumbnail), AudioPreviewPlayer (AudioTransportSource + AudioDeviceManager), PreviewPanel with play/pause/stop controls and file info. Auto-previews first file when a folder is selected.
 
-**Benefits:**
-- Faster workflow
-- More intuitive interface
-- Reduced clicks
-- Modern UX
+### Out-of-Plan Work Completed (2026-03-08 session)
+- **Milestone 8 (Individual Sample Management):** Advanced mode with 5-bank × 14-slot grid (BankSlotComponent, BankRowComponent, BankEditorPanel). External file drop, internal slot-to-slot drag-reorder, right-click context menu, browse-for-file, clear, sort A-Z, auto-fill from folder. Mode toggle (Simple / Advanced). Category tabs (Cubbi / Jammi).
+- **Output folder redesign:** Default `~/Desktop/chompis`, editable name field, decompose selected path into base+name, clean-before-export toggle.
+- **Open Output button:** Activates after successful export; opens output folder in Finder (inside the folder).
+- **Persistent folder memory:** Last cubbi, jammi, and output folders remembered across sessions via `ApplicationProperties`. Advanced-mode file pickers recall last cubbi/jammi location and start inside the folder.
+- **Auto-Fill from Folder uses BankFolderParser:** Same bank-subfolder detection and overflow logging logic as the exporter. Overflow files reported to the status log.
+- **Future note (not yet implemented):** Chompi Pack should eventually let the user select a default application for opening the output folder (e.g. Finder, a DAW, a file manager). This should be added as a dedicated future milestone or sub-task under M9 polish.
+
+### Out-of-Plan Work Completed (2026-03-07 session)
+- **macOS menu bar:** File menu (Open Cubbi/Jammi/Output folders, Process Samples) and Settings menu (Show Runtime Logs toggle, Show Log Folder in Finder, Clear Status Log) via AppMenuBar / MenuBarModel.
+- **Runtime log toggle:** Logger callback wired to GUI status window. Settings → Show Runtime Logs enables per-file debug output alongside high-level status messages.
+- **Bank distribution fix:** Corrected unsorted-file distribution to fill empty banks before touching folder-bank overflow slots. Overflow files logged individually by name.
+- **Processing result improvements:** Output count now reflects source samples processed (not base + double). Doubles verified and reported. Modal confirmation dialogs removed; all results go to the status log.
+- **audio_dev_mcp tools:** Added `build_project`, `launch_project`, `get_repos` tools. Approved melatonin_inspector as a trusted dependency.
+
+---
+
+## Remaining Milestones 📋
+
+### Milestone 9 (remainder): GUI Polish
+**Priority:** Low-Medium
+**Estimated Effort:** 1-2 days
+**Description:** Complete the remaining GUI polish items not covered in the base theme work.
+
+**Remaining items:**
+- Tooltips on all controls (folder zones, process button, status area)
+- Hover/focus transition animations on drop zones and buttons
+- Any remaining spacing or alignment refinements
+
+**Already done (do not re-implement):**
+- Dark color palette and color theme system
+- Typography hierarchy and section labels
+- Drop zone styling and hover highlight
+- Menu bar and settings
+- Monospaced status log
 
 ---
 
 ### Milestone 8: Individual Sample Management
 **Priority:** Medium-High
 **Estimated Effort:** 1-2 weeks
-**Description:** Advanced mode with visual bank editor for granular sample management.
+**Description:** Advanced mode with a visual bank editor for slot-by-slot sample management alongside the existing folder-based simple mode.
 
 **Key Features:**
-- Bank editor showing all 70 slots
-- Drag individual samples into specific slots
-- Reorder samples within/between banks
-- Browse files into specific slots
-- Auto-fill, clear, sort operations
+- Toggle between Simple Mode (current folder-based) and Advanced Mode (slot editor)
+- Bank editor showing all 70 slots across 5 banks (A–E, 14 slots each)
+- Drag individual audio files from Finder into specific slots
+- Reorder samples within and between banks via drag
+- Browse file into a specific slot via right-click / context menu
+- Auto-fill, clear bank, and sort operations
+- Per-slot waveform thumbnail (reuses WaveformDisplay)
+- Per-slot preview on click (reuses AudioPreviewPlayer)
 
-**UI Addition:**
+**UI Structure:**
 ```
-Simple Mode: Folder-based (current, default)
-Advanced Mode: Slot-by-slot editor (new, power users)
+Simple Mode (default):    [Cubbi Zone] [Jammi Zone] [Output Zone] → Process
+Advanced Mode:            [Bank Editor Panel — 5 banks × 14 slots per category]
+                          [Preview Panel] → Process
 ```
 
 **Technical Changes:**
-- BankSlotComponent (individual slots)
-- BankRowComponent (14 slots per bank)
-- BankEditorPanel (5 banks)
-- Mode switching in MainComponent
+- BankSlotComponent — single slot (waveform thumb, filename, drag target)
+- BankRowComponent — 14 slots for one bank
+- BankEditorPanel — 5 banks, tabbed cubbi/jammi
+- Mode toggle button in MainComponent
+- BankEditorPanel feeds directly into ChompiProcessor (same backend)
 
-**Benefits:**
-- Granular control
-- Precise organization
-- Professional features
-- Flexible workflows
+**Dependencies:** PreviewPanel and WaveformDisplay already complete (M10).
 
 ---
 
-### Milestone 9: GUI Look and Feel Refinement
-**Priority:** Medium
-**Estimated Effort:** 1 week
-**Description:** Polish GUI with professional aesthetics, consistent design, and modern styling.
-
-**Key Features:**
-- Professional color scheme (audio production theme)
-- Consistent typography and spacing
-- Icons for common actions
-- Smooth animations and transitions
-- Tooltips for all controls
-- Dark mode support (optional)
-
-**Design Elements:**
-- Color theme system
-- Typography hierarchy
-- 8px grid spacing
-- Custom LookAndFeel class
-- Icon integration
-
-**Benefits:**
-- Professional appearance
-- Improved usability
-- Better user experience
-- Competitive with commercial tools
-
----
-
-### Milestone 10: Sample Waveform and Play Preview
-**Priority:** High (for power users)
-**Estimated Effort:** 1 week
-**Description:** Visual waveform display and audio playback preview for samples.
-
-**Key Features:**
-- Waveform visualization
-- Play/pause/stop controls
-- Thumbnail waveforms in bank slots
-- Volume control
-- Position/time display
-
-**Technical Components:**
-- WaveformDisplay (using AudioThumbnail)
-- AudioPreviewPlayer (using AudioTransportSource)
-- Preview panel in GUI
-- Integration with bank slots
-
-**Benefits:**
-- Essential for sample management
-- Professional feature
-- Reduces guesswork
-- Industry standard
-
----
-
-### Milestone 11: Unit Testing Review
+### Milestone 11: Unit Testing
 **Priority:** High (before open source)
 **Estimated Effort:** 1-2 weeks
-**Description:** Comprehensive unit testing coverage for all core modules.
+**Description:** Comprehensive unit test coverage for all core modules.
 
 **Test Scope:**
-- ChompiNamer (bank calculations, naming)
-- AudioConverter (format conversion, quality)
-- BankFolderParser (detection, assignment)
-- FileSystemHelper (file discovery, validation)
-- Logger (file creation, formatting)
-- ChompiProcessor (end-to-end integration)
+- ChompiNamer — bank calculations, slot numbering, naming
+- AudioConverter — format conversion, `_double` generation, duration validation
+- BankFolderParser — folder detection, bank assignment, unsorted distribution, overflow
+- FileSystemHelper — file discovery, extension filtering
+- Logger — file creation, formatting, callback
+- ChompiProcessor — end-to-end integration
 
 **Goals:**
-- 80%+ code coverage
-- Unit tests (<100ms)
-- Integration tests (<30s)
-- CI/CD pipeline
-- Code coverage reporting
-
-**Benefits:**
-- Confidence in changes
-- Regression prevention
-- Documentation via tests
-- Professional quality
+- 80%+ code coverage on core modules
+- Unit tests run in <100ms each
+- Integration tests run in <30s
+- CI/CD pipeline (GitHub Actions)
 
 ---
 
 ### Milestone 12: Code Review and Refactoring
 **Priority:** High (before open source)
-**Estimated Effort:** 2-3 weeks
-**Description:** Comprehensive code review to ensure quality, maintainability, and best practices.
+**Estimated Effort:** 1-2 weeks
+**Description:** Code review pass for quality, consistency, and maintainability.
 
 **Review Areas:**
-- Naming conventions
-- Error handling
-- Memory management
+- Naming conventions (consistent PascalCase/camelCase throughout)
 - Const correctness
-- Function length (<50 lines)
-- Code duplication
-- Documentation
-- Performance
-- Security
+- Error handling completeness
+- Memory management (ownership, RAII)
+- Function length and complexity
+- Dead code removal
+- Documentation / inline comments where logic is non-obvious
 
 **Tools:**
 - clang-tidy (static analysis)
-- cppcheck (additional analysis)
-- Valgrind/Instruments (memory leaks)
-- Doxygen (documentation)
-
-**Benefits:**
-- Clean codebase
-- Easy for contributors
-- Professional quality
-- Ready for open source
+- Instruments (memory/performance profiling on macOS)
 
 ---
 
 ### Milestone 13: Open Source Publication Preparation
 **Priority:** High (final step)
-**Estimated Effort:** 2-3 weeks
-**Description:** Prepare for public release as open-source project.
+**Estimated Effort:** 1-2 weeks
+**Description:** Prepare for public release.
 
 **Requirements:**
-- License selection (MIT recommended)
-- License headers in all files
-- Professional README
+- MIT license + license headers in all source files
+- Professional README (user-facing, with screenshots)
 - CONTRIBUTING.md
-- CODE_OF_CONDUCT.md
-- Issue/PR templates
-- CI/CD pipeline
-- Release builds (macOS, Windows, Linux)
-- Distribution packages (Homebrew, Chocolatey, Snap)
+- Issue and PR templates
+- CI/CD pipeline building on macOS (GitHub Actions)
+- Release build (signed .app or DMG for macOS)
 
 **Documentation:**
-- User guide
-- Developer guide
-- API documentation
+- Updated HOW_TO.md
+- Developer guide (architecture overview)
 - Changelog
-- Installation instructions
-
-**Community:**
-- GitHub setup
-- Issue tracking
-- Discussion forums
-- Project website (optional)
-
-**Benefits:**
-- Public contribution
-- Community growth
-- Long-term sustainability
-- Professional reputation
 
 ---
 
-## Milestone Dependencies
+## Current Status and Next Steps
 
 ```
-M1 → M2 → M3 → M4 (Done)
-              ↓
-              M5 (Input formats)
-              ↓
-              M6 (Bank folders)
-              ↓
-              M7 (Drag-drop) → M8 (Individual samples)
-              ↓                ↓
-              M9 (Look & feel)
-              ↓
-              M10 (Waveform/preview)
-              ↓
-              M11 (Testing) → M12 (Code review) → M13 (Open source)
+DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M10
+                                        ↓
+                                   M9 (base theme done)
 ```
 
-## Recommended Order
-
-**Phase 1: Core Features (M5-M6)**
-- M5: Format support (high value, easy)
-- M6: Bank folders (high value, medium effort)
-
-**Phase 2: UX Enhancement (M7, M9)**
-- M7: Drag-drop (quick win)
-- M9: Look and feel (polish)
-
-**Phase 3: Power Features (M8, M10)**
-- M8: Individual samples (complex, powerful)
-- M10: Waveform/preview (essential for M8)
-
-**Phase 4: Quality & Release (M11-M13)**
-- M11: Testing (foundation)
-- M12: Code review (quality)
-- M13: Open source (publication)
+**Recommended remaining order:**
+1. **M9 finish** — tooltips + animations (quick, 1-2 days)
+2. **M8** — individual sample management (the major remaining feature)
+3. **M11** — unit testing (before adding more complexity)
+4. **M12** — code review and refactor
+5. **M13** — open source release
 
 ## Version Roadmap
 
-- **v1.1.0:** M1-M4 complete
-- **v1.2.0:** M5 complete (format support + optimized sample generation)
-- **v1.3.0:** Current (M6 complete — bank folder organization)
-- **v1.3.0:** M6 (Bank folders)
-- **v1.4.0:** M7 + M9 (Drag-drop + Polish)
-- **v2.0.0:** M8 + M10 (Advanced mode + Preview)
-- **v2.1.0:** M11 + M12 (Testing + Review)
-- **v3.0.0:** M13 (Open source release)
+- **v1.1.0:** M1–M4 complete
+- **v1.2.0:** M5 complete (format support + optimized samples)
+- **v1.3.0:** M6 complete (bank folder organization)
+- **v2.0.0:** Current — M7, M9 (base), M10 complete + menu bar, runtime logs, bank distribution fixes
+- **v2.1.0:** M9 finish + M8 (advanced slot editor)
+- **v2.2.0:** M11 + M12 (testing + review)
+- **v3.0.0:** M13 (open source release)
 
-## Effort Summary
+## Effort Summary (Remaining)
 
 | Milestone | Effort | Priority | Value |
 |-----------|--------|----------|-------|
-| M5 | 2-3 days | High | High |
-| M6 | 3-5 days | High | High |
-| M7 | 2-3 days | Medium | Medium |
+| M9 finish | 1-2 days | Low-Medium | Medium |
 | M8 | 1-2 weeks | Medium-High | Very High |
-| M9 | 1 week | Medium | High |
-| M10 | 1 week | High | Very High |
 | M11 | 1-2 weeks | High | High |
-| M12 | 2-3 weeks | High | High |
-| M13 | 2-3 weeks | High | High |
+| M12 | 1-2 weeks | High | High |
+| M13 | 1-2 weeks | High | High |
 
-**Total:** ~10-14 weeks of development
-
-## Success Metrics
-
-**Technical:**
-- All tests passing
-- 80%+ code coverage
-- Zero memory leaks
-- <5s startup time
-- Fast conversion (>40 MB/sec)
-
-**User Experience:**
-- Intuitive interface
-- Clear documentation
-- Helpful error messages
-- Professional appearance
-
-**Community:**
-- Active GitHub repository
-- Regular contributions
-- Positive user feedback
-- Growing user base
+**Remaining total:** ~5-9 weeks of development
 
 ---
 
-**Last Updated:** February 2, 2026
-**Current Status:** Milestone 4 Complete (+ Addendum)
-**Next Milestone:** M5 (Format Support)
+**Last Updated:** 2026-03-07
+**Current Version:** v2.0.0
+**Next Milestone:** M9 finish (tooltips/animations) → M8 (individual sample management)

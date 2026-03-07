@@ -11,7 +11,8 @@
 class Logger
 {
 public:
-    Logger();
+    Logger();                       // creates timestamped log file (normal use)
+    explicit Logger(bool createLogFile);  // false = callback-only, no file created
     ~Logger();
 
     // Write message to both console and log file

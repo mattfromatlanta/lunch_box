@@ -6,6 +6,7 @@
 #include "../AudioConfiguration.h"
 #include "../Logger.h"
 #include "../ChompiProcessor.h"
+#include "../BankFolderParser.h"
 
 //==============================================================================
 // GuiProcessor - Bridge between GUI and processing logic
@@ -31,11 +32,16 @@ public:
         juce::String message;
     };
 
-    // Process files from GUI selections
-    // Returns result with file counts and success status
+    // Simple mode: process files from folder selections
     ProcessingResult processFiles(const juce::File& cubbiFolder,
                                   const juce::File& jammiFolder,
                                   const juce::File& outputFolder);
+
+    // Advanced mode: process from pre-built bank assignments
+    ProcessingResult processFilesFromAssignments(
+        const juce::Array<BankFolderParser::BankAssignment>& cubbiAssignments,
+        const juce::Array<BankFolderParser::BankAssignment>& jammiAssignments,
+        const juce::File& outputFolder);
 
     // Set a callback to receive all Logger output (for GUI runtime log)
     // Pass nullptr to disable
