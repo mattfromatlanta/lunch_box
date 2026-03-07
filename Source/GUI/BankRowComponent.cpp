@@ -18,7 +18,7 @@ BankRowComponent::BankRowComponent(char letter)
     bankLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(bankLabel);
 
-    for (int i = 0; i < SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
     {
         auto* slot = slots.add(new BankSlotComponent(i + 1));
 
@@ -27,7 +27,8 @@ BankRowComponent::BankRowComponent(char letter)
             // Update the bank label to show count
             int filled = getFilledCount();
             bankLabel.setText(juce::String::charToString(bankLetter).toUpperCase()
-                              + "\n" + juce::String(filled) + "/14",
+                              + "\n" + juce::String(filled) + "/" +
+                              juce::String(ChompiNamer::SLOTS_PER_BANK),
                               juce::dontSendNotification);
             if (onAssignmentsChanged) onAssignmentsChanged();
         };
@@ -53,13 +54,13 @@ BankRowComponent::BankRowComponent(char letter)
 
 void BankRowComponent::setSlot(int index, const juce::File& file)
 {
-    if (index >= 0 && index < SLOTS_PER_BANK)
+    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK)
         slots[index]->setSample(file);
 }
 
 void BankRowComponent::clearSlot(int index)
 {
-    if (index >= 0 && index < SLOTS_PER_BANK)
+    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK)
         slots[index]->clearSample();
 }
 
@@ -71,14 +72,14 @@ void BankRowComponent::clearAllSlots()
 
 juce::File BankRowComponent::getSlot(int index) const
 {
-    if (index >= 0 && index < SLOTS_PER_BANK)
+    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK)
         return slots[index]->getSample();
     return juce::File{};
 }
 
 BankSlotComponent* BankRowComponent::getSlotComponent(int index)
 {
-    if (index >= 0 && index < SLOTS_PER_BANK) return slots[index];
+    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK) return slots[index];
     return nullptr;
 }
 
@@ -110,7 +111,7 @@ void BankRowComponent::sortSlotsAlphabetically()
     filled.sort(comp);
 
     // Put sorted files back in order, clear remaining slots
-    for (int i = 0; i < SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
     {
         if (i < filled.size())
             slots[i]->setSample(filled[i]);
@@ -122,7 +123,7 @@ void BankRowComponent::sortSlotsAlphabetically()
 void BankRowComponent::autoFillFromFiles(const juce::Array<juce::File>& files, int startIndex)
 {
     int fileIdx = startIndex;
-    for (int i = 0; i < SLOTS_PER_BANK && fileIdx < files.size(); ++i)
+    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK && fileIdx < files.size(); ++i)
     {
         if (!slots[i]->hasSample())
         {
@@ -135,14 +136,14 @@ void BankRowComponent::autoFillFromFiles(const juce::Array<juce::File>& files, i
 juce::Array<BankFolderParser::BankAssignment> BankRowComponent::getAssignments() const
 {
     juce::Array<BankFolderParser::BankAssignment> assignments;
-    for (int i = 0; i < SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
     {
         if (slots[i]->hasSample())
         {
             BankFolderParser::BankAssignment a;
-            a.sourceFile    = slots[i]->getSample();
-            a.bankLetter    = bankLetter;
-            a.slotNumber    = i + 1;
+            a.sourceFile     = slots[i]->getSample();
+            a.bankLetter     = bankLetter;
+            a.slotNumber     = i + 1;
             a.fromBankFolder = false;
             assignments.add(a);
         }
@@ -161,7 +162,7 @@ void BankRowComponent::resized()
 
     bankLabel.setBounds(area.removeFromLeft(LABEL_WIDTH));
 
-    int slotW = area.getWidth() / SLOTS_PER_BANK;
+    int slotW = area.getWidth() / ChompiNamer::SLOTS_PER_BANK;
     for (auto* slot : slots)
         slot->setBounds(area.removeFromLeft(slotW));
 }

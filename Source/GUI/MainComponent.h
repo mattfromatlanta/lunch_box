@@ -121,6 +121,7 @@ private:
     void processFilesAdvanced();
     void updateProcessButtonState();
     void appendStatus(const juce::String& message);
+    void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
 
     static int countAudioFiles(const juce::File& folder);
     void previewFirstAudioFile(const juce::File& folder);

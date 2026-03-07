@@ -1,4 +1,5 @@
 #include "BankSlotComponent.h"
+#include "../FileSystemHelper.h"
 
 namespace
 {
@@ -150,12 +151,8 @@ void BankSlotComponent::mouseExit(const juce::MouseEvent&)
 
 bool BankSlotComponent::isSupportedAudioFile(const juce::String& path)
 {
-    auto lower = path.toLowerCase();
-    return lower.endsWith(".wav")  ||
-           lower.endsWith(".aiff") ||
-           lower.endsWith(".aif")  ||
-           lower.endsWith(".mp3")  ||
-           lower.endsWith(".flac");
+    auto ext = "*" + juce::File(path).getFileExtension().toLowerCase();
+    return FileSystemHelper::getSupportedAudioExtensions().contains(ext);
 }
 
 bool BankSlotComponent::isInterestedInFileDrag(const juce::StringArray& files)

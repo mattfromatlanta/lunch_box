@@ -5,8 +5,8 @@
 #include <functional>
 #include "../AudioConfiguration.h"
 #include "../Logger.h"
-#include "../ChompiProcessor.h"
-#include "../BankFolderParser.h"
+#include "../Processing/ChompiProcessor.h"
+#include "../Processing/BankFolderParser.h"
 
 //==============================================================================
 // GuiProcessor - Bridge between GUI and processing logic

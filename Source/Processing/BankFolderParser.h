@@ -2,7 +2,7 @@
 
 #include <juce_core/juce_core.h>
 #include <map>
-#include "Logger.h"
+#include "../Logger.h"
 #include "ChompiNamer.h"
 
 //==============================================================================
@@ -37,10 +37,6 @@ public:
 
 private:
     Logger& logger;
-
-    static constexpr int SLOTS_PER_BANK = 14;
-    static constexpr int NUM_BANKS = 5;
-    static constexpr int MAX_FILES = 70;
 
     // Find all supported audio files in a folder
     static void findAudioFiles(const juce::File& folder,

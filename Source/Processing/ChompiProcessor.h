@@ -2,10 +2,10 @@
 
 #include <juce_core/juce_core.h>
 #include <juce_audio_formats/juce_audio_formats.h>
-#include "Logger.h"
+#include "../Logger.h"
 #include "ChompiNamer.h"
 #include "AudioConverter.h"
-#include "AudioConfiguration.h"
+#include "../AudioConfiguration.h"
 #include "BankFolderParser.h"
 
 //==============================================================================
@@ -56,4 +56,12 @@ public:
 
 private:
     Logger& logger;
+
+    // Shared conversion loop used by both processCategory and processCategoryFromAssignments
+    ProcessingResult runConversions(
+        const juce::Array<BankFolderParser::BankAssignment>& assignments,
+        const juce::File& outputFolder,
+        ChompiNamer::Category category,
+        juce::AudioFormatManager& formatManager,
+        AudioConverter& converter);
 };

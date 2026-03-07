@@ -2,8 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "BankRowComponent.h"
-#include "../ChompiNamer.h"
-#include "../BankFolderParser.h"
+#include "../Processing/ChompiNamer.h"
+#include "../Processing/BankFolderParser.h"
 
 //==============================================================================
 // BankEditorPanel - All 5 banks (A–E) for one CHOMPI category (M8)
@@ -80,8 +80,6 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    static constexpr int NUM_BANKS     = 5;
-    static constexpr int SLOTS_PER_BANK = 14;
     static constexpr int ROW_HEIGHT    = 52;
     static constexpr int ROW_GAP       = 4;
     static constexpr int BUTTON_HEIGHT = 28;

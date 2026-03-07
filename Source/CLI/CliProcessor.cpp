@@ -1,7 +1,7 @@
 #include "CliProcessor.h"
-#include "../AudioConverter.h"
+#include "../Processing/AudioConverter.h"
 #include "../FileSystemHelper.h"
-#include "../ChompiProcessor.h"
+#include "../Processing/ChompiProcessor.h"
 
 CliProcessor::CliProcessor()
 {

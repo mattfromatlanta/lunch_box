@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "BankSlotComponent.h"
-#include "../BankFolderParser.h"
+#include "../Processing/BankFolderParser.h"
 
 //==============================================================================
 // BankRowComponent - One CHOMPI bank (A–E) with 14 slots (M8)
@@ -47,7 +47,6 @@ private:
     juce::Label bankLabel;
     juce::OwnedArray<BankSlotComponent> slots;  // 14 slots
 
-    static constexpr int SLOTS_PER_BANK = 14;
     static constexpr int LABEL_WIDTH    = 38;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BankRowComponent)

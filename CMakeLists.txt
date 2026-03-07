@@ -48,14 +48,14 @@ target_sources(chompi_pack
         Source/GUI/PreviewPanel.cpp
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
-        Source/AudioConverter.h
-        Source/AudioConverter.cpp
-        Source/ChompiNamer.h
-        Source/ChompiNamer.cpp
-        Source/ChompiProcessor.h
-        Source/ChompiProcessor.cpp
-        Source/BankFolderParser.h
-        Source/BankFolderParser.cpp)
+        Source/Processing/AudioConverter.h
+        Source/Processing/AudioConverter.cpp
+        Source/Processing/ChompiNamer.h
+        Source/Processing/ChompiNamer.cpp
+        Source/Processing/ChompiProcessor.h
+        Source/Processing/ChompiProcessor.cpp
+        Source/Processing/BankFolderParser.h
+        Source/Processing/BankFolderParser.cpp)
 
 # Link required JUCE modules
 target_link_libraries(chompi_pack
@@ -88,8 +88,8 @@ juce_add_console_app(test_chompi_namer
 target_sources(test_chompi_namer
     PRIVATE
         Source/TestChompiNamer.cpp
-        Source/ChompiNamer.h
-        Source/ChompiNamer.cpp
+        Source/Processing/ChompiNamer.h
+        Source/Processing/ChompiNamer.cpp
         Source/Logger.h
         Source/Logger.cpp)
 

@@ -6,13 +6,31 @@ namespace
     const juce::Colour accentCol   { 0xff4caf50 };
     const juce::Colour buttonCol   { 0xff2a3a4a };
     const juce::Colour buttonTxt   { 0xffaabbcc };
+
+    struct CellFile
+    {
+        BankEditorPanel::Cell c;
+        juce::File f;
+    };
+
+    // Sort an array of CellFile by (row, col) ascending — used for stable swap pairing
+    static void sortCellsRowMajor(juce::Array<CellFile>& arr)
+    {
+        for (int i = 0; i < arr.size() - 1; ++i)
+            for (int j = i + 1; j < arr.size(); ++j)
+            {
+                auto a = arr[i], b = arr[j];
+                if (b.c.row < a.c.row || (b.c.row == a.c.row && b.c.col < a.c.col))
+                    arr.swap(i, j);
+            }
+    }
 }
 
 BankEditorPanel::BankEditorPanel(ChompiNamer::Category cat)
     : category(cat)
 {
     const char letters[] = {'a', 'b', 'c', 'd', 'e'};
-    for (int i = 0; i < NUM_BANKS; ++i)
+    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
     {
         auto* row = banks.add(new BankRowComponent(letters[i]));
         wireRowCallbacks(row, i);
@@ -46,7 +64,7 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
     row->getStartDirectory    = [this]() -> juce::File { return (getStartDirectory) ? getStartDirectory() : juce::File{}; };
     row->onFolderBrowsed      = [this](juce::File dir)  { if (onFolderBrowsed) onFolderBrowsed(dir); };
 
-    for (int s = 0; s < SLOTS_PER_BANK; ++s)
+    for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
     {
         if (auto* slot = row->getSlotComponent(s))
         {
@@ -134,7 +152,7 @@ void BankEditorPanel::autoFillFromFolder(const juce::File&)
         for (const auto& a : assignments)
         {
             int bankIdx = (int)(a.bankLetter - 'a');
-            if (bankIdx >= 0 && bankIdx < NUM_BANKS)
+            if (bankIdx >= 0 && bankIdx < ChompiNamer::NUM_BANKS)
                 banks[bankIdx]->setSlot(a.slotNumber - 1, a.sourceFile);
         }
 
@@ -153,7 +171,7 @@ BankSlotComponent* BankEditorPanel::getSlotAt(int b, int s) const
 BankEditorPanel::Cell BankEditorPanel::getCellFor(BankSlotComponent* slot) const
 {
     for (int b = 0; b < banks.size(); ++b)
-        for (int s = 0; s < SLOTS_PER_BANK; ++s)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
             if (banks[b]->getSlotComponent(s) == slot)
                 return {b, s};
     return {-1, -1};
@@ -166,7 +184,7 @@ BankEditorPanel::Cell BankEditorPanel::getCellAtPoint(juce::Point<int> pt) const
         auto* bank = banks[b];
         if (!bank->getBounds().contains(pt)) continue;
         auto local = pt - bank->getBounds().getPosition();
-        for (int s = 0; s < SLOTS_PER_BANK; ++s)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = bank->getSlotComponent(s))
                 if (slot->getBounds().contains(local))
                     return {b, s};
@@ -221,8 +239,8 @@ void BankEditorPanel::clearSelection()
 
 void BankEditorPanel::updateSlotVisuals()
 {
-    for (int b = 0; b < NUM_BANKS; ++b)
-        for (int s = 0; s < SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = getSlotAt(b, s))
             {
                 Cell c = {b, s};
@@ -237,8 +255,8 @@ void BankEditorPanel::moveFocus(int dr, int dc)
 {
     Cell anchor = (selection.size() > 1) ? getEarliestSelected() : focusCell;
     Cell next = {
-        juce::jlimit(0, NUM_BANKS     - 1, anchor.row + dr),
-        juce::jlimit(0, SLOTS_PER_BANK - 1, anchor.col + dc)
+        juce::jlimit(0, ChompiNamer::NUM_BANKS      - 1, anchor.row + dr),
+        juce::jlimit(0, ChompiNamer::SLOTS_PER_BANK - 1, anchor.col + dc)
     };
     selection.clear();
     selection.add(next);
@@ -251,8 +269,8 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
     if (selection.isEmpty()) return;
 
     // Compute bounding box of current selection
-    int minRow = NUM_BANKS,      maxRow = -1;
-    int minCol = SLOTS_PER_BANK, maxCol = -1;
+    int minRow = ChompiNamer::NUM_BANKS,      maxRow = -1;
+    int minCol = ChompiNamer::SLOTS_PER_BANK, maxCol = -1;
     for (const auto& c : selection)
     {
         minRow = std::min(minRow, c.row); maxRow = std::max(maxRow, c.row);
@@ -263,9 +281,9 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
     int newMinRow = minRow, newMaxRow = maxRow;
     int newMinCol = minCol, newMaxCol = maxCol;
 
-    if      (dRow > 0) newMaxRow = std::min(maxRow + 1, NUM_BANKS      - 1);
+    if      (dRow > 0) newMaxRow = std::min(maxRow + 1, ChompiNamer::NUM_BANKS      - 1);
     else if (dRow < 0) newMinRow = std::max(minRow - 1, 0);
-    if      (dCol > 0) newMaxCol = std::min(maxCol + 1, SLOTS_PER_BANK - 1);
+    if      (dCol > 0) newMaxCol = std::min(maxCol + 1, ChompiNamer::SLOTS_PER_BANK - 1);
     else if (dCol < 0) newMinCol = std::max(minCol - 1, 0);
 
     // Already at the border — nothing to do
@@ -290,7 +308,7 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
 
 void BankEditorPanel::tabFocus()
 {
-    Cell next = { (focusCell.row + 1) % NUM_BANKS, focusCell.col };
+    Cell next = { (focusCell.row + 1) % ChompiNamer::NUM_BANKS, focusCell.col };
     selection.clear();
     selection.add(next);
     focusCell = next;
@@ -389,8 +407,8 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* src, const juce::Mo
         int dc = hover.col - selectionDragStart.col;
 
         // Bounding box of the current selection
-        int minRow = NUM_BANKS,     maxRow = -1;
-        int minCol = SLOTS_PER_BANK, maxCol = -1;
+        int minRow = ChompiNamer::NUM_BANKS,      maxRow = -1;
+        int minCol = ChompiNamer::SLOTS_PER_BANK, maxCol = -1;
         for (const auto& c : selection)
         {
             minRow = std::min(minRow, c.row);  maxRow = std::max(maxRow, c.row);
@@ -398,8 +416,8 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* src, const juce::Mo
         }
 
         // Clamp so entire selection stays within the grid
-        dr = juce::jlimit(-minRow, (NUM_BANKS      - 1) - maxRow, dr);
-        dc = juce::jlimit(-minCol, (SLOTS_PER_BANK - 1) - maxCol, dc);
+        dr = juce::jlimit(-minRow, (ChompiNamer::NUM_BANKS      - 1) - maxRow, dr);
+        dc = juce::jlimit(-minCol, (ChompiNamer::SLOTS_PER_BANK - 1) - maxCol, dc);
 
         dragTargetCells.clear();
         for (const auto& c : selection)
@@ -444,7 +462,6 @@ void BankEditorPanel::commitSelectionDrag(bool doSwap)
     //    geometrically stable regardless of how the selection was constructed (drag-select
     //    always gives row-major order, but cmd-click can produce arbitrary order).
     //    Overlap cells carry the moving-set content through and are excluded from the swap.
-    struct CellFile { Cell c; juce::File f; };
     juce::Array<CellFile> srcOnly, tgtOnly;
     if (doSwap)
     {
@@ -455,19 +472,8 @@ void BankEditorPanel::commitSelectionDrag(bool doSwap)
             if (!selection.contains(dragTargetCells[j]))
                 tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
 
-        // Bubble-sort both arrays by (row, col) so same-bank rows are paired together
-        auto sortRowMajor = [](juce::Array<CellFile>& arr)
-        {
-            for (int i = 0; i < arr.size() - 1; ++i)
-                for (int j = i + 1; j < arr.size(); ++j)
-                {
-                    auto a = arr[i], b = arr[j];
-                    if (b.c.row < a.c.row || (b.c.row == a.c.row && b.c.col < a.c.col))
-                        arr.swap(i, j);
-                }
-        };
-        sortRowMajor(srcOnly);
-        sortRowMajor(tgtOnly);
+        sortCellsRowMajor(srcOnly);
+        sortCellsRowMajor(tgtOnly);
     }
 
     // 3. Clear ALL source slots (overlap slots will be re-filled in step 4)
@@ -512,8 +518,8 @@ void BankEditorPanel::commitSelectionDrag(bool doSwap)
 
 void BankEditorPanel::updateDragTargetVisuals()
 {
-    for (int b = 0; b < NUM_BANKS; ++b)
-        for (int s = 0; s < SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = getSlotAt(b, s))
                 slot->setDragTarget(dragTargetCells.contains({b, s}));
 }
@@ -542,7 +548,6 @@ void BankEditorPanel::updateDragPreviews(bool isSwap)
     if (isSwap)
     {
         // Mirror the row-major sorted pairing from commitSelectionDrag
-        struct CellFile { Cell c; juce::File f; };
         juce::Array<CellFile> srcOnly, tgtOnly;
         for (int i = 0; i < selection.size(); ++i)
             if (!dragTargetCells.contains(selection[i]))
@@ -551,18 +556,8 @@ void BankEditorPanel::updateDragPreviews(bool isSwap)
             if (!selection.contains(dragTargetCells[j]))
                 tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
 
-        auto sortRowMajor = [](juce::Array<CellFile>& arr)
-        {
-            for (int i = 0; i < arr.size() - 1; ++i)
-                for (int j = i + 1; j < arr.size(); ++j)
-                {
-                    auto a = arr[i], b = arr[j];
-                    if (b.c.row < a.c.row || (b.c.row == a.c.row && b.c.col < a.c.col))
-                        arr.swap(i, j);
-                }
-        };
-        sortRowMajor(srcOnly);
-        sortRowMajor(tgtOnly);
+        sortCellsRowMajor(srcOnly);
+        sortCellsRowMajor(tgtOnly);
 
         // Source-only cells: preview shows the displaced content they'll receive
         int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
@@ -587,8 +582,8 @@ void BankEditorPanel::updateDragPreviews(bool isSwap)
 
 void BankEditorPanel::clearAllPreviews()
 {
-    for (int b = 0; b < NUM_BANKS; ++b)
-        for (int s = 0; s < SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = getSlotAt(b, s))
             {
                 slot->clearPreviewSample();

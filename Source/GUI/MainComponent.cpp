@@ -584,20 +584,7 @@ void MainComponent::processFiles()
         auto result = processor->processFiles(selectedCubbiFolder, selectedJammiFolder, outputFolder);
 
         if (result.success)
-        {
-            int totalProcessed = result.cubbiFilesProcessed + result.jammiFilesProcessed;
-            int totalOptimized = result.cubbiOptimized + result.jammiOptimized;
-
-            appendStatus("\n=== Processing Complete ===");
-            if (result.cubbiFilesProcessed > 0)
-                appendStatus("  Cubbi: " + juce::String(result.cubbiFilesProcessed) + " samples");
-            if (result.jammiFilesProcessed > 0)
-                appendStatus("  Jammi: " + juce::String(result.jammiFilesProcessed) + " samples");
-            appendStatus("  Total: " + juce::String(totalProcessed) + " samples processed");
-            appendStatus("  Doubles: " + juce::String(totalOptimized) + " optimized versions created");
-            appendStatus("  Output: " + outputFolder.getFullPathName());
-            openOutputButton.setEnabled(true);
-        }
+            appendProcessingResult(result, outputFolder);
         else
         {
             appendStatus("\n=== Processing Failed ===");
@@ -621,24 +608,29 @@ void MainComponent::processFilesAdvanced()
 
     if (result.success)
     {
-        int totalProcessed = result.cubbiFilesProcessed + result.jammiFilesProcessed;
-        int totalOptimized = result.cubbiOptimized + result.jammiOptimized;
-
-        appendStatus("\n=== Processing Complete ===");
-        if (result.cubbiFilesProcessed > 0)
-            appendStatus("  Cubbi: " + juce::String(result.cubbiFilesProcessed) + " samples");
-        if (result.jammiFilesProcessed > 0)
-            appendStatus("  Jammi: " + juce::String(result.jammiFilesProcessed) + " samples");
-        appendStatus("  Total: " + juce::String(totalProcessed) + " samples processed");
-        appendStatus("  Doubles: " + juce::String(totalOptimized) + " optimized versions created");
-        appendStatus("  Output: " + outputFolder.getFullPathName());
-        openOutputButton.setEnabled(true);
+        appendProcessingResult(result, outputFolder);
     }
     else
     {
         appendStatus("\n=== Processing Failed ===");
         appendStatus("Error: " + result.message);
     }
+}
+
+void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult& result,
+                                            const juce::File& outputFolder)
+{
+    int totalProcessed = result.cubbiFilesProcessed + result.jammiFilesProcessed;
+    int totalOptimized = result.cubbiOptimized + result.jammiOptimized;
+    appendStatus("\n=== Processing Complete ===");
+    if (result.cubbiFilesProcessed > 0)
+        appendStatus("  Cubbi: " + juce::String(result.cubbiFilesProcessed) + " samples");
+    if (result.jammiFilesProcessed > 0)
+        appendStatus("  Jammi: " + juce::String(result.jammiFilesProcessed) + " samples");
+    appendStatus("  Total: " + juce::String(totalProcessed) + " samples processed");
+    appendStatus("  Doubles: " + juce::String(totalOptimized) + " optimized versions created");
+    appendStatus("  Output: " + outputFolder.getFullPathName());
+    openOutputButton.setEnabled(true);
 }
 
 void MainComponent::updateProcessButtonState()

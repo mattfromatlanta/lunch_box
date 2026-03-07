@@ -1,7 +1,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
-#include "Logger.h"
+#include "../Logger.h"
 
 //==============================================================================
 // ChompiNamer - Handles CHOMPI sampler naming convention
@@ -17,6 +17,11 @@
 class ChompiNamer
 {
 public:
+    // CHOMPI hardware structure constants (shared across all modules)
+    static constexpr int SLOTS_PER_BANK         = 14;
+    static constexpr int NUM_BANKS              = 5;
+    static constexpr int MAX_FILES_PER_CATEGORY = 70;
+
     // Sample category types
     enum class Category
     {
@@ -57,10 +62,4 @@ public:
 
 private:
     Logger& logger;
-
-    // Constants
-    static constexpr int MAX_FILES_PER_CATEGORY = 70;
-    static constexpr int SLOTS_PER_BANK = 14;
-    static constexpr int NUM_BANKS = 5;
-
 };
