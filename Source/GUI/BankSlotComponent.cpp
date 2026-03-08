@@ -3,8 +3,8 @@
 
 namespace
 {
-    const juce::Colour slotEmptyBg       { 0xff232d3d };
-    const juce::Colour slotFilledBg      { 0xff1e3a52 };
+    const juce::Colour slotEmptyBg       { 0xff1d2228 };
+    const juce::Colour slotFilledBg      { 0xff3a5060 };
     const juce::Colour slotBorder        { 0xff3a4a5a };
     const juce::Colour slotHoverBdr      { 0xff5577aa };
     const juce::Colour slotDropBdr       { 0xff4caf50 };
@@ -19,8 +19,9 @@ namespace
     const juce::Colour slotSwapSourceBdr { 0xff997733 };
 }
 
-BankSlotComponent::BankSlotComponent(int slot)
-    : slotNumber(slot)
+BankSlotComponent::BankSlotComponent(char bank, int slot)
+    : bankLetter(bank >= 'a' ? (char)(bank - ('a' - 'A')) : bank)
+    , slotNumber(slot)
 {
 }
 
@@ -66,22 +67,12 @@ void BankSlotComponent::paint(juce::Graphics& g)
     g.setColour(border);
     g.drawRoundedRectangle(bounds, 3.0f, bw);
 
-    if (displayFilled)
-    {
-        g.setColour(slotTxtCol);
-        g.setFont(juce::Font(8.5f));
-        g.drawFittedText(displayFile.getFileNameWithoutExtension(),
-                         getLocalBounds().reduced(2, 2),
-                         juce::Justification::centred, 2);
-    }
-    else
-    {
-        g.setColour(slotNumCol);
-        g.setFont(juce::Font(9.0f));
-        g.drawText(juce::String(slotNumber),
-                   getLocalBounds(),
-                   juce::Justification::centred);
-    }
+    // Always show cell label (e.g. "A1", "E14") at 16pt
+    const juce::String cellLabel = juce::String::charToString((juce::juce_wchar)bankLetter)
+                                   + juce::String(slotNumber);
+    g.setColour(displayFilled ? slotTxtCol.withAlpha(0.55f) : slotNumCol);
+    g.setFont(juce::Font(16.0f));
+    g.drawText(cellLabel, getLocalBounds(), juce::Justification::centred);
 }
 
 void BankSlotComponent::mouseDown(const juce::MouseEvent& e)
@@ -100,6 +91,11 @@ void BankSlotComponent::mouseUp(const juce::MouseEvent& e)
 {
     if (e.mods.isRightButtonDown()) return;
     if (onSlotMouseUp) onSlotMouseUp(this, e);
+}
+
+void BankSlotComponent::mouseDoubleClick(const juce::MouseEvent&)
+{
+    if (onSlotDoubleClicked) onSlotDoubleClicked(this);
 }
 
 void BankSlotComponent::setSelected(bool s)

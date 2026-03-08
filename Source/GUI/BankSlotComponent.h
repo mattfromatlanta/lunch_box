@@ -15,7 +15,7 @@ class BankSlotComponent : public juce::Component,
                           public juce::DragAndDropTarget
 {
 public:
-    explicit BankSlotComponent(int slotNumber);
+    BankSlotComponent(char bankLetter, int slotNumber);
 
     void setSample(const juce::File& file);
     void clearSample();
@@ -34,7 +34,8 @@ public:
 
     // Callbacks
     std::function<void(BankSlotComponent*)> onSampleChanged;
-    std::function<void(BankSlotComponent*)> onSlotClicked;   // triggered externally for preview
+    std::function<void(BankSlotComponent*)> onSlotClicked;       // triggered externally for preview
+    std::function<void(BankSlotComponent*)> onSlotDoubleClicked; // open file browser
 
     // Folder memory: return start dir for browser; receive parent of selected file
     std::function<juce::File()>                                    getStartDirectory;
@@ -58,11 +59,12 @@ public:
 
     // juce::Component
     void paint(juce::Graphics& g) override;
-    void mouseDown(const juce::MouseEvent& e) override;
-    void mouseDrag(const juce::MouseEvent& e) override;
-    void mouseUp(const juce::MouseEvent& e) override;
-    void mouseEnter(const juce::MouseEvent& e) override;
-    void mouseExit(const juce::MouseEvent& e) override;
+    void mouseDown       (const juce::MouseEvent& e) override;
+    void mouseDrag       (const juce::MouseEvent& e) override;
+    void mouseUp         (const juce::MouseEvent& e) override;
+    void mouseDoubleClick(const juce::MouseEvent& e) override;
+    void mouseEnter      (const juce::MouseEvent& e) override;
+    void mouseExit       (const juce::MouseEvent& e) override;
 
     // juce::FileDragAndDropTarget (external — from Finder)
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
@@ -77,7 +79,8 @@ public:
     void itemDropped(const SourceDetails& details) override;
 
 private:
-    int slotNumber;
+    char bankLetter;
+    int  slotNumber;
     juce::File sample;
     bool isDraggingOver = false;
     bool isHovered      = false;

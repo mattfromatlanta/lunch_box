@@ -44,10 +44,7 @@ public:
 
 private:
     char bankLetter;
-    juce::Label bankLabel;
     juce::OwnedArray<BankSlotComponent> slots;  // 14 slots
-
-    static constexpr int LABEL_WIDTH    = 38;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BankRowComponent)
 };

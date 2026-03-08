@@ -3,7 +3,7 @@
 
 namespace
 {
-    const juce::Colour rowEmptyBg      { 0xff1a1f2e };
+    const juce::Colour rowEmptyBg      { 0xff1d2228 };
     const juce::Colour rowFilledBg     { 0xff1e3a52 };
     const juce::Colour rowSelectedBg   { 0xff1e2a4a };
     const juce::Colour rowBorderCol    { 0xff2a3040 };
@@ -20,14 +20,17 @@ FocusedSlotRow::FocusedSlotRow(int slot,
                                 juce::AudioFormatManager& fmt,
                                 juce::AudioThumbnailCache& cache)
     : slotNumber(slot),
-      thumbnail(512, fmt, cache)
+      thumbnail(512, fmt, cache),
+      previewThumbnail(512, fmt, cache)
 {
     thumbnail.addChangeListener(this);
+    previewThumbnail.addChangeListener(this);
 }
 
 FocusedSlotRow::~FocusedSlotRow()
 {
     thumbnail.removeChangeListener(this);
+    previewThumbnail.removeChangeListener(this);
 }
 
 void FocusedSlotRow::setSample(const juce::File& file)
@@ -59,30 +62,55 @@ void FocusedSlotRow::setDragSource(bool s)
     if (isDragSrc != s) { isDragSrc = s; repaint(); }
 }
 
-void FocusedSlotRow::setInsertionTarget(bool t)
+
+void FocusedSlotRow::setPreviewSample(const juce::File& f)
 {
-    if (insertionTarget != t) { insertionTarget = t; repaint(); }
+    previewFile = f;
+    if (f != juce::File{})
+        previewThumbnail.setSource(new juce::FileInputSource(f));
+    else
+        previewThumbnail.clear();
+    showingPreview = true;
+    repaint();
+}
+
+void FocusedSlotRow::clearPreviewSample()
+{
+    if (!showingPreview) return;
+    showingPreview = false;
+    previewFile    = juce::File{};
+    previewThumbnail.clear();
+    repaint();
 }
 
 void FocusedSlotRow::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
 
+    // Resolve display content — preview overrides actual state during drag
+    const juce::File&     displayFile  = showingPreview ? previewFile  : sample;
+    const bool            displayFilled = (displayFile != juce::File{});
+    juce::AudioThumbnail& displayThumb  = showingPreview ? previewThumbnail : thumbnail;
+
     // Background
     juce::Colour bg;
-    if      (isDragSrc)  bg = rowEmptyBg.withAlpha(0.4f);
-    else if (selected)   bg = hasSample() ? rowFilledBg.brighter(0.15f) : rowSelectedBg;
-    else                 bg = hasSample() ? rowFilledBg : rowEmptyBg;
+    if      (selected) bg = displayFilled ? rowFilledBg.brighter(0.15f) : rowSelectedBg;
+    else               bg = displayFilled ? rowFilledBg : rowEmptyBg;
     g.setColour(bg);
     g.fillRect(bounds);
 
-    // Bottom border line (separator between rows)
+    // Bottom border separator
     g.setColour(rowBorderCol);
     g.drawLine(0.0f, (float)bounds.getBottom() - 1.0f,
                (float)bounds.getWidth(), (float)bounds.getBottom() - 1.0f, 1.0f);
 
-    // Hover / drop / selected side highlight
-    if (isDraggingOver)
+    // Border priority: drag-source → file-drop → selected → hovered
+    if (isDragSrc)
+    {
+        g.setColour(juce::Colour(0xffdd7722));
+        g.drawRect(bounds, 2);
+    }
+    else if (isDraggingOver)
     {
         g.setColour(rowDropBdr);
         g.drawRect(bounds, 2);
@@ -98,41 +126,29 @@ void FocusedSlotRow::paint(juce::Graphics& g)
         g.drawRect(bounds, 1);
     }
 
-    // Insertion line (drawn above this row when it's the drop target during reorder)
-    if (insertionTarget)
-    {
-        g.setColour(insertionCol);
-        g.fillRect(bounds.getX(), bounds.getY(), bounds.getWidth(), 2);
-    }
-
-    if (isDragSrc) return;
-
     // Slot number (left column, 28px)
     const int numW = 28;
     auto numArea = bounds.removeFromLeft(numW);
     g.setColour(slotNumCol);
-    g.setFont(juce::Font(9.0f));
+    g.setFont(juce::Font(16.0f));
     g.drawText(juce::String(slotNumber).paddedLeft('0', 2),
                numArea, juce::Justification::centred);
 
-    if (!hasSample())
-    {
-        // Empty slot: dim number already drawn, nothing more needed
+    if (!displayFilled)
         return;
-    }
 
-    // Waveform
-    if (thumbnail.getTotalLength() > 0.0)
+    // Waveform (slightly dimmed when showing preview content)
+    if (displayThumb.getTotalLength() > 0.0)
     {
-        g.setColour(waveColour.withAlpha(0.75f));
-        thumbnail.drawChannels(g, bounds.reduced(0, 4),
-                               0.0, thumbnail.getTotalLength(), 1.0f);
+        g.setColour(waveColour.withAlpha(showingPreview ? 0.5f : 0.75f));
+        displayThumb.drawChannels(g, bounds.reduced(0, 4),
+                                  0.0, displayThumb.getTotalLength(), 1.0f);
     }
 
-    // Filename overlay — right-aligned, semi-transparent, drawn on top of waveform
-    g.setColour(filenameCol.withAlpha(0.9f));
+    // Filename overlay — right-aligned, drawn on top of waveform
+    g.setColour(filenameCol.withAlpha(showingPreview ? 0.6f : 0.9f));
     g.setFont(juce::Font(9.5f));
-    g.drawText(sample.getFileNameWithoutExtension(),
+    g.drawText(displayFile.getFileNameWithoutExtension(),
                bounds.reduced(4, 0),
                juce::Justification::centredRight, true);
 }
@@ -153,6 +169,11 @@ void FocusedSlotRow::mouseUp(const juce::MouseEvent& e)
 {
     if (e.mods.isRightButtonDown()) return;
     if (onRowMouseUp) onRowMouseUp(this, e);
+}
+
+void FocusedSlotRow::mouseDoubleClick(const juce::MouseEvent&)
+{
+    if (onRowDoubleClicked) onRowDoubleClicked(this);
 }
 
 void FocusedSlotRow::mouseEnter(const juce::MouseEvent&)

@@ -85,6 +85,32 @@
 
 ---
 
+### UI Layout Overhaul (unplanned, completed 2026-03-09)
+**Status:** Complete
+**Branch:** 0.3
+**Description:** Comprehensive layout and styling pass to establish a fixed, proportional UI.
+
+**Changes:**
+- Fixed window size: 1118×700px (no resize; `setResizable(false, false)`)
+- Pack (Advanced) cells: 77×77px; Bank focus rows: 55px tall; both grids lock to 385px total height so the shared footer never moves
+- Pack grid: removed row header label column (was 38px); bank letter embedded in each cell label (e.g. "A1", "E14") at 16pt
+- Bank focus view: restructured to two columns of 7 rows (matching Pack grid height)
+- Bank A–E selector buttons: styled with `SlotStyleLAF` (LookAndFeel_V4 subclass) to match slot cell appearance — rounded rect, same palette, toggle state border; 32px wide
+- Nav row order: Cubbi/Jammi first, then Pack/Bank (left-to-right)
+- Console refactored to a floating `DocumentWindow` (`ConsoleWindow`) rather than an inline panel; toggle opens/closes it
+- Fill and Clear buttons moved from individual panels into a shared footer component; footer height is fixed regardless of active view (no button position shift on mode toggle)
+- Output section: "OUTPUT FOLDER" label moved inline with the path button; full output path label removed from UI; name editor widened from 180px to 540px
+
+**Key files modified:**
+- `Source/GUI/MainComponent.h/.cpp` — window size, footer layout, ConsoleWindow, nav order, output section
+- `Source/GUI/BankEditorPanel.h/.cpp` — removed button row, ROW_HEIGHT=77, ROW_GAP=0
+- `Source/GUI/BankFocusPanel.h/.cpp` — SlotStyleLAF, two-column layout, triggerAutoFill/triggerClear, ROW_HEIGHT=55
+- `Source/GUI/BankRowComponent.h/.cpp` — removed bankLabel + LABEL_WIDTH
+- `Source/GUI/BankSlotComponent.h/.cpp` — bankLetter member, combined cell label at 16pt, updated palette
+- `Source/GUI/FocusedSlotRow.cpp` — slot number font 16pt, rowEmptyBg matches Pack
+
+---
+
 ### Out-of-Plan Work Completed (2026-03-07 session)
 - **macOS menu bar:** File menu (Open Cubbi/Jammi/Output folders, Process Samples) and Settings menu (Show Runtime Logs toggle, Show Log Folder in Finder, Clear Status Log) via AppMenuBar / MenuBarModel.
 - **Runtime log toggle:** Logger callback wired to GUI status window. Settings → Show Runtime Logs enables per-file debug output alongside high-level status messages.
@@ -201,7 +227,7 @@
 ## Current Status and Next Steps
 
 ```
-DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major) → Bank Focus View
+DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major) → Bank Focus View → UI Layout Overhaul
                                                    ↓
                                               M9 (base theme done)
 ```
@@ -219,7 +245,8 @@ DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major
 - **v1.3.0:** M6 complete (bank folder organization)
 - **v2.0.0:** M7, M8, M9 (base), M10 complete + menu bar, runtime logs, bank distribution fixes
 - **v2.1.0:** M12 structural refactor (0.3 branch); Source/Processing/ layout, constants dedup, bug fixes
-- **v2.2.0:** Current — Bank Focus View complete (third tab, waveform rows, shared category tabs, re-entrant flush fix)
+- **v2.3.0:** Current — UI Layout Overhaul (fixed window, unified grid heights, 2-col bank view, floating console, footer polish)
+- **v2.2.0:** Bank Focus View complete (third tab, waveform rows, shared category tabs, re-entrant flush fix)
 - **v2.3.0:** M9 finish + M11 (testing)
 - **v3.0.0:** M13 (open source release)
 
@@ -236,6 +263,6 @@ DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major
 
 ---
 
-**Last Updated:** 2026-03-08
-**Current Version:** v2.2.0
+**Last Updated:** 2026-03-09
+**Current Version:** v2.3.0
 **In Progress:** M9 finish → M11 (unit testing)

@@ -23,13 +23,12 @@ private:
 
     enum MenuItemIds
     {
-        openCubbiFolder  = 1,
-        openJammiFolder  = 2,
-        openOutputFolder = 3,
-        processSamples   = 4,
-        showLogFolder    = 5,
-        clearStatusLog   = 6,
-        showRuntimeLogs  = 7,
+        openOutputFolder = 1,
+        processSamples   = 2,
+        toggleConsole    = 3,
+        showLogFolder    = 4,
+        clearStatusLog   = 5,
+        showRuntimeLogs  = 6,
     };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AppMenuBar)

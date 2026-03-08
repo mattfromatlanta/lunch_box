@@ -29,8 +29,11 @@ public:
 
     // Visual state (managed by BankFocusPanel)
     void setSelected(bool s);
-    void setDragSource(bool s);   // this row is being dragged (ghosted)
-    void setInsertionTarget(bool t);  // draw insertion line above this row
+    void setDragSource(bool s);       // this row is the current drag destination (orange border)
+
+    // Drag preview: show a different file's waveform without changing the actual sample
+    void setPreviewSample(const juce::File& f);  // showingPreview=true, previewFile=f
+    void clearPreviewSample();                    // showingPreview=false
 
     // Open file browser (also callable from keyboard via BankFocusPanel)
     void browseForFile();
@@ -38,6 +41,7 @@ public:
     // Callbacks
     std::function<void(FocusedSlotRow*)>                          onSampleChanged;
     std::function<void(FocusedSlotRow*)>                          onSlotClicked;
+    std::function<void(FocusedSlotRow*)>                          onRowDoubleClicked; // open file browser
     std::function<juce::File()>                                   getStartDirectory;
     std::function<void(juce::File)>                               onFolderBrowsed;
 
@@ -47,12 +51,13 @@ public:
     std::function<void(FocusedSlotRow*, const juce::MouseEvent&)> onRowMouseUp;
 
     // juce::Component
-    void paint(juce::Graphics& g) override;
-    void mouseDown(const juce::MouseEvent& e) override;
-    void mouseDrag(const juce::MouseEvent& e) override;
-    void mouseUp  (const juce::MouseEvent& e) override;
-    void mouseEnter(const juce::MouseEvent& e) override;
-    void mouseExit (const juce::MouseEvent& e) override;
+    void paint           (juce::Graphics& g)        override;
+    void mouseDown       (const juce::MouseEvent& e) override;
+    void mouseDrag       (const juce::MouseEvent& e) override;
+    void mouseUp         (const juce::MouseEvent& e) override;
+    void mouseDoubleClick(const juce::MouseEvent& e) override;
+    void mouseEnter      (const juce::MouseEvent& e) override;
+    void mouseExit       (const juce::MouseEvent& e) override;
 
     // juce::FileDragAndDropTarget
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
@@ -65,11 +70,15 @@ private:
     juce::File     sample;
     juce::AudioThumbnail thumbnail;
 
+    // Preview state (used during drag to show future positions)
+    bool           showingPreview = false;
+    juce::File     previewFile;
+    juce::AudioThumbnail previewThumbnail;
+
     bool isDraggingOver   = false;
     bool isHovered        = false;
     bool selected         = false;
     bool isDragSrc        = false;
-    bool insertionTarget  = false;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 

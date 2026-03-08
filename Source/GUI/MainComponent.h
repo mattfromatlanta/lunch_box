@@ -4,15 +4,18 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <functional>
 #include "GuiProcessor.h"
-#include "FolderDropZone.h"
 #include "PreviewPanel.h"
 #include "BankEditorPanel.h"
 #include "BankFocusPanel.h"
 
+#if JUCE_DEBUG
+ #include <melatonin_inspector/melatonin_inspector.h>
+#endif
+
+class ConsoleWindow;
+
 //==============================================================================
 // MainComponent - Main GUI component for Chompi Pack
-//==============================================================================
-// Dark-themed layout with drag-and-drop folder selection (M7 + M9).
 //==============================================================================
 
 class MainComponent : public juce::Component,
@@ -27,39 +30,30 @@ public:
     void parentHierarchyChanged() override;
 
     // Public interface for menu bar actions
-    void selectCubbiFolder();
-    void selectJammiFolder();
     void selectOutputFolder();
     void processFiles();
     void showLogFolder();
     void clearStatusLog();
     void setShowRuntimeLogs(bool shouldShow);
     bool getShowRuntimeLogs() const { return showRuntimeLogs; }
+    bool getConsoleVisible()  const { return consoleVisible; }
+    void toggleConsole();
 
 private:
     // Header
     juce::Label headerLabel;
 
-    // Mode toggle (Simple / Advanced / Bank)
-    enum class ViewMode { Simple, Advanced, Bank };
-    ViewMode viewMode = ViewMode::Simple;
+    // Mode toggle (Pack / Bank)
+    enum class ViewMode { Pack, Bank };
+    ViewMode viewMode = ViewMode::Pack;
 
-    juce::TextButton simpleModeButton;
-    juce::TextButton advancedModeButton;
+    juce::TextButton packModeButton;
     juce::TextButton bankModeButton;
+    bool consoleVisible = false;
+    juce::String     consoleContent { "Ready to process samples...\n" };
+    std::unique_ptr<ConsoleWindow> consoleWindow;
 
-    // ── Simple mode ────────────────────────────────────────
-    juce::Label cubbiSectionLabel;
-    juce::Label jammiSectionLabel;
-    juce::Label previewSectionLabel;
-
-    std::unique_ptr<FolderDropZone> cubbiDropZone;
-    std::unique_ptr<FolderDropZone> jammiDropZone;
-
-    juce::File selectedCubbiFolder;
-    juce::File selectedJammiFolder;
-
-    // ── Advanced mode ──────────────────────────────────────
+    // ── Pack mode ───────────────────────────────────────────
     juce::TextButton cubbiTabButton;
     juce::TextButton jammiTabButton;
     bool showCubbiEditor = true;
@@ -82,7 +76,8 @@ private:
 
     juce::TextButton processButton;
     juce::TextButton openOutputButton;
-    juce::TextEditor statusTextEditor;
+    juce::TextButton fillButton;
+    juce::TextButton clearButton;
 
     PreviewPanel previewPanel;
     BankEditorPanel::Cell playingCell { -1, -1 };  // grid cell whose file is currently previewing
@@ -100,7 +95,7 @@ private:
     void styleTabButton(juce::TextButton& btn, bool active);
 
     // Cross-tab data sync
-    void syncAdvancedToBankFocus();
+    void syncPackToBankFocus();
     void syncBankFocusToAdvanced();
 
     // Helpers
@@ -116,27 +111,23 @@ private:
     void       saveString(const juce::String& key, const juce::String& value);
     juce::String getSavedString(const juce::String& key, const juce::String& fallback = {});
 
-    // Simple mode folder handlers
-    void handleCubbiFolderSelected(juce::File folder);
-    void handleJammiFolderSelected(juce::File folder);
-    void handleOutputFolderSelected(juce::File folder);   // decomposes into base+name
-    void selectFolderFor(const juce::String& title, const juce::File& startDir,
-                         std::function<void(juce::File)> handler);
+    void handleOutputFolderSelected(juce::File folder);
 
-    // Preview (advanced mode)
+    // Preview
     void stopPreview();
 
     // juce::KeyListener
     bool keyPressed(const juce::KeyPress& key, juce::Component* origin) override;
 
     // Processing
-    void processFilesAdvanced();
+    void processFilesFromEditors();
     void updateProcessButtonState();
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
 
-    static int countAudioFiles(const juce::File& folder);
-    void previewFirstAudioFile(const juce::File& folder);
+#if JUCE_DEBUG
+    melatonin::Inspector inspector { *this };
+#endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

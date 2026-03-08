@@ -20,15 +20,15 @@ juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
 
     if (menuIndex == 0) // File
     {
-        menu.addItem(openCubbiFolder,  "Open Cubbi Folder...");
-        menu.addItem(openJammiFolder,  "Open Jammi Folder...");
         menu.addItem(openOutputFolder, "Open Output Folder...");
         menu.addSeparator();
         menu.addItem(processSamples,   "Process Samples");
     }
     else if (menuIndex == 1) // Settings
     {
+        bool consoleOn     = (mainComponent != nullptr) && mainComponent->getConsoleVisible();
         bool runtimeLogsOn = (mainComponent != nullptr) && mainComponent->getShowRuntimeLogs();
+        menu.addItem(toggleConsole,   consoleOn ? "Hide console" : "Show console");
         menu.addItem(showRuntimeLogs, "Show Runtime Logs", true, runtimeLogsOn);
         menu.addSeparator();
         menu.addItem(showLogFolder,   "Show Log Folder in Finder");
@@ -44,12 +44,11 @@ void AppMenuBar::menuItemSelected(int menuItemID, int /*topLevelMenuIndex*/)
 
     switch (menuItemID)
     {
-        case openCubbiFolder:   mainComponent->selectCubbiFolder();   break;
-        case openJammiFolder:   mainComponent->selectJammiFolder();   break;
         case openOutputFolder:  mainComponent->selectOutputFolder();  break;
         case processSamples:    mainComponent->processFiles();        break;
-        case showLogFolder:     mainComponent->showLogFolder();                                    break;
-        case clearStatusLog:    mainComponent->clearStatusLog();                                 break;
+        case toggleConsole:     mainComponent->toggleConsole(); menuItemsChanged(); break;
+        case showLogFolder:     mainComponent->showLogFolder();       break;
+        case clearStatusLog:    mainComponent->clearStatusLog();      break;
         case showRuntimeLogs:   mainComponent->setShowRuntimeLogs(!mainComponent->getShowRuntimeLogs()); break;
         default: break;
     }

@@ -17,8 +17,8 @@
 
 ## Current Status
 
-**Version:** 2.2.0
-**Completed Milestones:** M1–M8, M10, M12 (major), Bank Focus View
+**Version:** 2.3.0
+**Completed Milestones:** M1–M8, M10, M12 (major), Bank Focus View, UI Layout Overhaul
 
 **What Works:**
 - ✅ CLI interface with full CHOMPI processing
@@ -35,6 +35,9 @@
 - ✅ Persistent folder memory across sessions
 - ✅ macOS menu bar (File / Settings menus)
 - ✅ Source/Processing/ module layout; constants deduplication; code review pass
+- ✅ Fixed-size window (1118×700); unified Pack/Bank grid heights (385px each)
+- ✅ Pack cells 77×77px with bank-letter prefixed labels (A1, E14); Bank rows 55px, 2-col layout
+- ✅ Floating console window; shared fixed footer (Fill/Clear + output + process buttons)
 
 **See:** [prompts/MILESTONES_OVERVIEW.md](prompts/MILESTONES_OVERVIEW.md) for full roadmap.
 
@@ -530,7 +533,8 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ## Version History
 
-- **v2.2.0** (Current) - Bank Focus View (third tab, waveform rows, shared category tabs)
+- **v2.3.0** (Current) - UI Layout Overhaul: fixed window, unified grid heights, 2-col bank view, floating console, footer, output section polish
+- **v2.2.0** - Bank Focus View (third tab, waveform rows, shared category tabs)
 - **v2.1.0** - M12 structural refactor: Source/Processing/ layout, constants deduplication, bug fixes
 - **v2.0.0** - M7, M8, M9 (base), M10 complete; menu bar, runtime logs, bank distribution fixes
 - **v1.3.0** - M6: Bank-subfolder detection (BankFolderParser)
@@ -542,7 +546,7 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ---
 
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-09
 **Maintainer:** Matt from Atlanta
 **AI Assistant:** This document is specifically for AI assistants working on the codebase
 

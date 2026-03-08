@@ -32,7 +32,6 @@ public:
 
     // Bulk operations
     void clearAllBanks();
-    void sortAllAlphabetically();
     void autoFillFromFolder(const juce::File& folder);
 
     // Individual slot access (used for cross-tab sync)
@@ -80,15 +79,10 @@ private:
     ChompiNamer::Category category;
     juce::OwnedArray<BankRowComponent> banks;  // A–E
 
-    juce::TextButton autoFillButton;
-    juce::TextButton clearAllButton;
-    juce::TextButton sortAllButton;
-
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    static constexpr int ROW_HEIGHT    = 52;
-    static constexpr int ROW_GAP       = 4;
-    static constexpr int BUTTON_HEIGHT = 28;
+    static constexpr int ROW_HEIGHT    = 77;
+    static constexpr int ROW_GAP       = 0;
 
     // Selection state
     juce::Array<Cell> selection;
@@ -122,9 +116,9 @@ private:
     void handleSlotMouseDrag(BankSlotComponent* src, const juce::MouseEvent& e);
     void handleSlotMouseUp  (BankSlotComponent* src, const juce::MouseEvent& e);
 
-    void commitSelectionDrag(bool doSwap);
+    void commitSelectionDrag();
     void updateDragTargetVisuals();
-    void updateDragPreviews(bool isSwap);   // live label preview during drag
+    void updateDragPreviews();              // live preview during drag
     void clearAllPreviews();                // clears preview + swap highlight on all slots
     void clearDragState();                  // clears drag targets + resets drag flags
 

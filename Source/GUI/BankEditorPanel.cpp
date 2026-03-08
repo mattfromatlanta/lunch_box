@@ -37,24 +37,6 @@ BankEditorPanel::BankEditorPanel(ChompiNamer::Category cat)
         addAndMakeVisible(row);
     }
 
-    autoFillButton.setButtonText("Auto-Fill from Folder...");
-    autoFillButton.setColour(juce::TextButton::buttonColourId,  buttonCol);
-    autoFillButton.setColour(juce::TextButton::textColourOffId, buttonTxt);
-    autoFillButton.onClick = [this] { autoFillFromFolder(juce::File{}); };
-    addAndMakeVisible(autoFillButton);
-
-    clearAllButton.setButtonText("Clear All");
-    clearAllButton.setColour(juce::TextButton::buttonColourId,  buttonCol);
-    clearAllButton.setColour(juce::TextButton::textColourOffId, buttonTxt);
-    clearAllButton.onClick = [this] { clearAllBanks(); };
-    addAndMakeVisible(clearAllButton);
-
-    sortAllButton.setButtonText("Sort A-Z");
-    sortAllButton.setColour(juce::TextButton::buttonColourId,  buttonCol);
-    sortAllButton.setColour(juce::TextButton::textColourOffId, buttonTxt);
-    sortAllButton.onClick = [this] { sortAllAlphabetically(); };
-    addAndMakeVisible(sortAllButton);
-
     setWantsKeyboardFocus(true);
 }
 
@@ -83,6 +65,12 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
             slot->onSlotMouseUp = [this](BankSlotComponent* src, const juce::MouseEvent& e)
             {
                 handleSlotMouseUp(src, e);
+            };
+            slot->onSlotDoubleClicked = [this](BankSlotComponent* src)
+            {
+                auto c = getCellFor(src);
+                if (c.isValid()) { selectCell(c, true); grabKeyboardFocus(); }
+                src->browseForFile();
             };
         }
     }
@@ -114,12 +102,6 @@ void BankEditorPanel::setSlotFile(int bankIdx, int slotIdx, const juce::File& fi
 {
     if (bankIdx >= 0 && bankIdx < banks.size())
         banks[bankIdx]->setSlot(slotIdx, file);
-}
-
-void BankEditorPanel::sortAllAlphabetically()
-{
-    for (auto* bank : banks)
-        bank->sortSlotsAlphabetically();
 }
 
 void BankEditorPanel::autoFillFromFolder(const juce::File&)
@@ -390,14 +372,14 @@ void BankEditorPanel::handleSlotMouseDown(BankSlotComponent* src, const juce::Mo
     else
     {
         selectCell(c, true);
-        dragAnchor = c;
-        notifyPreviewForSelection();
+        mouseDownOnSelected = true;  // plain drag from here = move, not box select
+        // Preview fires on mouseUp (via mouseDownOnSelected path), not here
     }
 
     grabKeyboardFocus();
 }
 
-void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* src, const juce::MouseEvent& e)
+void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* /*src*/, const juce::MouseEvent& e)
 {
     if (e.mods.isRightButtonDown()) return;
     if (e.getDistanceFromDragStart() < 5) return;
@@ -405,29 +387,15 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* src, const juce::Mo
     auto panelPt = e.getEventRelativeTo(this).getPosition();
     Cell hover   = getCellAtPoint(panelPt);
 
-    // Decide drag mode on first move past threshold
-    if (!isDragSelecting && !isSelectionDragging)
+    // All drags move the selection
+    if (!isSelectionDragging)
     {
-        if (mouseDownOnSelected)
-        {
-            isSelectionDragging   = true;
-            selectionDragStart    = mouseDownCell;
-            mouseDownOnSelected   = false;
-        }
-        else
-        {
-            isDragSelecting = true;
-            dragAnchor = getCellFor(src);
-            if (!dragAnchor.isValid()) dragAnchor = hover.isValid() ? hover : Cell{0,0};
-        }
+        isSelectionDragging = true;
+        selectionDragStart  = mouseDownCell;
+        mouseDownOnSelected = false;
     }
 
-    if (isDragSelecting)
-    {
-        if (!hover.isValid()) return;
-        selectRange(dragAnchor, hover);
-    }
-    else if (isSelectionDragging)
+    if (isSelectionDragging)
     {
         if (!hover.isValid() || !selectionDragStart.isValid()) return;
 
@@ -453,20 +421,16 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* src, const juce::Mo
             dragTargetCells.add({ c.row + dr, c.col + dc });
 
         updateDragTargetVisuals();
-        updateDragPreviews(e.mods.isCommandDown());
+        updateDragPreviews();
     }
 }
 
-void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEvent& e)
+void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEvent& /*e*/)
 {
     if (isSelectionDragging && !dragTargetCells.isEmpty())
     {
-        commitSelectionDrag(e.mods.isCommandDown());
-        notifyPreviewForSelection();
-    }
-    else if (isDragSelecting)
-    {
-        notifyPreviewForSelection();  // drag-selected range — likely multi → stop
+        commitSelectionDrag();
+        if (onPreviewStop) onPreviewStop();  // no auto-play on drag release
     }
     else if (mouseDownOnSelected)
     {
@@ -478,11 +442,13 @@ void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEve
     clearDragState();
 }
 
-void BankEditorPanel::commitSelectionDrag(bool doSwap)
+void BankEditorPanel::commitSelectionDrag()
 {
     if (dragTargetCells.size() != selection.size()) return;
 
-    // 1. Snapshot ALL source and target files before any mutation
+    // 1. Snapshot all source and target files before any mutation.
+    //    Sorting by position ensures geometrically stable pairing regardless
+    //    of how the selection was built (drag-select vs cmd-click).
     juce::Array<juce::File> sourceFiles, targetFiles;
     for (int i = 0; i < selection.size(); ++i)
     {
@@ -492,26 +458,21 @@ void BankEditorPanel::commitSelectionDrag(bool doSwap)
         targetFiles.add(t ? t->getSample() : juce::File{});
     }
 
-    // 2. For swap: build source-only and target-only (cell, file) pairs, sorted row-major.
-    //    Sorting by position (not by selection-array order) ensures that the pairing is
-    //    geometrically stable regardless of how the selection was constructed (drag-select
-    //    always gives row-major order, but cmd-click can produce arbitrary order).
-    //    Overlap cells carry the moving-set content through and are excluded from the swap.
+    // 2. Build source-only and target-only (cell, file) pairs, sorted row-major.
+    //    Source-only cells will receive displaced content; overlap cells carry
+    //    the moving-set content and are excluded.
     juce::Array<CellFile> srcOnly, tgtOnly;
-    if (doSwap)
-    {
-        for (int i = 0; i < selection.size(); ++i)
-            if (!dragTargetCells.contains(selection[i]))
-                srcOnly.add({ selection[i], sourceFiles[i] });
-        for (int j = 0; j < dragTargetCells.size(); ++j)
-            if (!selection.contains(dragTargetCells[j]))
-                tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
+    for (int i = 0; i < selection.size(); ++i)
+        if (!dragTargetCells.contains(selection[i]))
+            srcOnly.add({ selection[i], sourceFiles[i] });
+    for (int j = 0; j < dragTargetCells.size(); ++j)
+        if (!selection.contains(dragTargetCells[j]))
+            tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
 
-        sortCellsRowMajor(srcOnly);
-        sortCellsRowMajor(tgtOnly);
-    }
+    sortCellsRowMajor(srcOnly);
+    sortCellsRowMajor(tgtOnly);
 
-    // 3. Clear ALL source slots (overlap slots will be re-filled in step 4)
+    // 3. Clear all source slots (overlap slots re-filled in step 4)
     for (const auto& c : selection)
         if (auto* slot = getSlotAt(c.row, c.col))
             slot->clearSample();
@@ -526,17 +487,14 @@ void BankEditorPanel::commitSelectionDrag(bool doSwap)
         }
     }
 
-    // 5. Swap: write displaced content to vacated source-only cells (row-major paired).
-    if (doSwap)
+    // 5. Write displaced target-only content into the vacated source-only cells
+    int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
+    for (int k = 0; k < pairs; ++k)
     {
-        int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
-        for (int k = 0; k < pairs; ++k)
+        if (auto* slot = getSlotAt(srcOnly[k].c.row, srcOnly[k].c.col))
         {
-            if (auto* slot = getSlotAt(srcOnly[k].c.row, srcOnly[k].c.col))
-            {
-                if (tgtOnly[k].f != juce::File{}) slot->setSample(tgtOnly[k].f);
-                else                              slot->clearSample();
-            }
+            if (tgtOnly[k].f != juce::File{}) slot->setSample(tgtOnly[k].f);
+            else                              slot->clearSample();
         }
     }
 
@@ -559,7 +517,7 @@ void BankEditorPanel::updateDragTargetVisuals()
                 slot->setDragTarget(dragTargetCells.contains({b, s}));
 }
 
-void BankEditorPanel::updateDragPreviews(bool isSwap)
+void BankEditorPanel::updateDragPreviews()
 {
     clearAllPreviews();
 
@@ -575,44 +533,28 @@ void BankEditorPanel::updateDragPreviews(bool isSwap)
         targetFiles.add(t ? t->getSample() : juce::File{});
     }
 
-    // Target cells: show what moving-set content will land there
+    // Target cells: show the incoming content
     for (int i = 0; i < dragTargetCells.size(); ++i)
         if (auto* slot = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col))
             slot->setPreviewSample(sourceFiles[i]);
 
-    if (isSwap)
-    {
-        // Mirror the row-major sorted pairing from commitSelectionDrag
-        juce::Array<CellFile> srcOnly, tgtOnly;
-        for (int i = 0; i < selection.size(); ++i)
-            if (!dragTargetCells.contains(selection[i]))
-                srcOnly.add({ selection[i], sourceFiles[i] });
-        for (int j = 0; j < dragTargetCells.size(); ++j)
-            if (!selection.contains(dragTargetCells[j]))
-                tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
+    // Source-only cells: show the displaced content that will shift back there.
+    // Mirrors the row-major pairing used in commitSelectionDrag.
+    juce::Array<CellFile> srcOnly, tgtOnly;
+    for (int i = 0; i < selection.size(); ++i)
+        if (!dragTargetCells.contains(selection[i]))
+            srcOnly.add({ selection[i], sourceFiles[i] });
+    for (int j = 0; j < dragTargetCells.size(); ++j)
+        if (!selection.contains(dragTargetCells[j]))
+            tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
 
-        sortCellsRowMajor(srcOnly);
-        sortCellsRowMajor(tgtOnly);
+    sortCellsRowMajor(srcOnly);
+    sortCellsRowMajor(tgtOnly);
 
-        // Source-only cells: preview shows the displaced content they'll receive
-        int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
-        for (int k = 0; k < pairs; ++k)
-            if (auto* slot = getSlotAt(srcOnly[k].c.row, srcOnly[k].c.col))
-                slot->setPreviewSample(tgtOnly[k].f);
-
-        // All selected cells: warm swap highlight
-        for (const auto& c : selection)
-            if (auto* slot = getSlotAt(c.row, c.col))
-                slot->setSwapHighlight(true);
-    }
-    else
-    {
-        // Move mode: source-only cells preview as empty (they'll be vacated)
-        for (int i = 0; i < selection.size(); ++i)
-            if (!dragTargetCells.contains(selection[i]))
-                if (auto* slot = getSlotAt(selection[i].row, selection[i].col))
-                    slot->setPreviewSample(juce::File{});
-    }
+    int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
+    for (int k = 0; k < pairs; ++k)
+        if (auto* slot = getSlotAt(srcOnly[k].c.row, srcOnly[k].c.col))
+            slot->setPreviewSample(tgtOnly[k].f);
 }
 
 void BankEditorPanel::clearAllPreviews()
@@ -638,10 +580,9 @@ void BankEditorPanel::clearDragState()
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-void BankEditorPanel::modifierKeysChanged(const juce::ModifierKeys& mods)
+void BankEditorPanel::modifierKeysChanged(const juce::ModifierKeys&)
 {
-    if (isSelectionDragging)
-        updateDragPreviews(mods.isCommandDown());
+    // Drag mode no longer depends on modifier keys
 }
 
 void BankEditorPanel::mouseDown(const juce::MouseEvent&)
@@ -667,12 +608,4 @@ void BankEditorPanel::resized()
         area.removeFromTop(ROW_GAP);
     }
 
-    area.removeFromTop(4);
-
-    // Action buttons evenly across bottom
-    auto btnArea = area.removeFromTop(BUTTON_HEIGHT);
-    int btnW = btnArea.getWidth() / 3;
-    autoFillButton.setBounds(btnArea.removeFromLeft(btnW).reduced(2, 0));
-    clearAllButton.setBounds(btnArea.removeFromLeft(btnW).reduced(2, 0));
-    sortAllButton.setBounds(btnArea.reduced(2, 0));
 }

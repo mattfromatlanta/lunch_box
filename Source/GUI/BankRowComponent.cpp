@@ -3,33 +3,17 @@
 namespace
 {
     const juce::Colour rowBgColour    { 0xff1a1f2e };
-    const juce::Colour labelColour    { 0xff8899aa };
-    const juce::Colour countColour    { 0xff4a5a6a };
 }
 
 BankRowComponent::BankRowComponent(char letter)
     : bankLetter(letter)
 {
-    // Bank label (e.g. "A")
-    bankLabel.setText(juce::String::charToString(letter).toUpperCase(),
-                      juce::dontSendNotification);
-    bankLabel.setFont(juce::Font(11.0f, juce::Font::bold));
-    bankLabel.setColour(juce::Label::textColourId, labelColour);
-    bankLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(bankLabel);
-
     for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
     {
-        auto* slot = slots.add(new BankSlotComponent(i + 1));
+        auto* slot = slots.add(new BankSlotComponent(letter, i + 1));
 
         slot->onSampleChanged = [this](BankSlotComponent*)
         {
-            // Update the bank label to show count
-            int filled = getFilledCount();
-            bankLabel.setText(juce::String::charToString(bankLetter).toUpperCase()
-                              + "\n" + juce::String(filled) + "/" +
-                              juce::String(ChompiNamer::SLOTS_PER_BANK),
-                              juce::dontSendNotification);
             if (onAssignmentsChanged) onAssignmentsChanged();
         };
 
@@ -159,9 +143,6 @@ void BankRowComponent::paint(juce::Graphics& g)
 void BankRowComponent::resized()
 {
     auto area = getLocalBounds();
-
-    bankLabel.setBounds(area.removeFromLeft(LABEL_WIDTH));
-
     int slotW = area.getWidth() / ChompiNamer::SLOTS_PER_BANK;
     for (auto* slot : slots)
         slot->setBounds(area.removeFromLeft(slotW));

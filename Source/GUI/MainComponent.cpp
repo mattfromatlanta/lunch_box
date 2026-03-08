@@ -14,6 +14,42 @@ namespace
     const juce::Colour tabTextCol      { 0xffaabbcc };
 }
 
+//==============================================================================
+// ConsoleWindow - floating status log window
+//==============================================================================
+class ConsoleWindow : public juce::DocumentWindow
+{
+public:
+    explicit ConsoleWindow(const juce::String& initialContent)
+        : juce::DocumentWindow("Console", juce::Colour(0xff151a26), DocumentWindow::closeButton)
+    {
+        setUsingNativeTitleBar(true);
+        editor.setMultiLine(true);
+        editor.setReadOnly(true);
+        editor.setScrollbarsShown(true);
+        editor.setCaretVisible(false);
+        editor.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain));
+        editor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xff151a26));
+        editor.setColour(juce::TextEditor::textColourId,       juce::Colour(0xffaabbcc));
+        editor.setColour(juce::TextEditor::outlineColourId,    juce::Colour(0xff2a3a4a));
+        editor.setText(initialContent);
+        setContentNonOwned(&editor, true);
+        setSize(520, 280);
+        setResizable(true, false);
+        setVisible(true);
+    }
+
+    void closeButtonPressed() override
+    {
+        if (onClose) onClose();
+    }
+
+    juce::TextEditor editor;
+    std::function<void()> onClose;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ConsoleWindow)
+};
+
 static void styleSectionLabel(juce::Label& label, const juce::String& text)
 {
     label.setText(text, juce::dontSendNotification);
@@ -33,44 +69,22 @@ MainComponent::MainComponent()
     }
 
     // Header
-    headerLabel.setText("chompi pack  |  by matt from atlanta", juce::dontSendNotification);
+    headerLabel.setText("chompi pack", juce::dontSendNotification);
     headerLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-    headerLabel.setJustificationType(juce::Justification::centred);
+    headerLabel.setJustificationType(juce::Justification::centredLeft);
     headerLabel.setColour(juce::Label::textColourId, headerColour);
     addAndMakeVisible(headerLabel);
 
     // Mode toggle buttons
-    simpleModeButton.setButtonText("Simple");
-    advancedModeButton.setButtonText("Advanced");
+    packModeButton.setButtonText("Pack");
     bankModeButton.setButtonText("Bank");
-    simpleModeButton.onClick   = [this] { setViewMode(ViewMode::Simple); };
-    advancedModeButton.onClick = [this] { setViewMode(ViewMode::Advanced); };
-    bankModeButton.onClick     = [this] { setViewMode(ViewMode::Bank); };
-    addAndMakeVisible(simpleModeButton);
-    addAndMakeVisible(advancedModeButton);
+    packModeButton.onClick = [this] { setViewMode(ViewMode::Pack); };
+    bankModeButton.onClick = [this] { setViewMode(ViewMode::Bank); };
+    addAndMakeVisible(packModeButton);
     addAndMakeVisible(bankModeButton);
 
-    // ── Simple mode components ─────────────────────────────
 
-    styleSectionLabel(cubbiSectionLabel,   "CUBBI SAMPLES");
-    styleSectionLabel(jammiSectionLabel,   "JAMMI SAMPLES");
-    styleSectionLabel(previewSectionLabel, "");
-    addAndMakeVisible(cubbiSectionLabel);
-    addAndMakeVisible(jammiSectionLabel);
-
-    cubbiDropZone = std::make_unique<FolderDropZone>("Select Cubbi Folder...",
-                                                      "no cubbi folder selected");
-    cubbiDropZone->onButtonClicked  = [this] { selectCubbiFolder(); };
-    cubbiDropZone->onFolderSelected = [this](juce::File f) { handleCubbiFolderSelected(f); };
-    addAndMakeVisible(cubbiDropZone.get());
-
-    jammiDropZone = std::make_unique<FolderDropZone>("Select Jammi Folder...",
-                                                      "no jammi folder selected");
-    jammiDropZone->onButtonClicked  = [this] { selectJammiFolder(); };
-    jammiDropZone->onFolderSelected = [this](juce::File f) { handleJammiFolderSelected(f); };
-    addAndMakeVisible(jammiDropZone.get());
-
-    // ── Advanced mode components ───────────────────────────
+    // ── Pack mode components ───────────────────────────────
 
     cubbiTabButton.setButtonText("Cubbi");
     jammiTabButton.setButtonText("Jammi");
@@ -85,7 +99,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(cubbiTabButton);
     addAndMakeVisible(jammiTabButton);
 
-    auto advancedSlotClicked = [this](BankEditorPanel::Cell cell, const juce::File& f)
+    auto packSlotClicked = [this](BankEditorPanel::Cell cell, const juce::File& f)
     {
         playingCell = cell;
         previewPanel.playFile(f);
@@ -95,7 +109,7 @@ MainComponent::MainComponent()
 
     cubbiEditor = std::make_unique<BankEditorPanel>(ChompiNamer::Category::Cubbi);
     cubbiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
-    cubbiEditor->onSlotClicked         = advancedSlotClicked;
+    cubbiEditor->onSlotClicked         = packSlotClicked;
     cubbiEditor->onPreviewStop         = [this] { stopPreview(); };
     cubbiEditor->getStartDirectory     = [this]() -> juce::File { return getSavedFolder("lastCubbiFolder"); };
     cubbiEditor->onFolderBrowsed       = [this](juce::File dir)  { saveFolder("lastCubbiFolder", dir); };
@@ -105,7 +119,7 @@ MainComponent::MainComponent()
 
     jammiEditor = std::make_unique<BankEditorPanel>(ChompiNamer::Category::Jammi);
     jammiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
-    jammiEditor->onSlotClicked         = advancedSlotClicked;
+    jammiEditor->onSlotClicked         = packSlotClicked;
     jammiEditor->onPreviewStop         = [this] { stopPreview(); };
     jammiEditor->getStartDirectory     = [this]() -> juce::File { return getSavedFolder("lastJammiFolder"); };
     jammiEditor->onFolderBrowsed       = [this](juce::File dir)  { saveFolder("lastJammiFolder", dir); };
@@ -217,36 +231,52 @@ MainComponent::MainComponent()
     openOutputButton.setEnabled(false);
     addAndMakeVisible(openOutputButton);
 
-    statusTextEditor.setMultiLine(true);
-    statusTextEditor.setReadOnly(true);
-    statusTextEditor.setScrollbarsShown(true);
-    statusTextEditor.setCaretVisible(false);
-    statusTextEditor.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain));
-    statusTextEditor.setColour(juce::TextEditor::backgroundColourId, statusBgColour);
-    statusTextEditor.setColour(juce::TextEditor::textColourId,       statusFgColour);
-    statusTextEditor.setColour(juce::TextEditor::outlineColourId,    juce::Colour(0xff2a3a4a));
-    statusTextEditor.setText("Ready to process samples...");
-    addAndMakeVisible(statusTextEditor);
+    fillButton.setButtonText("Fill from folder...");
+    fillButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff2a3a4a));
+    fillButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffaabbcc));
+    fillButton.onClick = [this]
+    {
+        if (viewMode == ViewMode::Pack)
+        {
+            auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+            ed->autoFillFromFolder({});
+        }
+        else
+        {
+            bankFocusPanel->triggerAutoFill();
+        }
+    };
+    addAndMakeVisible(fillButton);
+
+    clearButton.setButtonText("Clear All");
+    clearButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff2a3a4a));
+    clearButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffaabbcc));
+    clearButton.onClick = [this]
+    {
+        if (viewMode == ViewMode::Pack)
+        {
+            auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+            ed->clearAllBanks();
+        }
+        else
+        {
+            bankFocusPanel->triggerClear();
+        }
+    };
+    addAndMakeVisible(clearButton);
 
     processor = std::make_unique<GuiProcessor>();
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
 
     // Apply initial mode styling
-    styleTabButton(simpleModeButton,   true);
-    styleTabButton(advancedModeButton, false);
-    styleTabButton(bankModeButton,     false);
-    styleTabButton(cubbiTabButton,     true);
-    styleTabButton(jammiTabButton,     false);
-
-    // Advanced and Bank mode controls are hidden initially
-    cubbiTabButton.setVisible(false);
-    jammiTabButton.setVisible(false);
-    cubbiEditor->setVisible(false);
-    jammiEditor->setVisible(false);
+    styleTabButton(packModeButton, true);
+    styleTabButton(bankModeButton, false);
+    styleTabButton(cubbiTabButton, true);
+    styleTabButton(jammiTabButton, false);
 
     setWantsKeyboardFocus(true);
 
-    setSize(600, 740);
+    setSize(1118, 700);
 }
 
 MainComponent::~MainComponent()
@@ -270,100 +300,75 @@ void MainComponent::resized()
 {
     auto area = getLocalBounds().reduced(20);
     const int sectionLabelH = 18;
-    const int zoneH         = 62;
-    const int sectionGap    = 14;
+    const int sectionGap    = 8;
     const int itemGap       = 6;
-    const int modeToggleH   = 28;
-    const int tabH          = 28;
+    const int navH          = 26;
 
-    // Header
-    headerLabel.setBounds(area.removeFromTop(44));
-    area.removeFromTop(sectionGap);
+    // ── Shared header + nav row ───────────────────────────
+    headerLabel.setBounds(area.removeFromTop(28));
+    area.removeFromTop(8);
 
-    // Mode toggle (3 buttons)
+    // Single nav row: [Cubbi][Jammi]  20px gap  [Pack][Bank]
     {
-        auto row = area.removeFromTop(modeToggleH);
-        int btnW = row.getWidth() / 3;
-        simpleModeButton.setBounds  (row.removeFromLeft(btnW).reduced(2, 0));
-        advancedModeButton.setBounds(row.removeFromLeft(btnW).reduced(2, 0));
-        bankModeButton.setBounds    (row.reduced(2, 0));
+        auto row = area.removeFromTop(navH);
+        const int modeW = 52, catW = 58;
+
+        cubbiTabButton.setBounds(row.removeFromLeft(catW).reduced(1, 0));
+        jammiTabButton.setBounds(row.removeFromLeft(catW).reduced(1, 0));
+        row.removeFromLeft(20);
+        packModeButton.setBounds(row.removeFromLeft(modeW).reduced(1, 0));
+        bankModeButton.setBounds(row.removeFromLeft(modeW).reduced(1, 0));
     }
+    area.removeFromTop(10);
 
-    if (viewMode == ViewMode::Simple)
+    // ── Reserve footer from bottom ────────────────────────
+    // Footer: fill/clear (26px) + gap + output section + buttons [+ bank status label]
+    const int fillClearH  = 26;
+    const int outputH     = 26 + 4 + 20 + sectionGap;  // path label removed; ~58px
+    const int buttonsH    = 32;
+    const int bankStatusH = 6 + 16;  // always reserved; label hidden in Pack mode
+    const int footerH     = fillClearH + itemGap + outputH + buttonsH + bankStatusH;
+
+    auto footer = area.removeFromBottom(footerH);
+
+    if (viewMode == ViewMode::Pack)
     {
-        // ── Simple mode layout ─────────────────────────────
-        area.removeFromTop(sectionGap);
-
-        cubbiSectionLabel.setBounds(area.removeFromTop(sectionLabelH));
-        area.removeFromTop(itemGap);
-        cubbiDropZone->setBounds(area.removeFromTop(zoneH));
-        area.removeFromTop(sectionGap);
-
-        jammiSectionLabel.setBounds(area.removeFromTop(sectionLabelH));
-        area.removeFromTop(itemGap);
-        jammiDropZone->setBounds(area.removeFromTop(zoneH));
-        area.removeFromTop(sectionGap);
-
-        layoutOutputSection(area, sectionLabelH, itemGap, sectionGap);
-
-        layoutButtonRow(area, 32);
-        area.removeFromTop(sectionGap);
-
-        statusTextEditor.setBounds(area);
-    }
-    else if (viewMode == ViewMode::Advanced)
-    {
-        // ── Advanced mode layout ───────────────────────────
-        area.removeFromTop(10);
-
-        // Category tabs
-        {
-            auto row = area.removeFromTop(tabH);
-            int btnW = row.getWidth() / 2;
-            cubbiTabButton.setBounds(row.removeFromLeft(btnW).reduced(2, 0));
-            jammiTabButton.setBounds(row.reduced(2, 0));
-        }
-        area.removeFromTop(8);
-
-        // Bank editor (only the visible one is laid out; both share the same rect)
-        const int editorH = 312;  // 5 × (52+4) + 4 + 28
+        // ── Pack mode: editor fills remaining space ────────
+        const int editorH = 385;  // 5 × 77px (ROW_HEIGHT, no gaps)
         auto editorBounds = area.removeFromTop(editorH);
         cubbiEditor->setBounds(editorBounds);
         jammiEditor->setBounds(editorBounds);
-        area.removeFromTop(sectionGap);
-
-        layoutOutputSection(area, sectionLabelH, itemGap, sectionGap);
-
-        layoutButtonRow(area, 32);
-        area.removeFromTop(10);
-
-        statusTextEditor.setBounds(area);
     }
     else  // ViewMode::Bank
     {
-        // ── Bank focus mode layout ─────────────────────────
-        area.removeFromTop(10);
+        // ── Bank mode: focus panel fills remaining space ───
+        cubbiEditor->setBounds({});
+        jammiEditor->setBounds({});
+        bankFocusPanel->setBounds(area.removeFromTop(385));  // 7 × 55px (ROW_HEIGHT)
+    }
 
-        // Category tabs (shared with Advanced)
+    // ── Shared footer ─────────────────────────────────────
+    {
+        // Fill / Clear row
+        auto fillRow = footer.removeFromTop(fillClearH);
+        const int btnW = fillRow.getWidth() / 2;
+        fillButton.setBounds(fillRow.removeFromLeft(btnW).reduced(2, 0));
+        clearButton.setBounds(fillRow.reduced(2, 0));
+
+        footer.removeFromTop(itemGap);
+
+        // Output folder section
+        layoutOutputSection(footer, sectionLabelH, itemGap, sectionGap);
+
+        // Process / Open buttons
+        layoutButtonRow(footer, buttonsH);
+
+        // Bank status label
+        if (viewMode == ViewMode::Bank)
         {
-            auto row = area.removeFromTop(tabH);
-            int btnW = row.getWidth() / 2;
-            cubbiTabButton.setBounds(row.removeFromLeft(btnW).reduced(2, 0));
-            jammiTabButton.setBounds(row.reduced(2, 0));
+            footer.removeFromTop(6);
+            bankStatusLabel.setBounds(footer.removeFromTop(16));
         }
-        area.removeFromTop(8);
-
-        // Bank focus panel fills the space above the bottom section
-        const int focusPanelH = area.getHeight() - 106 - 32 - 10 - 22;
-        bankFocusPanel->setBounds(area.removeFromTop(focusPanelH));
-        area.removeFromTop(sectionGap);
-
-        layoutOutputSection(area, sectionLabelH, itemGap, sectionGap);
-
-        layoutButtonRow(area, 32);
-        area.removeFromTop(6);
-
-        bankStatusLabel.setBounds(area.removeFromTop(16));
     }
 }
 
@@ -376,60 +381,45 @@ void MainComponent::setViewMode(ViewMode mode)
         syncBankFocusToAdvanced();
     // Sync data when entering Bank mode
     if (mode == ViewMode::Bank && viewMode != ViewMode::Bank)
-        syncAdvancedToBankFocus();
+        syncPackToBankFocus();
 
     viewMode = mode;
 
-    styleTabButton(simpleModeButton,   mode == ViewMode::Simple);
-    styleTabButton(advancedModeButton, mode == ViewMode::Advanced);
-    styleTabButton(bankModeButton,     mode == ViewMode::Bank);
+    styleTabButton(packModeButton, mode == ViewMode::Pack);
+    styleTabButton(bankModeButton, mode == ViewMode::Bank);
 
-    const bool isSimple   = (mode == ViewMode::Simple);
-    const bool isAdvanced = (mode == ViewMode::Advanced);
-    const bool isBank     = (mode == ViewMode::Bank);
+    const bool isPack = (mode == ViewMode::Pack);
+    const bool isBank = (mode == ViewMode::Bank);
 
-    // Simple mode
-    cubbiSectionLabel.setVisible(isSimple);
-    jammiSectionLabel.setVisible(isSimple);
-    cubbiDropZone->setVisible(isSimple);
-    jammiDropZone->setVisible(isSimple);
-
-    // Category tabs shared between Advanced and Bank modes
-    cubbiTabButton.setVisible(isAdvanced || isBank);
-    jammiTabButton.setVisible(isAdvanced || isBank);
-    if (isAdvanced)
+    // Category tabs shared between Pack and Bank modes
+    cubbiTabButton.setVisible(true);
+    jammiTabButton.setVisible(true);
+    if (isPack)
     {
         setCategoryTab(showCubbiEditor);
     }
-    else if (isBank)
+    else  // isBank
     {
-        // Style tabs without touching editor visibility
         styleTabButton(cubbiTabButton, showCubbiEditor);
         styleTabButton(jammiTabButton, !showCubbiEditor);
-        // Sync bank focus panel to the current category selection
         auto cat = showCubbiEditor ? ChompiNamer::Category::Cubbi
                                    : ChompiNamer::Category::Jammi;
         bankFocusPanel->switchToCategory(cat);
     }
-    else
-    {
-        cubbiEditor->setVisible(false);
-        jammiEditor->setVisible(false);
-    }
 
     // Bank mode
     bankFocusPanel->setVisible(isBank);
+    if (isBank) bankFocusPanel->grabKeyboardFocus();
     bankStatusLabel.setVisible(isBank);
-    statusTextEditor.setVisible(!isBank);
 
-    // Window height: Bank mode needs more vertical space for 14 rows
-    setSize(600, isBank ? 820 : 740);
+    // Update footer button labels for current mode
+    clearButton.setButtonText(isBank ? "Clear Bank" : "Clear All");
 
     updateProcessButtonState();
     resized();
 }
 
-void MainComponent::syncAdvancedToBankFocus()
+void MainComponent::syncPackToBankFocus()
 {
     bankFocusPanel->clearAll();
 
@@ -470,7 +460,7 @@ void MainComponent::setCategoryTab(bool showCubbi)
     styleTabButton(cubbiTabButton, showCubbi);
     styleTabButton(jammiTabButton, !showCubbi);
     stopPreview();
-    if (viewMode == ViewMode::Advanced)
+    if (viewMode == ViewMode::Pack)
     {
         cubbiEditor->clearSelection();
         jammiEditor->clearSelection();
@@ -487,47 +477,12 @@ void MainComponent::styleTabButton(juce::TextButton& btn, bool active)
     btn.setColour(juce::TextButton::textColourOnId,  headerColour);
 }
 
-// ─── Unified folder handlers ──────────────────────────────────────────────────
-
-void MainComponent::handleCubbiFolderSelected(juce::File folder)
-{
-    if (!folder.isDirectory()) return;
-
-    selectedCubbiFolder = folder;
-    cubbiDropZone->setSelectedFolder(folder);
-
-    int count = countAudioFiles(folder);
-    if (count == 0)
-        appendStatus("Warning: Cubbi folder contains no supported audio files");
-    else
-        appendStatus("Cubbi folder selected: " + juce::String(count) + " audio files found");
-
-    saveFolder("lastCubbiFolder", folder);
-    updateProcessButtonState();
-}
-
-void MainComponent::handleJammiFolderSelected(juce::File folder)
-{
-    if (!folder.isDirectory()) return;
-
-    selectedJammiFolder = folder;
-    jammiDropZone->setSelectedFolder(folder);
-
-    int count = countAudioFiles(folder);
-    if (count == 0)
-        appendStatus("Warning: Jammi folder contains no supported audio files");
-    else
-        appendStatus("Jammi folder selected: " + juce::String(count) + " audio files found");
-
-    saveFolder("lastJammiFolder", folder);
-    updateProcessButtonState();
-}
+// ─── Output folder ────────────────────────────────────────────────────────────
 
 void MainComponent::handleOutputFolderSelected(juce::File folder)
 {
     if (!folder.isDirectory()) return;
 
-    // Decompose: parent becomes the base, folder name populates the editor
     outputBaseFolder = folder.getParentDirectory();
     outputNameEditor.setText(folder.getFileName(), juce::dontSendNotification);
     saveFolder("lastOutputParent", outputBaseFolder);
@@ -610,24 +565,20 @@ void MainComponent::prepareOutputFolder(const juce::File& folder)
         folder.deleteRecursively();
         appendStatus("Cleaned: " + folder.getFullPathName());
     }
-    // Actual directory creation handled by processor via ensureDirectoryExists
 }
 
-void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int labelH, int itemGap, int sectionGap)
+void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int /*labelH*/, int /*itemGap*/, int sectionGap)
 {
-    outputSectionLabel.setBounds(area.removeFromTop(labelH));
-    area.removeFromTop(itemGap);
-
-    // Row: [parent button] [/] [name editor]
+    // Row: [OUTPUT FOLDER label] [parent button] [/] [name editor]
     auto row = area.removeFromTop(26);
-    const int nameW  = 180;
+    const int labelW = 100;
+    const int nameW  = 540;
     const int slashW = 16;
+    outputSectionLabel.setBounds(row.removeFromLeft(labelW));
     outputNameEditor.setBounds(row.removeFromRight(nameW));
     outputSlashLabel.setBounds(row.removeFromRight(slashW));
     outputParentButton.setBounds(row);
 
-    area.removeFromTop(4);
-    outputPathLabel.setBounds(area.removeFromTop(14));
     area.removeFromTop(4);
     cleanOutputToggle.setBounds(area.removeFromTop(20));
     area.removeFromTop(sectionGap);
@@ -635,50 +586,14 @@ void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int labelH, 
 
 // ─── File browser launchers ───────────────────────────────────────────────────
 
-void MainComponent::selectFolderFor(const juce::String& title,
-                                    const juce::File& startDir,
-                                    std::function<void(juce::File)> handler)
-{
-    auto start = (startDir != juce::File{} && startDir.isDirectory())
-                     ? startDir
-                     : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
-
-    fileChooser = std::make_unique<juce::FileChooser>(title, start, "", true);
-
-    auto flags = juce::FileBrowserComponent::openMode
-               | juce::FileBrowserComponent::canSelectDirectories;
-
-    fileChooser->launchAsync(flags, [handler](const juce::FileChooser& chooser) {
-        auto f = chooser.getResult();
-        if (f != juce::File{}) handler(f);
-    });
-}
-
-void MainComponent::selectCubbiFolder()
-{
-    selectFolderFor("Select Cubbi Folder",
-                    getSavedFolder("lastCubbiFolder"),
-                    [this](juce::File f) { handleCubbiFolderSelected(f); });
-}
-
-void MainComponent::selectJammiFolder()
-{
-    selectFolderFor("Select Jammi Folder",
-                    getSavedFolder("lastJammiFolder"),
-                    [this](juce::File f) { handleJammiFolderSelected(f); });
-}
-
 void MainComponent::selectOutputFolder()
 {
-    // Open chooser starting at current resolved folder (or saved parent)
     auto startDir = getResolvedOutputFolder();
     if (!startDir.exists())
         startDir = outputBaseFolder;
 
     fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Output Folder",
-        startDir,
-        "", true);
+        "Select Output Folder", startDir, "", true);
 
     auto flags = juce::FileBrowserComponent::openMode
                | juce::FileBrowserComponent::canSelectDirectories;
@@ -698,36 +613,15 @@ void MainComponent::processFiles()
     processButton.setEnabled(false);
     appendStatus("\n=== Starting CHOMPI Processing ===");
 
-    if (viewMode == ViewMode::Advanced)
-    {
-        processFilesAdvanced();
-    }
-    else if (viewMode == ViewMode::Bank)
-    {
-        // Sync Bank → Advanced, then reuse the same processing path
+    if (viewMode == ViewMode::Bank)
         syncBankFocusToAdvanced();
-        processFilesAdvanced();
-    }
-    else
-    {
-        juce::File outputFolder = getResolvedOutputFolder();
-        prepareOutputFolder(outputFolder);
 
-        auto result = processor->processFiles(selectedCubbiFolder, selectedJammiFolder, outputFolder);
-
-        if (result.success)
-            appendProcessingResult(result, outputFolder);
-        else
-        {
-            appendStatus("\n=== Processing Failed ===");
-            appendStatus("Error: " + result.message);
-        }
-    }
+    processFilesFromEditors();
 
     processButton.setEnabled(true);
 }
 
-void MainComponent::processFilesAdvanced()
+void MainComponent::processFilesFromEditors()
 {
     auto cubbiAssignments = cubbiEditor->getAssignments();
     auto jammiAssignments = jammiEditor->getAssignments();
@@ -739,9 +633,7 @@ void MainComponent::processFilesAdvanced()
         cubbiAssignments, jammiAssignments, outputFolder);
 
     if (result.success)
-    {
         appendProcessingResult(result, outputFolder);
-    }
     else
     {
         appendStatus("\n=== Processing Failed ===");
@@ -768,22 +660,24 @@ void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult&
 void MainComponent::updateProcessButtonState()
 {
     bool ready = false;
-    if (viewMode == ViewMode::Advanced)
+    if (viewMode == ViewMode::Pack)
         ready = (cubbiEditor->getFilledCount() + jammiEditor->getFilledCount()) > 0;
-    else if (viewMode == ViewMode::Bank)
+    else  // Bank
         ready = (bankFocusPanel->getFilledCount(ChompiNamer::Category::Cubbi)
                + bankFocusPanel->getFilledCount(ChompiNamer::Category::Jammi)) > 0;
-    else
-        ready = (selectedCubbiFolder != juce::File{}) || (selectedJammiFolder != juce::File{});
 
     processButton.setEnabled(ready);
 }
 
 void MainComponent::appendStatus(const juce::String& message)
 {
-    statusTextEditor.moveCaretToEnd();
-    statusTextEditor.insertTextAtCaret(message + "\n");
-    statusTextEditor.moveCaretToEnd();
+    consoleContent += message + "\n";
+    if (consoleWindow != nullptr)
+    {
+        consoleWindow->editor.moveCaretToEnd();
+        consoleWindow->editor.insertTextAtCaret(message + "\n");
+        consoleWindow->editor.moveCaretToEnd();
+    }
 }
 
 void MainComponent::setShowRuntimeLogs(bool shouldShow)
@@ -818,38 +712,52 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     if (dynamic_cast<juce::TextEditor*>(origin) != nullptr)
         return false;
 
+    if (key == juce::KeyPress::escapeKey)
+    {
+        stopPreview();
+        return true;
+    }
+
     if (key == juce::KeyPress::spaceKey)
     {
-        if (viewMode == ViewMode::Advanced)
+        if (viewMode == ViewMode::Pack)
         {
             auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
-            if (previewPanel.isPlaying())
-            {
-                // Snapshot before stopPreview clears playingCell
-                auto wasPlaying = playingCell;
-                stopPreview();
-                // Different cell focused → interrupt + immediately play it
-                if (ed->selectionSize() == 1 && ed->getFocusCell() != wasPlaying)
-                    ed->playFocused();
-                // Same cell (or invalid) → just stop; nothing more to do
-            }
-            else
-            {
-                ed->playFocused();
-            }
+            stopPreview();
+            ed->playFocused();
         }
-        else
+        else  // Bank
         {
             stopPreview();
+            bankFocusPanel->playFocused();
         }
         return true;
     }
 
-    if (viewMode != ViewMode::Advanced) return false;
+    // ── Bank view keyboard navigation ────────────────────────────────────────
+    if (viewMode == ViewMode::Bank)
+    {
+        if (key.getModifiers().isShiftDown())
+        {
+            if (key.getKeyCode() == juce::KeyPress::upKey)   { bankFocusPanel->expandRowSelection(-1); return true; }
+            if (key.getKeyCode() == juce::KeyPress::downKey) { bankFocusPanel->expandRowSelection( 1); return true; }
+        }
+        if (key == juce::KeyPress::upKey)   { bankFocusPanel->moveFocusedRow(-1); return true; }
+        if (key == juce::KeyPress::downKey) { bankFocusPanel->moveFocusedRow( 1); return true; }
+        if (key == juce::KeyPress::deleteKey
+         || key == juce::KeyPress::backspaceKey) { bankFocusPanel->clearFocusedRows(); return true; }
+        if (key == juce::KeyPress::returnKey)
+        {
+            if (dynamic_cast<juce::Button*>(origin) != nullptr) return false;
+            bankFocusPanel->browseForFocused();
+            return true;
+        }
+        return false;
+    }
 
+    // ── Pack view keyboard navigation ─────────────────────────────────────────
     auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
 
-    // Shift+Arrow: expand rectangular selection (no-op at grid border)
     if (key.getModifiers().isShiftDown())
     {
         if (key.getKeyCode() == juce::KeyPress::leftKey)  { ed->expandSelection(0, -1); return true; }
@@ -870,13 +778,26 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
 
     if (key == juce::KeyPress::returnKey)
     {
-        // Don't intercept if a button has focus — let it handle its own click
         if (dynamic_cast<juce::Button*>(origin) != nullptr) return false;
         ed->browseForFocused();
         return true;
     }
 
     return false;
+}
+
+void MainComponent::toggleConsole()
+{
+    consoleVisible = !consoleVisible;
+    if (consoleVisible)
+    {
+        consoleWindow = std::make_unique<ConsoleWindow>(consoleContent);
+        consoleWindow->onClose = [this] { toggleConsole(); };
+    }
+    else
+    {
+        consoleWindow.reset();
+    }
 }
 
 void MainComponent::showLogFolder()
@@ -889,30 +810,7 @@ void MainComponent::showLogFolder()
 
 void MainComponent::clearStatusLog()
 {
-    statusTextEditor.clear();
-    statusTextEditor.setText("Status log cleared.");
-}
-
-int MainComponent::countAudioFiles(const juce::File& folder)
-{
-    juce::Array<juce::File> files;
-    for (const auto& pattern : FileSystemHelper::getSupportedAudioExtensions())
-        folder.findChildFiles(files, juce::File::findFiles, true, pattern);
-    return files.size();
-}
-
-void MainComponent::previewFirstAudioFile(const juce::File& folder)
-{
-    juce::Array<juce::File> files;
-    for (const auto& pattern : FileSystemHelper::getSupportedAudioExtensions())
-    {
-        folder.findChildFiles(files, juce::File::findFiles, true, pattern);
-        if (!files.isEmpty()) break;
-    }
-
-    if (!files.isEmpty())
-    {
-        files.sort();
-        previewPanel.loadFile(files[0]);
-    }
+    consoleContent = "Status log cleared.\n";
+    if (consoleWindow != nullptr)
+        consoleWindow->editor.setText(consoleContent);
 }
