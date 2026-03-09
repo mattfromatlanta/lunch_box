@@ -17,12 +17,12 @@
 
 ## Current Status
 
-**Version:** 2.3.0
-**Completed Milestones:** M1–M8, M10, M12 (major), Bank Focus View, UI Layout Overhaul
+**Version:** 2.4.0
+**Completed Milestones:** M1–M8, M10, M12 (major+second pass), Bank Focus View, UI Layout Overhaul, Keyboard/UX Refinements
 
 **What Works:**
-- ✅ CLI interface with full CHOMPI processing
-- ✅ GUI: Simple mode (folder drop zones), Advanced mode (5-bank × 14-slot grid), Bank mode (single-bank focus view)
+- ✅ CLI interface with full CHOMPI processing (wav/aiff/mp3/flac)
+- ✅ GUI: Simple mode (folder drop zones), Advanced/Pack mode (5-bank × 14-slot grid), Bank mode (single-bank focus view)
 - ✅ Audio conversion (16-bit 48kHz WAV output)
 - ✅ Automatic bank assignment (A-E, 14 slots each)
 - ✅ Dual categories (Cubbi / Jammi)
@@ -33,11 +33,15 @@
 - ✅ Waveform preview per slot (FocusedSlotRow, AudioThumbnail)
 - ✅ Preview playback (click to play, move focus to stop)
 - ✅ Persistent folder memory across sessions
-- ✅ macOS menu bar (File / Settings menus)
-- ✅ Source/Processing/ module layout; constants deduplication; code review pass
-- ✅ Fixed-size window (1118×700); unified Pack/Bank grid heights (385px each)
+- ✅ macOS menu bar (File / Edit / Settings menus)
+- ✅ Source/Processing/ module layout; constants deduplication; code review passes
+- ✅ Resizable window (default 525×900); unified Pack/Bank grid heights (385px each)
 - ✅ Pack cells 77×77px with bank-letter prefixed labels (A1, E14); Bank rows 55px, 2-col layout
 - ✅ Floating console window; shared fixed footer (Fill/Clear + output + process buttons)
+- ✅ Full keyboard navigation: arrows + Shift-select, Tab (toggle Cubbi/Jammi), Esc (clear selection), Space (preview), Enter (browse), Delete/Backspace (clear)
+- ✅ ApplicationCommandManager hotkeys: Cmd+Z/Shift+Z (undo/redo), Cmd+C/X/V (copy/cut/paste), Cmd+A (select all), Cmd+O (open output), Cmd+Return (process)
+- ✅ 10-step undo/redo (full state snapshots, cross-view-mode)
+- ✅ System clipboard paste from external apps (Finder file URLs, Sononym plain-text paths)
 
 **See:** [prompts/MILESTONES_OVERVIEW.md](prompts/MILESTONES_OVERVIEW.md) for full roadmap.
 
@@ -533,7 +537,7 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ## Version History
 
-- **v2.3.0** (Current) - UI Layout Overhaul: fixed window, unified grid heights, 2-col bank view, floating console, footer, output section polish
+- **v2.3.0** (Current) - UI Layout Overhaul: resizable window (default 525×900), unified grid heights, 2-col bank view, floating console, footer, output section polish
 - **v2.2.0** - Bank Focus View (third tab, waveform rows, shared category tabs)
 - **v2.1.0** - M12 structural refactor: Source/Processing/ layout, constants deduplication, bug fixes
 - **v2.0.0** - M7, M8, M9 (base), M10 complete; menu bar, runtime logs, bank distribution fixes
@@ -546,7 +550,7 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ---
 
-**Last Updated:** 2026-03-09
+**Last Updated:** 2026-03-10
 **Maintainer:** Matt from Atlanta
 **AI Assistant:** This document is specifically for AI assistants working on the codebase
 

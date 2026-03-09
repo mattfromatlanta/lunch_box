@@ -94,9 +94,8 @@ MainComponent::MainComponent()
     addAndMakeVisible(cubbiTabButton);
     addAndMakeVisible(jammiTabButton);
 
-    auto packSlotClicked = [this](BankEditorPanel::Cell cell, const juce::File& f)
+    auto packSlotClicked = [this](BankEditorPanel::Cell, const juce::File& f)
     {
-        playingCell = cell;
         previewPanel.playFile(f);
     };
 
@@ -193,8 +192,7 @@ MainComponent::MainComponent()
     {
         if (viewMode == ViewMode::Pack)
         {
-            auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
-            ed->autoFillFromFolder({});
+            getActiveEditor()->autoFillFromFolder({});
         }
         else
         {
@@ -211,8 +209,7 @@ MainComponent::MainComponent()
         captureUndoState();
         if (viewMode == ViewMode::Pack)
         {
-            auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
-            ed->clearAllBanks();
+            getActiveEditor()->clearAllBanks();
         }
         else
         {
@@ -259,7 +256,6 @@ void MainComponent::paint(juce::Graphics& g)
 void MainComponent::resized()
 {
     auto area = getLocalBounds().reduced(20);
-    const int sectionLabelH = 18;
     const int sectionGap    = 8;
     const int itemGap       = 6;
 
@@ -319,7 +315,7 @@ void MainComponent::resized()
         footer.removeFromTop(itemGap);
 
         // Output folder section
-        layoutOutputSection(footer, sectionLabelH, itemGap, sectionGap);
+        layoutOutputSection(footer, sectionGap);
 
         // Process / Open buttons
         layoutButtonRow(footer, buttonsH);
@@ -428,6 +424,11 @@ void MainComponent::setCategoryTab(bool showCubbi)
         cubbiEditor->setVisible(showCubbi);
         jammiEditor->setVisible(!showCubbi);
     }
+}
+
+BankEditorPanel* MainComponent::getActiveEditor()
+{
+    return showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
 }
 
 void MainComponent::styleTabButton(juce::TextButton& btn, bool active)
@@ -543,7 +544,7 @@ void MainComponent::prepareOutputFolder(const juce::File& folder)
     }
 }
 
-void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int /*labelH*/, int /*itemGap*/, int sectionGap)
+void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int sectionGap)
 {
     // Row: output button fills full width
     outputParentButton.setBounds(area.removeFromTop(26));
@@ -669,7 +670,6 @@ void MainComponent::setShowRuntimeLogs(bool shouldShow)
 void MainComponent::stopPreview()
 {
     previewPanel.stopPlayback();
-    playingCell = { -1, -1 };
 }
 
 bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origin)
@@ -683,7 +683,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
         if (viewMode == ViewMode::Bank)
             bankFocusPanel->clearSelection();
         else
-            (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->clearSelection();
+            getActiveEditor()->clearSelection();
         return true;
     }
 
@@ -691,9 +691,8 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     {
         if (viewMode == ViewMode::Pack)
         {
-            auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
             stopPreview();
-            ed->playFocused();
+            getActiveEditor()->playFocused();
         }
         else  // Bank
         {
@@ -733,7 +732,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     }
 
     // ── Pack view keyboard navigation ─────────────────────────────────────────
-    auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+    auto* ed = getActiveEditor();
 
     if (key.getModifiers().isShiftDown())
     {
@@ -803,7 +802,7 @@ void MainComponent::editCopy()
     if (viewMode == ViewMode::Bank)
         sampleClipboard = bankFocusPanel->getSelectedFiles();
     else
-        sampleClipboard = (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->getSelectedFiles();
+        sampleClipboard = getActiveEditor()->getSelectedFiles();
 
     // Record the current system clipboard change count so editPaste() can detect
     // whether an external copy happened after this one.
@@ -820,9 +819,8 @@ void MainComponent::editCut()
     }
     else
     {
-        auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
-        sampleClipboard = ed->getSelectedFiles();
-        ed->clearSelectedCells();
+        sampleClipboard = getActiveEditor()->getSelectedFiles();
+        getActiveEditor()->clearSelectedCells();
     }
 
     lastInternalCopyChangeCount = ClipboardHelper::getChangeCount();
@@ -848,7 +846,7 @@ void MainComponent::editPaste()
     if (viewMode == ViewMode::Bank)
         bankFocusPanel->pasteFiles(files);
     else
-        (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->pasteFiles(files);
+        getActiveEditor()->pasteFiles(files);
 }
 
 // ─── Undo / redo ──────────────────────────────────────────────────────────────
@@ -1009,7 +1007,7 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
             if (viewMode == ViewMode::Bank)
                 bankFocusPanel->selectAll();
             else
-                (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->selectAll();
+                getActiveEditor()->selectAll();
             return true;
         }
         case cmdOpenOutput:  getResolvedOutputFolder().startAsProcess(); return true;

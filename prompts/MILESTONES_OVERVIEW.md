@@ -91,7 +91,7 @@
 **Description:** Comprehensive layout and styling pass to establish a fixed, proportional UI.
 
 **Changes:**
-- Fixed window size: 1118×700px (no resize; `setResizable(false, false)`)
+- Resizable window, default 525×900px (`setResizable(true, false)`, limits 400–900 × 500–10000)
 - Pack (Advanced) cells: 77×77px; Bank focus rows: 55px tall; both grids lock to 385px total height so the shared footer never moves
 - Pack grid: removed row header label column (was 38px); bank letter embedded in each cell label (e.g. "A1", "E14") at 16pt
 - Bank focus view: restructured to two columns of 7 rows (matching Pack grid height)
@@ -136,6 +136,53 @@
 - clang-tidy static analysis pass
 - Instruments memory/performance profiling
 - Const-correctness and error-handling completeness audit
+
+---
+
+### Keyboard / UX Refinements (unplanned, completed 2026-03-09/10)
+**Status:** Complete
+**Branch:** 0.3
+**Version:** v2.4.0
+
+**Keyboard navigation:**
+- Arrow keys move focus (Pack: row/col grid; Bank: row list)
+- Shift+Arrow extends selection
+- Tab toggles between Cubbi and Jammi in both Pack and Bank modes
+- Esc collapses multi-selection to focused cell/row (removed all prior Esc uses)
+- Space previews focused slot; Enter browses for file; Delete/Backspace clears
+
+**ApplicationCommandManager hotkeys (wired to native macOS menu):**
+- Cmd+Z / Cmd+Shift+Z — Undo / Redo
+- Cmd+C / Cmd+X / Cmd+V — Copy / Cut / Paste
+- Cmd+A — Select All (all 70 cells in Pack; all 14 rows in Bank)
+- Cmd+O — Open output folder in Finder
+- Cmd+Return — Process Samples
+
+**Undo / Redo:**
+- 10-step buffer (configurable via `MAX_UNDO_STEPS`)
+- Full state snapshots (`UndoState` stores all 5×14 slots for both categories)
+- Cross-view-mode safe: `readCurrentState()` reads from the authoritative view; `applyUndoState()` writes Pack editors + syncs BankFocusPanel if active
+- `onBeforeChange` callback on BankEditorPanel, BankFocusPanel, and BankSlotComponent fires before any mutation; MainComponent's `captureUndoState()` is wired to each
+- Undo/Redo menu items always enabled (JUCE native macOS menu caches enabled state at registration time; silently no-ops when stack is empty)
+
+**System clipboard paste (ClipboardHelper.mm):**
+- New file: `Source/GUI/ClipboardHelper.h/.mm` — Obj-C++ wrapper around NSPasteboard
+- Strategy 1: enumerate `pasteboardItems`, read `public.file-url` per item (Finder, modern apps)
+- Strategy 2: legacy `NSFilenamesPboardType` (older/Electron apps)
+- Strategy 3: plain text path(s) split by newline (Sononym and similar)
+- `editPaste()` uses system clipboard when its `changeCount` has advanced since the last internal copy (detected via `ClipboardHelper::getChangeCount()`)
+- Extension matching uses `.fromFirstOccurrenceOf(".", true, false)` to strip glob `*.` prefix from `getSupportedAudioExtensions()`
+
+**Other UX fixes:**
+- Clean folder toggle unchecked by default on launch
+
+**Code review pass 2 (M12 continuation):**
+- Removed `playingCell` (set but never read)
+- Removed two commented-out melatonin inspector blocks from `MainComponent.h`
+- Removed unused `labelH` and `itemGap` params from `layoutOutputSection`; removed now-unused `sectionLabelH` local
+- Added `getActiveEditor()` private helper replacing 9 repeated `showCubbiEditor ? cubbiEditor.get() : jammiEditor.get()` ternaries
+- Legacy CLI scan updated from `"*.wav"` to `getSupportedAudioExtensions()` (all formats)
+- Window sizing documentation corrected in CLAUDE.md and MILESTONES_OVERVIEW.md (was erroneously documenting "fixed 1118×700")
 
 ---
 
@@ -245,10 +292,10 @@ DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major
 - **v1.3.0:** M6 complete (bank folder organization)
 - **v2.0.0:** M7, M8, M9 (base), M10 complete + menu bar, runtime logs, bank distribution fixes
 - **v2.1.0:** M12 structural refactor (0.3 branch); Source/Processing/ layout, constants dedup, bug fixes
-- **v2.3.0:** Current — UI Layout Overhaul (fixed window, unified grid heights, 2-col bank view, floating console, footer polish)
 - **v2.2.0:** Bank Focus View complete (third tab, waveform rows, shared category tabs, re-entrant flush fix)
-- **v2.3.0:** M9 finish + M11 (testing)
-- **v3.0.0:** M13 (open source release)
+- **v2.3.0:** UI Layout Overhaul (resizable window default 525×900, unified grid heights, 2-col bank view, floating console, footer polish)
+- **v2.4.0:** Current — Keyboard/UX Refinements (undo/redo, full keyboard nav, system clipboard paste, hotkeys, code review pass 2)
+- **v3.0.0:** M9 finish + M11 (testing) + M13 (open source release)
 
 ## Effort Summary (Remaining)
 
@@ -263,6 +310,6 @@ DONE:  M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10 → M12(major
 
 ---
 
-**Last Updated:** 2026-03-09
-**Current Version:** v2.3.0
+**Last Updated:** 2026-03-10
+**Current Version:** v2.4.0
 **In Progress:** M9 finish → M11 (unit testing)

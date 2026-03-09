@@ -8,10 +8,6 @@
 #include "BankEditorPanel.h"
 #include "BankFocusPanel.h"
 
-// #if JUCE_DEBUG
-//  #include <melatonin_inspector/melatonin_inspector.h>
-// #endif
-
 class ConsoleWindow;
 
 //==============================================================================
@@ -105,7 +101,6 @@ private:
     juce::TextButton clearButton;
 
     PreviewPanel previewPanel;
-    BankEditorPanel::Cell playingCell { -1, -1 };  // grid cell whose file is currently previewing
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     std::unique_ptr<GuiProcessor> processor;
@@ -128,7 +123,8 @@ private:
     // Helpers
     juce::File getResolvedOutputFolder();
     void updateOutputPathDisplay();
-    void layoutOutputSection(juce::Rectangle<int>& area, int labelH, int itemGap, int sectionGap);
+    void layoutOutputSection(juce::Rectangle<int>& area, int sectionGap);
+    BankEditorPanel* getActiveEditor();  // returns the visible Pack-mode editor
     void prepareOutputFolder(const juce::File& folder);   // clean + create
     void layoutButtonRow(juce::Rectangle<int>& area, int h);
 
@@ -169,10 +165,6 @@ private:
     void updateProcessButtonState();
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
-
-// #if JUCE_DEBUG
-//     melatonin::Inspector inspector { *this };
-// #endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

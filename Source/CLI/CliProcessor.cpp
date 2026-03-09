@@ -247,23 +247,25 @@ bool CliProcessor::initializeApplication(const juce::StringArray& args)
         logger.logLine("Folder validated successfully!");
         logger.logLine("");
 
-        // Scan for WAV files recursively
-        logger.logLine("Scanning for WAV files...");
+        // Scan for supported audio files recursively
+        logger.logLine("Scanning for audio files...");
         logger.logLine("");
 
-        config.targetFolder.findChildFiles(config.wavFiles,
-                                    juce::File::findFiles,
-                                    true,  // search recursively
-                                    "*.wav");
+        const auto extensions = FileSystemHelper::getSupportedAudioExtensions();
+        for (const auto& ext : extensions)
+            config.targetFolder.findChildFiles(config.wavFiles,
+                                               juce::File::findFiles,
+                                               true,  // search recursively
+                                               ext);
 
         // Check if any files were found
         if (config.wavFiles.isEmpty())
         {
-            logger.logLine("No WAV files found in the specified directory.");
+            logger.logLine("No supported audio files found in the specified directory.");
             return false;
         }
 
-        logger.logLine("Found " + juce::String(config.wavFiles.size()) + " WAV file(s):");
+        logger.logLine("Found " + juce::String(config.wavFiles.size()) + " audio file(s):");
         logger.logLine("");
 
         return true;
