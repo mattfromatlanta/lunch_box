@@ -143,7 +143,14 @@ void BankRowComponent::paint(juce::Graphics& g)
 void BankRowComponent::resized()
 {
     auto area = getLocalBounds();
-    int slotW = area.getWidth() / ChompiNamer::SLOTS_PER_BANK;
-    for (auto* slot : slots)
-        slot->setBounds(area.removeFromLeft(slotW));
+    constexpr int half = ChompiNamer::SLOTS_PER_BANK / 2;  // 7
+    const int rowH = area.getHeight() / 2;
+    const int slotW = area.getWidth() / half;
+
+    auto topRow = area.removeFromTop(rowH);
+    for (int i = 0; i < half; ++i)
+        slots[i]->setBounds(topRow.removeFromLeft(slotW));
+
+    for (int i = half; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+        slots[i]->setBounds(area.removeFromLeft(slotW));
 }

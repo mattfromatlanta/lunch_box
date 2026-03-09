@@ -8,9 +8,9 @@
 #include "BankEditorPanel.h"
 #include "BankFocusPanel.h"
 
-#if JUCE_DEBUG
- #include <melatonin_inspector/melatonin_inspector.h>
-#endif
+// #if JUCE_DEBUG
+//  #include <melatonin_inspector/melatonin_inspector.h>
+// #endif
 
 class ConsoleWindow;
 
@@ -19,9 +19,24 @@ class ConsoleWindow;
 //==============================================================================
 
 class MainComponent : public juce::Component,
-                      public juce::KeyListener
+                      public juce::KeyListener,
+                      public juce::ApplicationCommandTarget
 {
 public:
+    // Command IDs — used by AppMenuBar to wire menu items with keyboard shortcuts
+    enum CommandIDs
+    {
+        cmdCopy          = 0x2001,
+        cmdCut           = 0x2002,
+        cmdPaste         = 0x2003,
+        cmdToggleConsole = 0x2004,
+        cmdUndo          = 0x2005,
+        cmdRedo          = 0x2006,
+        cmdSelectAll     = 0x2007,
+        cmdOpenOutput    = 0x2008,
+        cmdProcess       = 0x2009,
+    };
+
     MainComponent();
     ~MainComponent() override;
 
@@ -38,6 +53,20 @@ public:
     bool getShowRuntimeLogs() const { return showRuntimeLogs; }
     bool getConsoleVisible()  const { return consoleVisible; }
     void toggleConsole();
+
+    // Edit operations (also invoked via ApplicationCommandTarget::perform)
+    void editCopy();
+    void editCut();
+    void editPaste();
+
+    // ApplicationCommandTarget
+    juce::ApplicationCommandTarget* getNextCommandTarget() override;
+    void getAllCommands(juce::Array<juce::CommandID>&) override;
+    void getCommandInfo(juce::CommandID, juce::ApplicationCommandInfo&) override;
+    bool perform(const juce::ApplicationCommandTarget::InvocationInfo&) override;
+
+    // Shared command manager — AppMenuBar uses this for addCommandItem
+    juce::ApplicationCommandManager commandManager;
 
 private:
     // Header
@@ -66,13 +95,9 @@ private:
     juce::Label bankStatusLabel;
 
     // ── Output folder (shared) ────────────────────────────
-    juce::Label        outputSectionLabel;
-    juce::TextButton   outputParentButton;   // shows base folder; click to browse
-    juce::Label        outputSlashLabel;     // "/" separator
-    juce::TextEditor   outputNameEditor;     // editable folder name / subpath
-    juce::Label        outputPathLabel;      // shows full resolved path
+    juce::TextButton   outputParentButton;   // shows truncated output path; click to browse
     juce::ToggleButton cleanOutputToggle;    // "Clean folder before export?"
-    juce::File         outputBaseFolder;     // ~/Desktop by default
+    juce::File         outputBaseFolder;     // full output folder path
 
     juce::TextButton processButton;
     juce::TextButton openOutputButton;
@@ -86,6 +111,8 @@ private:
     std::unique_ptr<GuiProcessor> processor;
 
     juce::ApplicationProperties appProperties;
+    juce::Array<juce::File> sampleClipboard;       // shared between Pack and Bank views
+    int lastInternalCopyChangeCount = -1;          // NSPasteboard changeCount at last internal copy
 
     bool showRuntimeLogs = false;
 
@@ -111,6 +138,24 @@ private:
     void       saveString(const juce::String& key, const juce::String& value);
     juce::String getSavedString(const juce::String& key, const juce::String& fallback = {});
 
+    // Undo / redo
+    struct UndoState
+    {
+        juce::File cubbiSlots[ChompiNamer::NUM_BANKS][ChompiNamer::SLOTS_PER_BANK];
+        juce::File jammiSlots[ChompiNamer::NUM_BANKS][ChompiNamer::SLOTS_PER_BANK];
+    };
+
+    static constexpr int MAX_UNDO_STEPS = 10;
+    juce::Array<UndoState> undoStack;
+    juce::Array<UndoState> redoStack;
+    bool isApplyingUndoState = false;
+
+    UndoState readCurrentState();
+    void captureUndoState();
+    void applyUndoState(const UndoState& state);
+    void performUndo();
+    void performRedo();
+
     void handleOutputFolderSelected(juce::File folder);
 
     // Preview
@@ -125,9 +170,9 @@ private:
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
 
-#if JUCE_DEBUG
-    melatonin::Inspector inspector { *this };
-#endif
+// #if JUCE_DEBUG
+//     melatonin::Inspector inspector { *this };
+// #endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

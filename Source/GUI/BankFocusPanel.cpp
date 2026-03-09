@@ -181,6 +181,15 @@ void BankFocusPanel::setSlot(ChompiNamer::Category cat, int bankIdx, int slotIdx
         populateRowsFromStorage();
 }
 
+juce::File BankFocusPanel::getSlotFile(ChompiNamer::Category cat, int bankIdx, int slotIdx)
+{
+    if (!isPopulating) flushRowsToStorage();
+    const int catIdx = (cat == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    if (bankIdx < 0 || bankIdx >= ChompiNamer::NUM_BANKS)    return juce::File{};
+    if (slotIdx < 0 || slotIdx >= ChompiNamer::SLOTS_PER_BANK) return juce::File{};
+    return slots[catIdx][bankIdx][slotIdx];
+}
+
 void BankFocusPanel::clearAll()
 {
     for (int c = 0; c < 2; ++c)
@@ -247,6 +256,7 @@ void BankFocusPanel::triggerAutoFill()
             if (folder == juce::File{} || !folder.isDirectory()) return;
 
             if (onFolderBrowsed) onFolderBrowsed(folder);
+            if (onBeforeChange) onBeforeChange();
 
             juce::Array<juce::File> files;
             for (const auto& pattern : FileSystemHelper::getSupportedAudioExtensions())
@@ -325,8 +335,9 @@ void BankFocusPanel::wireRowCallbacks(FocusedSlotRow* row, int /*rowIdx*/)
         if (onSlotClicked) onSlotClicked(r->getSample());
     };
 
-    row->onRowDoubleClicked = [](FocusedSlotRow* r)
+    row->onRowDoubleClicked = [this](FocusedSlotRow* r)
     {
+        if (onBeforeChange) onBeforeChange();
         r->browseForFile();
     };
 
@@ -365,24 +376,16 @@ int BankFocusPanel::rowIndexFor(FocusedSlotRow* row) const
     return -1;
 }
 
-int BankFocusPanel::rowAtPoint(int x, int y) const
+int BankFocusPanel::rowAtPoint(int /*x*/, int y) const
 {
     if (rows.isEmpty()) return 0;
 
-    // Determine column: left half = rows 0-6, right half = rows 7-13
-    const int contentX = x - BANK_COL_WIDTH;
-    const int contentW = getWidth() - BANK_COL_WIDTH;
-    const bool isRightCol = (contentX >= contentW / 2);
-
-    int colStart = isRightCol ? 7 : 0;
-    int colEnd   = colStart + 6;
-
-    for (int i = colStart; i <= colEnd && i < rows.size(); ++i)
+    for (int i = 0; i < rows.size(); ++i)
         if (rows[i]->getY() <= y && y < rows[i]->getBottom())
             return i;
 
-    if (y < rows[colStart]->getY()) return colStart;
-    return juce::jmin(colEnd, rows.size() - 1);
+    if (y < rows[0]->getY()) return 0;
+    return rows.size() - 1;
 }
 
 void BankFocusPanel::handleRowMouseDown(FocusedSlotRow* row, const juce::MouseEvent& e)
@@ -450,6 +453,7 @@ void BankFocusPanel::handleRowMouseUp(FocusedSlotRow* row, const juce::MouseEven
     if (isDragging && dragSourceIdx >= 0 && dragInsertIdx >= 0
         && dragSourceIdx != dragInsertIdx)
     {
+        if (onBeforeChange) onBeforeChange();
         flushRowsToStorage();
         const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
         const int N      = ChompiNamer::SLOTS_PER_BANK;
@@ -710,7 +714,58 @@ void BankFocusPanel::selectRowRange(int from, int to)
         selection.add(i);
 }
 
+// ─── Copy / cut / paste ───────────────────────────────────────────────────────
+
+juce::Array<juce::File> BankFocusPanel::getSelectedFiles()
+{
+    flushRowsToStorage();
+    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+
+    juce::Array<int> sorted = selection;
+    for (int i = 0; i < sorted.size() - 1; ++i)
+        for (int j = i + 1; j < sorted.size(); ++j)
+            if (sorted[j] < sorted[i]) sorted.swap(i, j);
+
+    juce::Array<juce::File> files;
+    for (int idx : sorted)
+        files.add(slots[catIdx][activeBank][idx]);
+    return files;
+}
+
+void BankFocusPanel::pasteFiles(const juce::Array<juce::File>& files)
+{
+    if (files.isEmpty()) return;
+    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    for (int i = 0; i < files.size(); ++i)
+    {
+        int slot = focusedRowIdx + i;
+        if (slot >= ChompiNamer::SLOTS_PER_BANK) break;
+        slots[catIdx][activeBank][slot] = files[i];
+    }
+    populateRowsFromStorage();
+    if (onAssignmentsChanged) onAssignmentsChanged();
+}
+
 // ─── Public keyboard-navigation API ──────────────────────────────────────────
+
+void BankFocusPanel::selectAll()
+{
+    selection.clear();
+    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+        selection.add(i);
+    focusedRowIdx   = 0;
+    selectionAnchor = 0;
+    updateRowVisuals();
+    if (onPreviewStop) onPreviewStop();
+}
+
+void BankFocusPanel::clearSelection()
+{
+    selection.clear();
+    selection.add(focusedRowIdx);
+    selectionAnchor = focusedRowIdx;
+    updateRowVisuals();
+}
 
 void BankFocusPanel::moveFocusedRow(int delta)
 {
@@ -749,7 +804,10 @@ void BankFocusPanel::playFocused()
 void BankFocusPanel::browseForFocused()
 {
     if (focusedRowIdx >= 0 && focusedRowIdx < rows.size())
+    {
+        if (onBeforeChange) onBeforeChange();
         rows[focusedRowIdx]->browseForFile();
+    }
 }
 
 void BankFocusPanel::clearFocusedRows()
@@ -806,14 +864,74 @@ void BankFocusPanel::resized()
     for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
         bankButtons[i].setBounds(bankCol.removeFromTop(bankBtnH));
 
-    // Remaining area: two columns of 7 rows each (ROW_HEIGHT px per row)
-    const int half = area.getWidth() / 2;
-    auto leftCol  = area.removeFromLeft(half);
-    auto rightCol = area;
+    // Single column of 14 rows, height divided evenly
+    const int rowH = area.getHeight() / ChompiNamer::SLOTS_PER_BANK;
+    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+        rows[i]->setBounds(area.removeFromTop(rowH));
+}
 
-    for (int i = 0; i < 7; ++i)
-        rows[i]->setBounds(leftCol.removeFromTop(ROW_HEIGHT));
+// ─── External file drag (FileDragAndDropTarget) ───────────────────────────────
 
-    for (int i = 7; i < ChompiNamer::SLOTS_PER_BANK; ++i)
-        rows[i]->setBounds(rightCol.removeFromTop(ROW_HEIGHT));
+bool BankFocusPanel::isInterestedInFileDrag(const juce::StringArray& files)
+{
+    if (files.isEmpty() || files.size() > ChompiNamer::SLOTS_PER_BANK) return false;
+    for (const auto& f : files)
+    {
+        auto ext = "*" + juce::File(f).getFileExtension().toLowerCase();
+        if (!FileSystemHelper::getSupportedAudioExtensions().contains(ext)) return false;
+    }
+    return true;
+}
+
+void BankFocusPanel::fileDragEnter(const juce::StringArray& files, int x, int y)
+{
+    externalDragFiles = files;
+    updateExternalDragHighlight(x, y);
+}
+
+void BankFocusPanel::fileDragMove(const juce::StringArray& files, int x, int y)
+{
+    externalDragFiles = files;
+    updateExternalDragHighlight(x, y);
+}
+
+void BankFocusPanel::fileDragExit(const juce::StringArray&)
+{
+    externalDragFiles.clear();
+    clearAllPreviews();
+}
+
+void BankFocusPanel::filesDropped(const juce::StringArray& files, int x, int y)
+{
+    int startRow = rowAtPoint(x, y);
+
+    externalDragFiles.clear();
+    clearAllPreviews();
+
+    if (onBeforeChange) onBeforeChange();
+
+    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    for (int i = 0; i < files.size() && startRow + i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    {
+        juce::File f(files[i]);
+        if (f.existsAsFile())
+            slots[catIdx][activeBank][startRow + i] = f;
+    }
+
+    populateRowsFromStorage();
+    if (onAssignmentsChanged) onAssignmentsChanged();
+}
+
+void BankFocusPanel::updateExternalDragHighlight(int x, int y)
+{
+    clearAllPreviews();
+
+    int startRow = rowAtPoint(x, y);
+    if (startRow < 0 || startRow >= rows.size()) return;
+
+    for (int i = 0; i < externalDragFiles.size() && startRow + i < rows.size(); ++i)
+    {
+        rows[startRow + i]->setDragSource(true);
+        rows[startRow + i]->setPreviewSample(juce::File(externalDragFiles[i]));
+    }
 }

@@ -11,7 +11,7 @@ AppMenuBar::~AppMenuBar()
 
 juce::StringArray AppMenuBar::getMenuBarNames()
 {
-    return { "File", "Settings" };
+    return { "File", "Edit", "Settings" };
 }
 
 juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
@@ -20,15 +20,34 @@ juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
 
     if (menuIndex == 0) // File
     {
-        menu.addItem(openOutputFolder, "Open Output Folder...");
+        menu.addItem(openOutputFolder, "Change Output Folder...");
+        if (mainComponent != nullptr)
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdOpenOutput);
         menu.addSeparator();
-        menu.addItem(processSamples,   "Process Samples");
+        if (mainComponent != nullptr)
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdProcess);
     }
-    else if (menuIndex == 1) // Settings
+    else if (menuIndex == 1) // Edit — use addCommandItem so JUCE wires NSMenuItem key equivalents
     {
-        bool consoleOn     = (mainComponent != nullptr) && mainComponent->getConsoleVisible();
+        if (mainComponent != nullptr)
+        {
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdUndo);
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdRedo);
+            menu.addSeparator();
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdCopy);
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdCut);
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdPaste);
+            menu.addSeparator();
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdSelectAll);
+        }
+    }
+    else if (menuIndex == 2) // Settings
+    {
         bool runtimeLogsOn = (mainComponent != nullptr) && mainComponent->getShowRuntimeLogs();
-        menu.addItem(toggleConsole,   consoleOn ? "Hide console" : "Show console");
+
+        if (mainComponent != nullptr)
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdToggleConsole);
+
         menu.addItem(showRuntimeLogs, "Show Runtime Logs", true, runtimeLogsOn);
         menu.addSeparator();
         menu.addItem(showLogFolder,   "Show Log Folder in Finder");
@@ -42,11 +61,11 @@ void AppMenuBar::menuItemSelected(int menuItemID, int /*topLevelMenuIndex*/)
 {
     if (mainComponent == nullptr) return;
 
+    // Note: items added via addCommandItem are handled by the ApplicationCommandTarget
+    // (MainComponent::perform) and never reach menuItemSelected.
     switch (menuItemID)
     {
         case openOutputFolder:  mainComponent->selectOutputFolder();  break;
-        case processSamples:    mainComponent->processFiles();        break;
-        case toggleConsole:     mainComponent->toggleConsole(); menuItemsChanged(); break;
         case showLogFolder:     mainComponent->showLogFolder();       break;
         case clearStatusLog:    mainComponent->clearStatusLog();      break;
         case showRuntimeLogs:   mainComponent->setShowRuntimeLogs(!mainComponent->getShowRuntimeLogs()); break;

@@ -33,6 +33,9 @@ public:
     void browseForFile();
 
     // Callbacks
+    // Fired just before a sample is about to change (for undo capture)
+    std::function<void()> onBeforeChange;
+
     std::function<void(BankSlotComponent*)> onSampleChanged;
     std::function<void(BankSlotComponent*)> onSlotClicked;       // triggered externally for preview
     std::function<void(BankSlotComponent*)> onSlotDoubleClicked; // open file browser

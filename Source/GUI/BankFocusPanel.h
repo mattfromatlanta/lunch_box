@@ -16,7 +16,8 @@
 // by MainComponent.
 //==============================================================================
 
-class BankFocusPanel : public juce::Component
+class BankFocusPanel : public juce::Component,
+                       public juce::FileDragAndDropTarget
 {
 public:
     BankFocusPanel(juce::AudioFormatManager& fmt, juce::AudioThumbnailCache& cache);
@@ -30,6 +31,7 @@ public:
 
     // Set a specific slot (used by MainComponent for cross-tab sync)
     void setSlot(ChompiNamer::Category cat, int bankIdx, int slotIdx, const juce::File& file);
+    juce::File getSlotFile(ChompiNamer::Category cat, int bankIdx, int slotIdx);
     void clearAll();
 
     int getFilledCount(ChompiNamer::Category cat);
@@ -44,14 +46,23 @@ public:
     void playFocused();                      // Space
     void browseForFocused();                 // Enter
     void clearFocusedRows();                 // Delete/Backspace
+    void selectAll();                        // Cmd+A
+    void clearSelection();                   // Esc
 
     void triggerAutoFill();   // shows folder picker and fills active bank
     void triggerClear();      // clears active bank and refreshes rows
+
+    // Copy / cut / paste
+    juce::Array<juce::File> getSelectedFiles();
+    void pasteFiles(const juce::Array<juce::File>& files);
 
     // --- Category / bank switching (driven by MainComponent) ---
     void switchToCategory(ChompiNamer::Category cat);
 
     // --- Callbacks ---
+    // Fired just before any slot content is about to change (for undo capture)
+    std::function<void()>                    onBeforeChange;
+
     std::function<void()>                    onAssignmentsChanged;
     std::function<void(const juce::File&)>   onSlotClicked;
     std::function<void()>                    onPreviewStop;
@@ -63,6 +74,13 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
     void modifierKeysChanged(const juce::ModifierKeys& mods) override;
+
+    // --- juce::FileDragAndDropTarget ---
+    bool isInterestedInFileDrag(const juce::StringArray& files) override;
+    void fileDragEnter(const juce::StringArray& files, int x, int y) override;
+    void fileDragMove (const juce::StringArray& files, int x, int y) override;
+    void fileDragExit (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int x, int y) override;
 
 private:
     // Shared audio resources (from AudioPreviewPlayer, owned by MainComponent)
@@ -82,6 +100,10 @@ private:
     juce::OwnedArray<FocusedSlotRow> rows;  // 14 rows for active bank
 
     std::unique_ptr<juce::FileChooser> fileChooser;
+
+    // External file drag state
+    juce::StringArray externalDragFiles;
+    void updateExternalDragHighlight(int x, int y);
 
     // Selection / keyboard focus state
     int  focusedRowIdx   = 0;

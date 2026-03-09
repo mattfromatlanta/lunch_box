@@ -12,7 +12,8 @@
 //==============================================================================
 
 class BankEditorPanel : public juce::Component,
-                        public juce::DragAndDropContainer
+                        public juce::DragAndDropContainer,
+                        public juce::FileDragAndDropTarget
 {
 public:
     // Grid cell coordinate (row = bank 0-4, col = slot 0-13)
@@ -34,18 +35,27 @@ public:
     void clearAllBanks();
     void autoFillFromFolder(const juce::File& folder);
 
-    // Individual slot access (used for cross-tab sync)
+    // Individual slot access (used for cross-tab sync and undo)
     void setSlotFile(int bankIdx, int slotIdx, const juce::File& file);
+    juce::File getSlotFile(int bankIdx, int slotIdx) const;
 
     // Selection / keyboard navigation (driven by MainComponent::keyPressed)
     int  selectionSize()  const { return selection.size(); }
     void clearSelection();
+    void selectAll();
     void moveFocus(int dRow, int dCol);
     void expandSelection(int dRow, int dCol);  // Shift+Arrow: grow the selection bbox by 1
     void tabFocus();
     void playFocused();
     void clearSelectedCells();
     void browseForFocused();
+
+    // Copy / cut / paste
+    juce::Array<juce::File> getSelectedFiles() const;
+    void pasteFiles(const juce::Array<juce::File>& files);
+
+    // Fired just before any slot content is about to change (for undo capture)
+    std::function<void()> onBeforeChange;
 
     // Fired whenever any slot content changes
     std::function<void()> onAssignmentsChanged;
@@ -75,6 +85,13 @@ public:
     void mouseDown(const juce::MouseEvent& e) override;
     void modifierKeysChanged(const juce::ModifierKeys& mods) override;
 
+    // juce::FileDragAndDropTarget
+    bool isInterestedInFileDrag(const juce::StringArray& files) override;
+    void fileDragEnter(const juce::StringArray& files, int x, int y) override;
+    void fileDragMove (const juce::StringArray& files, int x, int y) override;
+    void fileDragExit (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int x, int y) override;
+
 private:
     ChompiNamer::Category category;
     juce::OwnedArray<BankRowComponent> banks;  // A–E
@@ -100,6 +117,13 @@ private:
     // Deferred click: clicking on an already-selected cell defers the collapse
     bool mouseDownOnSelected = false;
     Cell mouseDownCell       { -1, -1 };
+
+    // External file drag state
+    juce::StringArray externalDragFiles;
+
+    // External drag helpers
+    juce::Array<Cell> getExternalDropCells(Cell start, int count) const;
+    void updateExternalDragHighlight(int x, int y);
 
     // Internal helpers
     BankSlotComponent* getSlotAt(int bankIdx, int slotIdx) const;

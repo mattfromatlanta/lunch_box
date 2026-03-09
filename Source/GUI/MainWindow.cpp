@@ -14,7 +14,8 @@ MainWindow::MainWindow(juce::String name)
     #if JUCE_IOS || JUCE_ANDROID
         setFullScreen(true);
     #else
-        setResizable(false, false);
+        setResizable(true, false);
+        setResizeLimits(400, 500, 900, 10000);
         centreWithSize(getWidth(), getHeight());
     #endif
 

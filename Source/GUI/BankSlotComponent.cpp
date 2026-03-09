@@ -151,9 +151,9 @@ bool BankSlotComponent::isSupportedAudioFile(const juce::String& path)
     return FileSystemHelper::getSupportedAudioExtensions().contains(ext);
 }
 
-bool BankSlotComponent::isInterestedInFileDrag(const juce::StringArray& files)
+bool BankSlotComponent::isInterestedInFileDrag(const juce::StringArray&)
 {
-    return files.size() == 1 && isSupportedAudioFile(files[0]);
+    return false;  // Panel handles all external file drops
 }
 
 void BankSlotComponent::filesDropped(const juce::StringArray& files, int, int)
@@ -182,6 +182,8 @@ void BankSlotComponent::fileDragExit(const juce::StringArray&)
 
 void BankSlotComponent::browseForFile()
 {
+    if (onBeforeChange) onBeforeChange();
+
     juce::File startDir = (getStartDirectory)
                               ? getStartDirectory()
                               : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
@@ -260,6 +262,6 @@ void BankSlotComponent::showContextMenu()
         {
             if (result == 1) browseForFile();
             else if (result == 2) { if (onSlotClicked) onSlotClicked(this); }
-            else if (result == 3) clearSample();
+            else if (result == 3) { if (onBeforeChange) onBeforeChange(); clearSample(); }
         });
 }

@@ -194,9 +194,9 @@ bool FocusedSlotRow::isSupportedAudioFile(const juce::String& path)
     return FileSystemHelper::getSupportedAudioExtensions().contains(ext);
 }
 
-bool FocusedSlotRow::isInterestedInFileDrag(const juce::StringArray& files)
+bool FocusedSlotRow::isInterestedInFileDrag(const juce::StringArray&)
 {
-    return files.size() == 1 && isSupportedAudioFile(files[0]);
+    return false;  // Panel handles all external file drops
 }
 
 void FocusedSlotRow::filesDropped(const juce::StringArray& files, int, int)

@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+#include "ClipboardHelper.h"
 
 // M9 color palette
 namespace
@@ -50,12 +51,6 @@ public:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ConsoleWindow)
 };
 
-static void styleSectionLabel(juce::Label& label, const juce::String& text)
-{
-    label.setText(text, juce::dontSendNotification);
-    label.setFont(juce::Font(11.0f, juce::Font::bold));
-    label.setColour(juce::Label::textColourId, sectionColour);
-}
 
 MainComponent::MainComponent()
 {
@@ -108,6 +103,7 @@ MainComponent::MainComponent()
     auto stopPreviewFn = [this] { stopPreview(); };
 
     cubbiEditor = std::make_unique<BankEditorPanel>(ChompiNamer::Category::Cubbi);
+    cubbiEditor->onBeforeChange        = [this] { captureUndoState(); };
     cubbiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     cubbiEditor->onSlotClicked         = packSlotClicked;
     cubbiEditor->onPreviewStop         = [this] { stopPreview(); };
@@ -118,6 +114,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(cubbiEditor.get());
 
     jammiEditor = std::make_unique<BankEditorPanel>(ChompiNamer::Category::Jammi);
+    jammiEditor->onBeforeChange        = [this] { captureUndoState(); };
     jammiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     jammiEditor->onSlotClicked         = packSlotClicked;
     jammiEditor->onPreviewStop         = [this] { stopPreview(); };
@@ -132,6 +129,7 @@ MainComponent::MainComponent()
     bankFocusPanel = std::make_unique<BankFocusPanel>(
         previewPanel.getFormatManager(), previewPanel.getThumbnailCache());
 
+    bankFocusPanel->onBeforeChange       = [this] { captureUndoState(); };
     bankFocusPanel->onAssignmentsChanged = [this] { updateProcessButtonState(); };
     bankFocusPanel->onSlotClicked        = [this](const juce::File& f) { previewPanel.playFile(f); };
     bankFocusPanel->onPreviewStop        = [this] { stopPreview(); };
@@ -147,70 +145,27 @@ MainComponent::MainComponent()
 
     // ── Output folder section (shared) ────────────────────
 
-    styleSectionLabel(outputSectionLabel, "OUTPUT FOLDER");
-    addAndMakeVisible(outputSectionLabel);
-
-    // Default base: ~/Desktop, default name: "chompis"
-    outputBaseFolder = juce::File::getSpecialLocation(juce::File::userDesktopDirectory);
+    // Default output folder: ~/Desktop/chompis
+    outputBaseFolder = juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
+                           .getChildFile("chompis");
 
     outputParentButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1e2838));
     outputParentButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff8899aa));
     outputParentButton.onClick = [this] { selectOutputFolder(); };
     addAndMakeVisible(outputParentButton);
 
-    outputSlashLabel.setText("/", juce::dontSendNotification);
-    outputSlashLabel.setFont(juce::Font(13.0f));
-    outputSlashLabel.setColour(juce::Label::textColourId, juce::Colour(0xff556677));
-    outputSlashLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(outputSlashLabel);
-
-    outputNameEditor.setFont(juce::Font(13.0f));
-    outputNameEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xff1e2838));
-    outputNameEditor.setColour(juce::TextEditor::textColourId,       juce::Colour(0xffccddee));
-    outputNameEditor.setColour(juce::TextEditor::outlineColourId,    juce::Colour(0xff3a4a5a));
-    outputNameEditor.setText("chompis", juce::dontSendNotification);
-    outputNameEditor.onTextChange = [this]
-    {
-        // Strip disallowed characters (only alphanumeric, _, -, / permitted)
-        auto text = outputNameEditor.getText();
-        juce::String cleaned;
-        for (int i = 0; i < text.length(); ++i)
-        {
-            juce::juce_wchar c = text[i];
-            if (juce::CharacterFunctions::isLetterOrDigit(c) || c == '_' || c == '-' || c == '/')
-                cleaned += c;
-        }
-        if (cleaned != text)
-        {
-            int pos = outputNameEditor.getCaretPosition();
-            outputNameEditor.setText(cleaned, false);  // false = don't re-trigger
-            outputNameEditor.setCaretPosition(juce::jmin(pos, cleaned.length()));
-        }
-        updateOutputPathDisplay();
-        saveString("lastOutputName", outputNameEditor.getText());
-    };
-    addAndMakeVisible(outputNameEditor);
-
-    outputPathLabel.setFont(juce::Font(11.0f));
-    outputPathLabel.setColour(juce::Label::textColourId, juce::Colour(0xff667788));
-    addAndMakeVisible(outputPathLabel);
-
-    cleanOutputToggle.setButtonText("Clean folder before export?");
-    cleanOutputToggle.setToggleState(true, juce::dontSendNotification);
+    cleanOutputToggle.setButtonText("Clean folder?");
+    cleanOutputToggle.setToggleState(false, juce::dontSendNotification);
     cleanOutputToggle.setColour(juce::ToggleButton::textColourId,    juce::Colour(0xff8899aa));
     cleanOutputToggle.setColour(juce::ToggleButton::tickColourId,    juce::Colour(0xff4caf50));
     cleanOutputToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colour(0xff3a4a5a));
     addAndMakeVisible(cleanOutputToggle);
 
-    // Restore persisted output state (overrides defaults if saved)
+    // Restore persisted output folder
     {
-        auto savedParent = getSavedFolder("lastOutputParent");
-        if (savedParent != juce::File{})
-            outputBaseFolder = savedParent;
-
-        auto savedName = getSavedString("lastOutputName");
-        if (savedName.isNotEmpty())
-            outputNameEditor.setText(savedName, juce::dontSendNotification);
+        auto saved = getSavedFolder("lastOutputParent");
+        if (saved != juce::File{})
+            outputBaseFolder = saved;
     }
 
     updateOutputPathDisplay();
@@ -253,6 +208,7 @@ MainComponent::MainComponent()
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffaabbcc));
     clearButton.onClick = [this]
     {
+        captureUndoState();
         if (viewMode == ViewMode::Pack)
         {
             auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
@@ -276,7 +232,11 @@ MainComponent::MainComponent()
 
     setWantsKeyboardFocus(true);
 
-    setSize(1118, 700);
+    // Register commands so AppMenuBar can use addCommandItem to wire keyboard shortcuts
+    commandManager.registerAllCommandsForTarget(this);
+    commandManager.setFirstCommandTarget(this);
+
+    setSize(525, 900);
 }
 
 MainComponent::~MainComponent()
@@ -302,53 +262,54 @@ void MainComponent::resized()
     const int sectionLabelH = 18;
     const int sectionGap    = 8;
     const int itemGap       = 6;
-    const int navH          = 26;
 
-    // ── Shared header + nav row ───────────────────────────
-    headerLabel.setBounds(area.removeFromTop(28));
-    area.removeFromTop(8);
-
-    // Single nav row: [Cubbi][Jammi]  20px gap  [Pack][Bank]
+    // ── Single header + nav row ───────────────────────────
     {
-        auto row = area.removeFromTop(navH);
+        auto row = area.removeFromTop(28);
         const int modeW = 52, catW = 58;
 
-        cubbiTabButton.setBounds(row.removeFromLeft(catW).reduced(1, 0));
-        jammiTabButton.setBounds(row.removeFromLeft(catW).reduced(1, 0));
-        row.removeFromLeft(20);
-        packModeButton.setBounds(row.removeFromLeft(modeW).reduced(1, 0));
-        bankModeButton.setBounds(row.removeFromLeft(modeW).reduced(1, 0));
+        // Buttons right-aligned: [Cubbi][Jammi]  gap  [Pack][Bank]
+        bankModeButton.setBounds(row.removeFromRight(modeW).reduced(1, 0));
+        packModeButton.setBounds(row.removeFromRight(modeW).reduced(1, 0));
+        row.removeFromRight(16);
+        jammiTabButton.setBounds(row.removeFromRight(catW).reduced(1, 0));
+        cubbiTabButton.setBounds(row.removeFromRight(catW).reduced(1, 0));
+        row.removeFromRight(16);
+
+        // Header label takes remaining left space
+        headerLabel.setBounds(row);
     }
     area.removeFromTop(10);
 
     // ── Reserve footer from bottom ────────────────────────
     // Footer: fill/clear (26px) + gap + output section + buttons [+ bank status label]
+    const int footerTopPad = 8;
     const int fillClearH  = 26;
-    const int outputH     = 26 + 4 + 20 + sectionGap;  // path label removed; ~58px
+    const int outputH     = 26 + sectionGap;  // button row + gap
     const int buttonsH    = 32;
     const int bankStatusH = 6 + 16;  // always reserved; label hidden in Pack mode
-    const int footerH     = fillClearH + itemGap + outputH + buttonsH + bankStatusH;
+    const int footerH     = footerTopPad + fillClearH + itemGap + outputH + buttonsH + bankStatusH;
 
     auto footer = area.removeFromBottom(footerH);
 
     if (viewMode == ViewMode::Pack)
     {
-        // ── Pack mode: editor fills remaining space ────────
-        const int editorH = 385;  // 5 × 77px (ROW_HEIGHT, no gaps)
-        auto editorBounds = area.removeFromTop(editorH);
-        cubbiEditor->setBounds(editorBounds);
-        jammiEditor->setBounds(editorBounds);
+        // Pack mode: editor fills remaining space
+        cubbiEditor->setBounds(area);
+        jammiEditor->setBounds(area);
     }
     else  // ViewMode::Bank
     {
-        // ── Bank mode: focus panel fills remaining space ───
+        // Bank mode: focus panel fills remaining space
         cubbiEditor->setBounds({});
         jammiEditor->setBounds({});
-        bankFocusPanel->setBounds(area.removeFromTop(385));  // 7 × 55px (ROW_HEIGHT)
+        bankFocusPanel->setBounds(area);
     }
 
     // ── Shared footer ─────────────────────────────────────
     {
+        footer.removeFromTop(footerTopPad);
+
         // Fill / Clear row
         auto fillRow = footer.removeFromTop(fillClearH);
         const int btnW = fillRow.getWidth() / 2;
@@ -483,36 +444,51 @@ void MainComponent::handleOutputFolderSelected(juce::File folder)
 {
     if (!folder.isDirectory()) return;
 
-    outputBaseFolder = folder.getParentDirectory();
-    outputNameEditor.setText(folder.getFileName(), juce::dontSendNotification);
+    outputBaseFolder = folder;
     saveFolder("lastOutputParent", outputBaseFolder);
-    saveString("lastOutputName",   folder.getFileName());
     updateOutputPathDisplay();
-    appendStatus("Output folder selected: " + getResolvedOutputFolder().getFullPathName());
+    appendStatus("Output folder selected: " + outputBaseFolder.getFullPathName());
 }
 
 juce::File MainComponent::getResolvedOutputFolder()
 {
-    auto name = outputNameEditor.getText().trim();
-    if (name.isEmpty()) name = "chompis";
-    return outputBaseFolder.getChildFile(name);
+    return outputBaseFolder;
 }
 
 void MainComponent::updateOutputPathDisplay()
 {
-    auto resolved = getResolvedOutputFolder();
-    outputPathLabel.setText(resolved.getFullPathName(), juce::dontSendNotification);
-    outputParentButton.setButtonText(outputBaseFolder.getFullPathName());
+    // Collect path segments from deepest to root
+    juce::StringArray parts;
+    auto f = outputBaseFolder;
+    for (;;)
+    {
+        auto name = f.getFileName();
+        if (name.isEmpty()) break;
+        parts.insert(0, name);
+        auto parent = f.getParentDirectory();
+        if (parent == f) break;
+        f = parent;
+    }
+
+    // Keep last 3 segments, prefix with ".." if truncated
+    const bool truncated = parts.size() > 3;
+    juce::StringArray display;
+    const int start = truncated ? parts.size() - 3 : 0;
+    for (int i = start; i < parts.size(); ++i)
+        display.add(parts[i]);
+
+    outputParentButton.setButtonText((truncated ? "../" : "") + display.joinIntoString("/"));
 }
 
 void MainComponent::layoutButtonRow(juce::Rectangle<int>& area, int h)
 {
     auto row = area.removeFromTop(h);
-    const int procW = 200, openW = 110, gap = 8;
-    auto pair = row.withSizeKeepingCentre(procW + gap + openW, h);
-    processButton.setBounds(pair.removeFromLeft(procW));
-    pair.removeFromLeft(gap);
-    openOutputButton.setBounds(pair);
+    const int procW = 200, openW = 110, cleanW = 160, gap = 8;
+    cleanOutputToggle.setBounds(row.removeFromLeft(cleanW).reduced(0, 3));
+    auto buttons = row.removeFromRight(procW + gap + openW);
+    processButton.setBounds(buttons.removeFromLeft(procW));
+    buttons.removeFromLeft(gap);
+    openOutputButton.setBounds(buttons);
 }
 
 juce::File MainComponent::getSavedFolder(const juce::String& key)
@@ -569,18 +545,8 @@ void MainComponent::prepareOutputFolder(const juce::File& folder)
 
 void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int /*labelH*/, int /*itemGap*/, int sectionGap)
 {
-    // Row: [OUTPUT FOLDER label] [parent button] [/] [name editor]
-    auto row = area.removeFromTop(26);
-    const int labelW = 100;
-    const int nameW  = 540;
-    const int slashW = 16;
-    outputSectionLabel.setBounds(row.removeFromLeft(labelW));
-    outputNameEditor.setBounds(row.removeFromRight(nameW));
-    outputSlashLabel.setBounds(row.removeFromRight(slashW));
-    outputParentButton.setBounds(row);
-
-    area.removeFromTop(4);
-    cleanOutputToggle.setBounds(area.removeFromTop(20));
+    // Row: output button fills full width
+    outputParentButton.setBounds(area.removeFromTop(26));
     area.removeFromTop(sectionGap);
 }
 
@@ -714,7 +680,10 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
 
     if (key == juce::KeyPress::escapeKey)
     {
-        stopPreview();
+        if (viewMode == ViewMode::Bank)
+            bankFocusPanel->clearSelection();
+        else
+            (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->clearSelection();
         return true;
     }
 
@@ -745,7 +714,15 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
         if (key == juce::KeyPress::upKey)   { bankFocusPanel->moveFocusedRow(-1); return true; }
         if (key == juce::KeyPress::downKey) { bankFocusPanel->moveFocusedRow( 1); return true; }
         if (key == juce::KeyPress::deleteKey
-         || key == juce::KeyPress::backspaceKey) { bankFocusPanel->clearFocusedRows(); return true; }
+         || key == juce::KeyPress::backspaceKey) { captureUndoState(); bankFocusPanel->clearFocusedRows(); return true; }
+        if (key == juce::KeyPress::tabKey)
+        {
+            bool newCubbi = !showCubbiEditor;
+            setCategoryTab(newCubbi);
+            bankFocusPanel->switchToCategory(newCubbi ? ChompiNamer::Category::Cubbi
+                                                      : ChompiNamer::Category::Jammi);
+            return true;
+        }
         if (key == juce::KeyPress::returnKey)
         {
             if (dynamic_cast<juce::Button*>(origin) != nullptr) return false;
@@ -771,10 +748,16 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     if (key == juce::KeyPress::upKey)       { ed->moveFocus(-1, 0);  return true; }
     if (key == juce::KeyPress::downKey)     { ed->moveFocus( 1, 0);  return true; }
 
-    if (key == juce::KeyPress::tabKey)      { ed->tabFocus();        return true; }
+    if (key == juce::KeyPress::tabKey)
+    {
+        setCategoryTab(!showCubbiEditor);
+        bankFocusPanel->switchToCategory(showCubbiEditor ? ChompiNamer::Category::Cubbi
+                                                         : ChompiNamer::Category::Jammi);
+        return true;
+    }
 
     if (key == juce::KeyPress::deleteKey
-     || key == juce::KeyPress::backspaceKey) { ed->clearSelectedCells(); return true; }
+     || key == juce::KeyPress::backspaceKey) { captureUndoState(); ed->clearSelectedCells(); return true; }
 
     if (key == juce::KeyPress::returnKey)
     {
@@ -813,4 +796,225 @@ void MainComponent::clearStatusLog()
     consoleContent = "Status log cleared.\n";
     if (consoleWindow != nullptr)
         consoleWindow->editor.setText(consoleContent);
+}
+
+void MainComponent::editCopy()
+{
+    if (viewMode == ViewMode::Bank)
+        sampleClipboard = bankFocusPanel->getSelectedFiles();
+    else
+        sampleClipboard = (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->getSelectedFiles();
+
+    // Record the current system clipboard change count so editPaste() can detect
+    // whether an external copy happened after this one.
+    lastInternalCopyChangeCount = ClipboardHelper::getChangeCount();
+}
+
+void MainComponent::editCut()
+{
+    captureUndoState();
+    if (viewMode == ViewMode::Bank)
+    {
+        sampleClipboard = bankFocusPanel->getSelectedFiles();
+        bankFocusPanel->clearFocusedRows();
+    }
+    else
+    {
+        auto* ed = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+        sampleClipboard = ed->getSelectedFiles();
+        ed->clearSelectedCells();
+    }
+
+    lastInternalCopyChangeCount = ClipboardHelper::getChangeCount();
+}
+
+void MainComponent::editPaste()
+{
+    // If the system clipboard has been updated since our last internal copy,
+    // the user copied something externally — prefer that over the stale internal clipboard.
+    const bool externalCopyIsNewer = (ClipboardHelper::getChangeCount() != lastInternalCopyChangeCount);
+
+    juce::Array<juce::File> files;
+    if (externalCopyIsNewer)
+        files = ClipboardHelper::getAudioFilesFromClipboard();
+
+    // Fall back to internal clipboard if external yielded nothing
+    if (files.isEmpty())
+        files = sampleClipboard;
+
+    if (files.isEmpty()) return;
+
+    captureUndoState();
+    if (viewMode == ViewMode::Bank)
+        bankFocusPanel->pasteFiles(files);
+    else
+        (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->pasteFiles(files);
+}
+
+// ─── Undo / redo ──────────────────────────────────────────────────────────────
+
+MainComponent::UndoState MainComponent::readCurrentState()
+{
+    UndoState state;
+    if (viewMode == ViewMode::Bank)
+    {
+        for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+            for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+            {
+                state.cubbiSlots[b][s] = bankFocusPanel->getSlotFile(ChompiNamer::Category::Cubbi, b, s);
+                state.jammiSlots[b][s] = bankFocusPanel->getSlotFile(ChompiNamer::Category::Jammi, b, s);
+            }
+    }
+    else
+    {
+        for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+            for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+            {
+                state.cubbiSlots[b][s] = cubbiEditor->getSlotFile(b, s);
+                state.jammiSlots[b][s] = jammiEditor->getSlotFile(b, s);
+            }
+    }
+    return state;
+}
+
+void MainComponent::captureUndoState()
+{
+    if (isApplyingUndoState) return;
+
+    undoStack.add(readCurrentState());
+    if (undoStack.size() > MAX_UNDO_STEPS)
+        undoStack.remove(0);
+
+    redoStack.clear();
+}
+
+void MainComponent::applyUndoState(const UndoState& state)
+{
+    isApplyingUndoState = true;
+
+    cubbiEditor->clearAllBanks();
+    jammiEditor->clearAllBanks();
+
+    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        {
+            cubbiEditor->setSlotFile(b, s, state.cubbiSlots[b][s]);
+            jammiEditor->setSlotFile(b, s, state.jammiSlots[b][s]);
+        }
+
+    if (viewMode == ViewMode::Bank)
+        syncPackToBankFocus();
+
+    isApplyingUndoState = false;
+    updateProcessButtonState();
+}
+
+void MainComponent::performUndo()
+{
+    if (undoStack.isEmpty()) return;
+
+    redoStack.add(readCurrentState());
+
+    auto prev = undoStack.getLast();
+    undoStack.removeLast();
+
+    applyUndoState(prev);
+}
+
+void MainComponent::performRedo()
+{
+    if (redoStack.isEmpty()) return;
+
+    undoStack.add(readCurrentState());
+    if (undoStack.size() > MAX_UNDO_STEPS)
+        undoStack.remove(0);
+
+    auto next = redoStack.getLast();
+    redoStack.removeLast();
+
+    applyUndoState(next);
+}
+
+// ─── ApplicationCommandTarget ─────────────────────────────────────────────────
+
+juce::ApplicationCommandTarget* MainComponent::getNextCommandTarget()
+{
+    return nullptr;
+}
+
+void MainComponent::getAllCommands(juce::Array<juce::CommandID>& commands)
+{
+    commands.addArray({ cmdUndo, cmdRedo, cmdCopy, cmdCut, cmdPaste, cmdSelectAll,
+                        cmdOpenOutput, cmdProcess, cmdToggleConsole });
+}
+
+void MainComponent::getCommandInfo(juce::CommandID id, juce::ApplicationCommandInfo& result)
+{
+    switch (id)
+    {
+        case cmdUndo:
+            result.setInfo("Undo", "Undo last action", "Edit", 0);
+            result.addDefaultKeypress('z', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdRedo:
+            result.setInfo("Redo", "Redo last undone action", "Edit", 0);
+            result.addDefaultKeypress('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier);
+            break;
+        case cmdCopy:
+            result.setInfo("Copy",  "Copy selected samples",  "Edit", 0);
+            result.addDefaultKeypress('c', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdCut:
+            result.setInfo("Cut",   "Cut selected samples",   "Edit", 0);
+            result.addDefaultKeypress('x', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdPaste:
+            result.setInfo("Paste", "Paste samples",          "Edit", 0);
+            result.addDefaultKeypress('v', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdSelectAll:
+            result.setInfo("Select All", "Select all slots", "Edit", 0);
+            result.addDefaultKeypress('a', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdOpenOutput:
+            result.setInfo("Open Output Folder", "Open output folder in Finder", "File", 0);
+            result.addDefaultKeypress('o', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdProcess:
+            result.setInfo("Process Samples", "Convert and export all samples", "File", 0);
+            result.addDefaultKeypress(juce::KeyPress::returnKey, juce::ModifierKeys::commandModifier);
+            break;
+        case cmdToggleConsole:
+            result.setInfo(consoleVisible ? "Hide Console" : "Show Console",
+                           "Toggle the console window", "Settings", 0);
+            result.addDefaultKeypress('/', juce::ModifierKeys::commandModifier);
+            result.setTicked(consoleVisible);
+            break;
+        default:
+            break;
+    }
+}
+
+bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo& info)
+{
+    switch (info.commandID)
+    {
+        case cmdUndo:        performUndo();   return true;
+        case cmdRedo:        performRedo();   return true;
+        case cmdCopy:        editCopy();      return true;
+        case cmdCut:         editCut();       return true;
+        case cmdPaste:       editPaste();     return true;
+        case cmdSelectAll:
+        {
+            if (viewMode == ViewMode::Bank)
+                bankFocusPanel->selectAll();
+            else
+                (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->selectAll();
+            return true;
+        }
+        case cmdOpenOutput:  getResolvedOutputFolder().startAsProcess(); return true;
+        case cmdProcess:     processFiles();    return true;
+        case cmdToggleConsole: toggleConsole(); return true;
+        default:               return false;
+    }
 }

@@ -9,8 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add JUCE
 add_subdirectory(/Users/matthewfishel/Repos/JUCE ${CMAKE_BINARY_DIR}/JUCE)
 
-# Melatonin Inspector — debug/dev tool only; must be added before juce_add_gui_app
-add_subdirectory(/Users/matthewfishel/Repos/melatonin_inspector ${CMAKE_BINARY_DIR}/melatonin_inspector)
+# Melatonin Inspector — disabled for now
+# add_subdirectory(/Users/matthewfishel/Repos/melatonin_inspector ${CMAKE_BINARY_DIR}/melatonin_inspector)
 
 # Create the GUI application
 juce_add_gui_app(chompi_pack
@@ -53,6 +53,8 @@ target_sources(chompi_pack
         Source/GUI/WaveformDisplay.cpp
         Source/GUI/PreviewPanel.h
         Source/GUI/PreviewPanel.cpp
+        Source/GUI/ClipboardHelper.h
+        Source/GUI/ClipboardHelper.mm
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/Processing/AudioConverter.h
@@ -74,7 +76,7 @@ target_link_libraries(chompi_pack
         juce::juce_audio_utils
         juce::juce_gui_basics
         juce::juce_gui_extra
-        melatonin_inspector
+        # melatonin_inspector
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

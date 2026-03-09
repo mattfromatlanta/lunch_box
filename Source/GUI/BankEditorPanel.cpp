@@ -1,4 +1,5 @@
 #include "BankEditorPanel.h"
+#include "../FileSystemHelper.h"
 
 namespace
 {
@@ -50,6 +51,7 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
     {
         if (auto* slot = row->getSlotComponent(s))
         {
+            slot->onBeforeChange = [this]() { if (onBeforeChange) onBeforeChange(); };
             slot->onSlotClicked = [this, bankIdx, s](BankSlotComponent* src)
             {
                 if (onSlotClicked) onSlotClicked({ bankIdx, s }, src->getSample());
@@ -70,7 +72,7 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
             {
                 auto c = getCellFor(src);
                 if (c.isValid()) { selectCell(c, true); grabKeyboardFocus(); }
-                src->browseForFile();
+                src->browseForFile();  // onBeforeChange fires inside browseForFile()
             };
         }
     }
@@ -104,6 +106,13 @@ void BankEditorPanel::setSlotFile(int bankIdx, int slotIdx, const juce::File& fi
         banks[bankIdx]->setSlot(slotIdx, file);
 }
 
+juce::File BankEditorPanel::getSlotFile(int bankIdx, int slotIdx) const
+{
+    if (auto* slot = getSlotAt(bankIdx, slotIdx))
+        return slot->getSample();
+    return juce::File{};
+}
+
 void BankEditorPanel::autoFillFromFolder(const juce::File&)
 {
     juce::File startDir = (getStartDirectory) ? getStartDirectory()
@@ -135,6 +144,7 @@ void BankEditorPanel::autoFillFromFolder(const juce::File&)
 
         if (assignments.isEmpty()) return;
 
+        if (onBeforeChange) onBeforeChange();
         clearAllBanks();
 
         for (const auto& a : assignments)
@@ -209,12 +219,17 @@ void BankEditorPanel::toggleCell(Cell c)
 
 void BankEditorPanel::selectRange(Cell a, Cell b)
 {
+    // Build a visual rectangle from a to b and select all cells within it
+    int vrA = a.row * 2 + a.col / 7, vcA = a.col % 7;
+    int vrB = b.row * 2 + b.col / 7, vcB = b.col % 7;
+
+    int vr0 = std::min(vrA, vrB), vr1 = std::max(vrA, vrB);
+    int vc0 = std::min(vcA, vcB), vc1 = std::max(vcA, vcB);
+
     selection.clear();
-    int r0 = juce::jmin(a.row, b.row), r1 = juce::jmax(a.row, b.row);
-    int c0 = juce::jmin(a.col, b.col), c1 = juce::jmax(a.col, b.col);
-    for (int r = r0; r <= r1; ++r)
-        for (int c = c0; c <= c1; ++c)
-            selection.add({r, c});
+    for (int vr = vr0; vr <= vr1; ++vr)
+        for (int vc = vc0; vc <= vc1; ++vc)
+            selection.add({ vr / 2, (vr % 2) * 7 + vc });
     focusCell = b;
     updateSlotVisuals();
 }
@@ -223,6 +238,17 @@ void BankEditorPanel::clearSelection()
 {
     selection.clear();
     updateSlotVisuals();
+}
+
+void BankEditorPanel::selectAll()
+{
+    selection.clear();
+    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+            selection.add({ b, s });
+    focusCell = { 0, 0 };
+    updateSlotVisuals();
+    if (onPreviewStop) onPreviewStop();
 }
 
 void BankEditorPanel::updateSlotVisuals()
@@ -258,10 +284,16 @@ void BankEditorPanel::notifyPreviewForSelection()
 void BankEditorPanel::moveFocus(int dr, int dc)
 {
     Cell anchor = (selection.size() > 1) ? getEarliestSelected() : focusCell;
-    Cell next = {
-        juce::jlimit(0, ChompiNamer::NUM_BANKS      - 1, anchor.row + dr),
-        juce::jlimit(0, ChompiNamer::SLOTS_PER_BANK - 1, anchor.col + dc)
-    };
+
+    // Convert to visual coords: 10 rows × 7 cols (2 sub-rows per bank)
+    int vr = anchor.row * 2 + anchor.col / 7;
+    int vc = anchor.col % 7;
+
+    // Move in visual space — no wrapping at the 7/8 slot boundary
+    vr = juce::jlimit(0, ChompiNamer::NUM_BANKS * 2 - 1, vr + dr);
+    vc = juce::jlimit(0, 6, vc + dc);
+
+    Cell next = { vr / 2, (vr % 2) * 7 + vc };
     selection.clear();
     selection.add(next);
     focusCell = next;
@@ -273,43 +305,49 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
 {
     if (selection.isEmpty()) return;
 
-    // Compute bounding box of current selection
-    int minRow = ChompiNamer::NUM_BANKS,      maxRow = -1;
-    int minCol = ChompiNamer::SLOTS_PER_BANK, maxCol = -1;
+    const int maxVisRow = ChompiNamer::NUM_BANKS * 2 - 1;
+    const int maxVisCol = 6;
+
+    // Compute bounding box in visual coords
+    int minVR = maxVisRow + 1, maxVR = -1;
+    int minVC = maxVisCol + 1, maxVC = -1;
     for (const auto& c : selection)
     {
-        minRow = std::min(minRow, c.row); maxRow = std::max(maxRow, c.row);
-        minCol = std::min(minCol, c.col); maxCol = std::max(maxCol, c.col);
+        int vr = c.row * 2 + c.col / 7;
+        int vc = c.col % 7;
+        minVR = std::min(minVR, vr); maxVR = std::max(maxVR, vr);
+        minVC = std::min(minVC, vc); maxVC = std::max(maxVC, vc);
     }
 
-    // Expand bbox by 1 in the requested direction, clamped to grid bounds
-    int newMinRow = minRow, newMaxRow = maxRow;
-    int newMinCol = minCol, newMaxCol = maxCol;
+    // Expand by 1 in the requested direction, clamped
+    int newMinVR = minVR, newMaxVR = maxVR;
+    int newMinVC = minVC, newMaxVC = maxVC;
 
-    if      (dRow > 0) newMaxRow = std::min(maxRow + 1, ChompiNamer::NUM_BANKS      - 1);
-    else if (dRow < 0) newMinRow = std::max(minRow - 1, 0);
-    if      (dCol > 0) newMaxCol = std::min(maxCol + 1, ChompiNamer::SLOTS_PER_BANK - 1);
-    else if (dCol < 0) newMinCol = std::max(minCol - 1, 0);
+    if      (dRow > 0) newMaxVR = std::min(maxVR + 1, maxVisRow);
+    else if (dRow < 0) newMinVR = std::max(minVR - 1, 0);
+    if      (dCol > 0) newMaxVC = std::min(maxVC + 1, maxVisCol);
+    else if (dCol < 0) newMinVC = std::max(minVC - 1, 0);
 
-    // Already at the border — nothing to do
-    if (newMinRow == minRow && newMaxRow == maxRow &&
-        newMinCol == minCol && newMaxCol == maxCol)
+    if (newMinVR == minVR && newMaxVR == maxVR &&
+        newMinVC == minVC && newMaxVC == maxVC)
         return;
 
-    // Rebuild selection as the full expanded rectangle
+    // Rebuild selection from the expanded visual rectangle
     selection.clear();
-    for (int r = newMinRow; r <= newMaxRow; ++r)
-        for (int c = newMinCol; c <= newMaxCol; ++c)
-            selection.add({ r, c });
+    for (int vr = newMinVR; vr <= newMaxVR; ++vr)
+        for (int vc = newMinVC; vc <= newMaxVC; ++vc)
+            selection.add({ vr / 2, (vr % 2) * 7 + vc });
 
     // Focus tracks the expanding edge
-    if      (dRow > 0) focusCell = { newMaxRow, focusCell.col };
-    else if (dRow < 0) focusCell = { newMinRow, focusCell.col };
-    else if (dCol > 0) focusCell = { focusCell.row, newMaxCol };
-    else if (dCol < 0) focusCell = { focusCell.row, newMinCol };
+    int focusVR = focusCell.row * 2 + focusCell.col / 7;
+    int focusVC = focusCell.col % 7;
+    if      (dRow > 0) focusVR = newMaxVR;
+    else if (dRow < 0) focusVR = newMinVR;
+    else if (dCol > 0) focusVC = newMaxVC;
+    else if (dCol < 0) focusVC = newMinVC;
+    focusCell = { focusVR / 2, (focusVR % 2) * 7 + focusVC };
 
     updateSlotVisuals();
-    // expandSelection always produces >1 cells → stop preview
     if (onPreviewStop) onPreviewStop();
 }
 
@@ -341,7 +379,39 @@ void BankEditorPanel::clearSelectedCells()
 void BankEditorPanel::browseForFocused()
 {
     if (auto* slot = getSlotAt(focusCell.row, focusCell.col))
-        slot->browseForFile();
+        slot->browseForFile();  // onBeforeChange fires inside browseForFile()
+}
+
+// ─── Copy / cut / paste ───────────────────────────────────────────────────────
+
+juce::Array<juce::File> BankEditorPanel::getSelectedFiles() const
+{
+    // Return files ordered by visual row-major (top-left → bottom-right)
+    juce::Array<Cell> sorted = selection;
+    for (int i = 0; i < sorted.size() - 1; ++i)
+        for (int j = i + 1; j < sorted.size(); ++j)
+        {
+            int vri = sorted[i].row * 2 + sorted[i].col / 7, vci = sorted[i].col % 7;
+            int vrj = sorted[j].row * 2 + sorted[j].col / 7, vcj = sorted[j].col % 7;
+            if (vrj < vri || (vrj == vri && vcj < vci))
+                sorted.swap(i, j);
+        }
+
+    juce::Array<juce::File> files;
+    for (const auto& c : sorted)
+        if (auto* slot = getSlotAt(c.row, c.col))
+            files.add(slot->getSample());
+    return files;
+}
+
+void BankEditorPanel::pasteFiles(const juce::Array<juce::File>& files)
+{
+    if (files.isEmpty()) return;
+    auto targets = getExternalDropCells(focusCell, files.size());
+    for (int i = 0; i < targets.size(); ++i)
+        if (auto* slot = getSlotAt(targets[i].row, targets[i].col))
+            slot->setSample(files[i]);
+    if (onAssignmentsChanged) onAssignmentsChanged();
 }
 
 // ─── Mouse-based selection ────────────────────────────────────────────────────
@@ -445,6 +515,7 @@ void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEve
 void BankEditorPanel::commitSelectionDrag()
 {
     if (dragTargetCells.size() != selection.size()) return;
+    if (onBeforeChange) onBeforeChange();
 
     // 1. Snapshot all source and target files before any mutation.
     //    Sorting by position ensures geometrically stable pairing regardless
@@ -601,11 +672,99 @@ void BankEditorPanel::resized()
 {
     auto area = getLocalBounds();
 
-    // Bank rows
-    for (auto* bank : banks)
+    // Bank rows: 8px gap between each bank pair, flush at top and bottom
+    const int numBanks = banks.size();
+    if (numBanks == 0) return;
+    const int gapH    = 8;
+    const int numGaps = numBanks - 1;
+    const int rowH    = (area.getHeight() - numGaps * gapH) / numBanks;
+    for (int i = 0; i < numBanks; ++i)
     {
-        bank->setBounds(area.removeFromTop(ROW_HEIGHT));
-        area.removeFromTop(ROW_GAP);
+        banks[i]->setBounds(area.removeFromTop(rowH));
+        if (i < numBanks - 1)
+            area.removeFromTop(gapH);
     }
 
+}
+
+// ─── External file drag (FileDragAndDropTarget) ───────────────────────────────
+
+bool BankEditorPanel::isInterestedInFileDrag(const juce::StringArray& files)
+{
+    if (files.isEmpty() || files.size() > ChompiNamer::SLOTS_PER_BANK) return false;
+    for (const auto& f : files)
+    {
+        auto ext = "*" + juce::File(f).getFileExtension().toLowerCase();
+        if (!FileSystemHelper::getSupportedAudioExtensions().contains(ext)) return false;
+    }
+    return true;
+}
+
+void BankEditorPanel::fileDragEnter(const juce::StringArray& files, int x, int y)
+{
+    externalDragFiles = files;
+    updateExternalDragHighlight(x, y);
+}
+
+void BankEditorPanel::fileDragMove(const juce::StringArray& files, int x, int y)
+{
+    externalDragFiles = files;
+    updateExternalDragHighlight(x, y);
+}
+
+void BankEditorPanel::fileDragExit(const juce::StringArray&)
+{
+    externalDragFiles.clear();
+    dragTargetCells.clear();
+    clearAllPreviews();
+    updateDragTargetVisuals();
+}
+
+void BankEditorPanel::filesDropped(const juce::StringArray& files, int x, int y)
+{
+    Cell target  = getCellAtPoint({ x, y });
+    auto targets = getExternalDropCells(target, files.size());
+
+    externalDragFiles.clear();
+    dragTargetCells.clear();
+    clearAllPreviews();
+    updateDragTargetVisuals();
+
+    if (onBeforeChange) onBeforeChange();
+
+    for (int i = 0; i < targets.size(); ++i)
+        if (auto* slot = getSlotAt(targets[i].row, targets[i].col))
+            slot->setSample(juce::File(files[i]));
+
+    if (onAssignmentsChanged) onAssignmentsChanged();
+}
+
+juce::Array<BankEditorPanel::Cell> BankEditorPanel::getExternalDropCells(Cell start, int count) const
+{
+    juce::Array<Cell> result;
+    if (!start.isValid()) return result;
+
+    const int total       = ChompiNamer::NUM_BANKS * ChompiNamer::SLOTS_PER_BANK;
+    const int startLinear = start.row * ChompiNamer::SLOTS_PER_BANK + start.col;
+
+    for (int i = 0; i < count; ++i)
+    {
+        int linear = startLinear + i;
+        if (linear >= total) break;
+        result.add({ linear / ChompiNamer::SLOTS_PER_BANK, linear % ChompiNamer::SLOTS_PER_BANK });
+    }
+    return result;
+}
+
+void BankEditorPanel::updateExternalDragHighlight(int x, int y)
+{
+    Cell target   = getCellAtPoint({ x, y });
+    dragTargetCells = getExternalDropCells(target, externalDragFiles.size());
+
+    clearAllPreviews();
+    for (int i = 0; i < dragTargetCells.size(); ++i)
+        if (auto* slot = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col))
+            slot->setPreviewSample(juce::File(externalDragFiles[i]));
+
+    updateDragTargetVisuals();
 }

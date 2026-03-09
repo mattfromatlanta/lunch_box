@@ -24,8 +24,6 @@ private:
     enum MenuItemIds
     {
         openOutputFolder = 1,
-        processSamples   = 2,
-        toggleConsole    = 3,
         showLogFolder    = 4,
         clearStatusLog   = 5,
         showRuntimeLogs  = 6,
