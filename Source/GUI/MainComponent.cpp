@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include "ClipboardHelper.h"
+#include <BinaryData.h>
 
 // M9 color palette
 namespace
@@ -63,12 +64,8 @@ MainComponent::MainComponent()
         appProperties.setStorageParameters(opts);
     }
 
-    // Header
-    headerLabel.setText("chompi pack", juce::dontSendNotification);
-    headerLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-    headerLabel.setJustificationType(juce::Justification::centredLeft);
-    headerLabel.setColour(juce::Label::textColourId, headerColour);
-    addAndMakeVisible(headerLabel);
+    logoImage = juce::ImageCache::getFromMemory(BinaryData::chompi_logo_png,
+                                                BinaryData::chompi_logo_pngSize);
 
     // Mode toggle buttons
     packModeButton.setButtonText("Pack");
@@ -148,18 +145,6 @@ MainComponent::MainComponent()
     outputBaseFolder = juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
                            .getChildFile("chompis");
 
-    outputParentButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1e2838));
-    outputParentButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff8899aa));
-    outputParentButton.onClick = [this] { selectOutputFolder(); };
-    addAndMakeVisible(outputParentButton);
-
-    cleanOutputToggle.setButtonText("Clean folder?");
-    cleanOutputToggle.setToggleState(false, juce::dontSendNotification);
-    cleanOutputToggle.setColour(juce::ToggleButton::textColourId,    juce::Colour(0xff8899aa));
-    cleanOutputToggle.setColour(juce::ToggleButton::tickColourId,    juce::Colour(0xff4caf50));
-    cleanOutputToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colour(0xff3a4a5a));
-    addAndMakeVisible(cleanOutputToggle);
-
     // Restore persisted output folder
     {
         auto saved = getSavedFolder("lastOutputParent");
@@ -167,54 +152,36 @@ MainComponent::MainComponent()
             outputBaseFolder = saved;
     }
 
-    updateOutputPathDisplay();
-
-    processButton.setButtonText("Process Samples");
-    processButton.setColour(juce::TextButton::buttonColourId,  accentColour);
-    processButton.setColour(juce::TextButton::buttonOnColourId, accentColour.darker(0.2f));
+    processButton.setButtonText("Pack");
+    processButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
+    processButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xff2b2732));
     processButton.setColour(juce::TextButton::textColourOffId,  juce::Colours::white);
     processButton.onClick = [this] { processFiles(); };
     processButton.setEnabled(false);
     addAndMakeVisible(processButton);
 
-    openOutputButton.setButtonText("Open Output");
-    openOutputButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff2a4060));
-    openOutputButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xff3a5070));
-    openOutputButton.setColour(juce::TextButton::textColourOffId,  juce::Colour(0xffaabbcc));
-    openOutputButton.onClick = [this] { getResolvedOutputFolder().startAsProcess(); };
-    openOutputButton.setEnabled(false);
-    addAndMakeVisible(openOutputButton);
-
-    fillButton.setButtonText("Fill from folder...");
-    fillButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff2a3a4a));
-    fillButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffaabbcc));
+    fillButton.setButtonText("Fill");
+    fillButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
+    fillButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     fillButton.onClick = [this]
     {
         if (viewMode == ViewMode::Pack)
-        {
             getActiveEditor()->autoFillFromFolder({});
-        }
         else
-        {
             bankFocusPanel->triggerAutoFill();
-        }
     };
     addAndMakeVisible(fillButton);
 
-    clearButton.setButtonText("Clear All");
-    clearButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff2a3a4a));
-    clearButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffaabbcc));
+    clearButton.setButtonText("Clear");
+    clearButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
+    clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     clearButton.onClick = [this]
     {
         captureUndoState();
         if (viewMode == ViewMode::Pack)
-        {
             getActiveEditor()->clearAllBanks();
-        }
         else
-        {
             bankFocusPanel->triggerClear();
-        }
     };
     addAndMakeVisible(clearButton);
 
@@ -233,7 +200,10 @@ MainComponent::MainComponent()
     commandManager.registerAllCommandsForTarget(this);
     commandManager.setFirstCommandTarget(this);
 
-    setSize(525, 900);
+    setSize(493, 890);
+
+    inspector = std::make_unique<melatonin::Inspector>(*this);
+    inspector->setVisible(true);
 }
 
 MainComponent::~MainComponent()
@@ -251,81 +221,68 @@ void MainComponent::parentHierarchyChanged()
 void MainComponent::paint(juce::Graphics& g)
 {
     g.fillAll(bgColour);
+
+    if (logoImage.isValid())
+    {
+        auto headerArea = getLocalBounds().reduced(12).removeFromTop(44);
+        const float logoAspect = (float)logoImage.getWidth() / (float)logoImage.getHeight();
+        const int logoH = headerArea.getHeight();
+        const int logoW = juce::roundToInt(logoH * logoAspect);
+        auto logoRect = juce::Rectangle<int>(logoW, logoH)
+                            .withCentre(headerArea.getCentre());
+        g.drawImage(logoImage, logoRect.toFloat());
+    }
 }
 
 void MainComponent::resized()
 {
-    auto area = getLocalBounds().reduced(20);
-    const int sectionGap    = 8;
-    const int itemGap       = 6;
+    auto area = getLocalBounds().reduced(12);
 
-    // ── Single header + nav row ───────────────────────────
+    // ── Blank header space (matches SVG top area) ─────────
+    area.removeFromTop(44);
+
+    // ── Nav row: [Cubbi][Jammi]  gap  [Pack][Bank] ────────
     {
-        auto row = area.removeFromTop(28);
-        const int modeW = 52, catW = 58;
+        auto navRow = area.removeFromTop(32);
+        const int halfW = (navRow.getWidth() - 24) / 2;
 
-        // Buttons right-aligned: [Cubbi][Jammi]  gap  [Pack][Bank]
-        bankModeButton.setBounds(row.removeFromRight(modeW).reduced(1, 0));
-        packModeButton.setBounds(row.removeFromRight(modeW).reduced(1, 0));
-        row.removeFromRight(16);
-        jammiTabButton.setBounds(row.removeFromRight(catW).reduced(1, 0));
-        cubbiTabButton.setBounds(row.removeFromRight(catW).reduced(1, 0));
-        row.removeFromRight(16);
+        auto leftPair  = navRow.removeFromLeft(halfW);
+        navRow.removeFromLeft(24);
+        auto rightPair = navRow;
 
-        // Header label takes remaining left space
-        headerLabel.setBounds(row);
+        const int lHalf = leftPair.getWidth() / 2;
+        cubbiTabButton.setBounds(leftPair.removeFromLeft(lHalf).reduced(2, 0));
+        jammiTabButton.setBounds(leftPair.reduced(2, 0));
+
+        const int rHalf = rightPair.getWidth() / 2;
+        packModeButton.setBounds(rightPair.removeFromLeft(rHalf).reduced(2, 0));
+        bankModeButton.setBounds(rightPair.reduced(2, 0));
     }
-    area.removeFromTop(10);
+    area.removeFromTop(8);
 
-    // ── Reserve footer from bottom ────────────────────────
-    // Footer: fill/clear (26px) + gap + output section + buttons [+ bank status label]
-    const int footerTopPad = 8;
-    const int fillClearH  = 26;
-    const int outputH     = 26 + sectionGap;  // button row + gap
-    const int buttonsH    = 32;
-    const int bankStatusH = 6 + 16;  // always reserved; label hidden in Pack mode
-    const int footerH     = footerTopPad + fillClearH + itemGap + outputH + buttonsH + bankStatusH;
+    // ── Footer: 3 equal buttons [Clear][Fill][Pack] ───────
+    auto footer = area.removeFromBottom(54 + 12);
+    footer.removeFromTop(12);
 
-    auto footer = area.removeFromBottom(footerH);
-
+    // ── Grid / content area ───────────────────────────────
     if (viewMode == ViewMode::Pack)
     {
-        // Pack mode: editor fills remaining space
         cubbiEditor->setBounds(area);
         jammiEditor->setBounds(area);
     }
     else  // ViewMode::Bank
     {
-        // Bank mode: focus panel fills remaining space
         cubbiEditor->setBounds({});
         jammiEditor->setBounds({});
         bankFocusPanel->setBounds(area);
     }
 
-    // ── Shared footer ─────────────────────────────────────
+    // ── Footer button layout ──────────────────────────────
     {
-        footer.removeFromTop(footerTopPad);
-
-        // Fill / Clear row
-        auto fillRow = footer.removeFromTop(fillClearH);
-        const int btnW = fillRow.getWidth() / 2;
-        fillButton.setBounds(fillRow.removeFromLeft(btnW).reduced(2, 0));
-        clearButton.setBounds(fillRow.reduced(2, 0));
-
-        footer.removeFromTop(itemGap);
-
-        // Output folder section
-        layoutOutputSection(footer, sectionGap);
-
-        // Process / Open buttons
-        layoutButtonRow(footer, buttonsH);
-
-        // Bank status label
-        if (viewMode == ViewMode::Bank)
-        {
-            footer.removeFromTop(6);
-            bankStatusLabel.setBounds(footer.removeFromTop(16));
-        }
+        const int bW = footer.getWidth() / 3;
+        clearButton.setBounds(footer.removeFromLeft(bW).reduced(2, 0));
+        fillButton.setBounds(footer.removeFromLeft(bW).reduced(2, 0));
+        processButton.setBounds(footer.reduced(2, 0));
     }
 }
 
@@ -368,9 +325,6 @@ void MainComponent::setViewMode(ViewMode mode)
     bankFocusPanel->setVisible(isBank);
     if (isBank) bankFocusPanel->grabKeyboardFocus();
     bankStatusLabel.setVisible(isBank);
-
-    // Update footer button labels for current mode
-    clearButton.setButtonText(isBank ? "Clear Bank" : "Clear All");
 
     updateProcessButtonState();
     resized();
@@ -441,55 +395,9 @@ void MainComponent::styleTabButton(juce::TextButton& btn, bool active)
 
 // ─── Output folder ────────────────────────────────────────────────────────────
 
-void MainComponent::handleOutputFolderSelected(juce::File folder)
-{
-    if (!folder.isDirectory()) return;
-
-    outputBaseFolder = folder;
-    saveFolder("lastOutputParent", outputBaseFolder);
-    updateOutputPathDisplay();
-    appendStatus("Output folder selected: " + outputBaseFolder.getFullPathName());
-}
-
 juce::File MainComponent::getResolvedOutputFolder()
 {
     return outputBaseFolder;
-}
-
-void MainComponent::updateOutputPathDisplay()
-{
-    // Collect path segments from deepest to root
-    juce::StringArray parts;
-    auto f = outputBaseFolder;
-    for (;;)
-    {
-        auto name = f.getFileName();
-        if (name.isEmpty()) break;
-        parts.insert(0, name);
-        auto parent = f.getParentDirectory();
-        if (parent == f) break;
-        f = parent;
-    }
-
-    // Keep last 3 segments, prefix with ".." if truncated
-    const bool truncated = parts.size() > 3;
-    juce::StringArray display;
-    const int start = truncated ? parts.size() - 3 : 0;
-    for (int i = start; i < parts.size(); ++i)
-        display.add(parts[i]);
-
-    outputParentButton.setButtonText((truncated ? "../" : "") + display.joinIntoString("/"));
-}
-
-void MainComponent::layoutButtonRow(juce::Rectangle<int>& area, int h)
-{
-    auto row = area.removeFromTop(h);
-    const int procW = 200, openW = 110, cleanW = 160, gap = 8;
-    cleanOutputToggle.setBounds(row.removeFromLeft(cleanW).reduced(0, 3));
-    auto buttons = row.removeFromRight(procW + gap + openW);
-    processButton.setBounds(buttons.removeFromLeft(procW));
-    buttons.removeFromLeft(gap);
-    openOutputButton.setBounds(buttons);
 }
 
 juce::File MainComponent::getSavedFolder(const juce::String& key)
@@ -535,22 +443,6 @@ void MainComponent::saveString(const juce::String& key, const juce::String& valu
     }
 }
 
-void MainComponent::prepareOutputFolder(const juce::File& folder)
-{
-    if (cleanOutputToggle.getToggleState() && folder.exists())
-    {
-        folder.deleteRecursively();
-        appendStatus("Cleaned: " + folder.getFullPathName());
-    }
-}
-
-void MainComponent::layoutOutputSection(juce::Rectangle<int>& area, int sectionGap)
-{
-    // Row: output button fills full width
-    outputParentButton.setBounds(area.removeFromTop(26));
-    area.removeFromTop(sectionGap);
-}
-
 // ─── File browser launchers ───────────────────────────────────────────────────
 
 void MainComponent::selectOutputFolder()
@@ -568,8 +460,12 @@ void MainComponent::selectOutputFolder()
     fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser)
     {
         auto f = chooser.getResult();
-        if (f != juce::File{})
-            handleOutputFolderSelected(f);
+        if (f.isDirectory())
+        {
+            outputBaseFolder = f;
+            saveFolder("lastOutputParent", outputBaseFolder);
+            appendStatus("Output folder: " + outputBaseFolder.getFullPathName());
+        }
     });
 }
 
@@ -594,7 +490,6 @@ void MainComponent::processFilesFromEditors()
     auto jammiAssignments = jammiEditor->getAssignments();
 
     juce::File outputFolder = getResolvedOutputFolder();
-    prepareOutputFolder(outputFolder);
 
     auto result = processor->processFilesFromAssignments(
         cubbiAssignments, jammiAssignments, outputFolder);
@@ -621,7 +516,6 @@ void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult&
     appendStatus("  Total: " + juce::String(totalProcessed) + " samples processed");
     appendStatus("  Doubles: " + juce::String(totalOptimized) + " optimized versions created");
     appendStatus("  Output: " + outputFolder.getFullPathName());
-    openOutputButton.setEnabled(true);
 }
 
 void MainComponent::updateProcessButtonState()

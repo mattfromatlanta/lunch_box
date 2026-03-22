@@ -7,6 +7,7 @@
 #include "PreviewPanel.h"
 #include "BankEditorPanel.h"
 #include "BankFocusPanel.h"
+#include "melatonin_inspector/melatonin_inspector.h"
 
 class ConsoleWindow;
 
@@ -65,8 +66,7 @@ public:
     juce::ApplicationCommandManager commandManager;
 
 private:
-    // Header
-    juce::Label headerLabel;
+    juce::Image logoImage;
 
     // Mode toggle (Pack / Bank)
     enum class ViewMode { Pack, Bank };
@@ -91,12 +91,9 @@ private:
     juce::Label bankStatusLabel;
 
     // ── Output folder (shared) ────────────────────────────
-    juce::TextButton   outputParentButton;   // shows truncated output path; click to browse
-    juce::ToggleButton cleanOutputToggle;    // "Clean folder before export?"
     juce::File         outputBaseFolder;     // full output folder path
 
     juce::TextButton processButton;
-    juce::TextButton openOutputButton;
     juce::TextButton fillButton;
     juce::TextButton clearButton;
 
@@ -122,11 +119,7 @@ private:
 
     // Helpers
     juce::File getResolvedOutputFolder();
-    void updateOutputPathDisplay();
-    void layoutOutputSection(juce::Rectangle<int>& area, int sectionGap);
     BankEditorPanel* getActiveEditor();  // returns the visible Pack-mode editor
-    void prepareOutputFolder(const juce::File& folder);   // clean + create
-    void layoutButtonRow(juce::Rectangle<int>& area, int h);
 
     // Persistent folder preferences
     juce::File getSavedFolder(const juce::String& key);
@@ -152,7 +145,6 @@ private:
     void performUndo();
     void performRedo();
 
-    void handleOutputFolderSelected(juce::File folder);
 
     // Preview
     void stopPreview();
@@ -165,6 +157,8 @@ private:
     void updateProcessButtonState();
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
+
+    std::unique_ptr<melatonin::Inspector> inspector;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

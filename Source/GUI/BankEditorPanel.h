@@ -98,7 +98,7 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    static constexpr int ROW_HEIGHT    = 77;
+    static constexpr int ROW_HEIGHT    = 65;
     static constexpr int ROW_GAP       = 0;
 
     // Selection state

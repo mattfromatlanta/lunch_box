@@ -15,7 +15,7 @@ MainWindow::MainWindow(juce::String name)
         setFullScreen(true);
     #else
         setResizable(true, false);
-        setResizeLimits(400, 500, 900, 10000);
+        setResizeLimits(350, 500, 800, 10000);
         centreWithSize(getWidth(), getHeight());
     #endif
 
