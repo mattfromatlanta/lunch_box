@@ -184,6 +184,8 @@ GNU Affero General Public License v3.0 -- see [LICENSE](LICENSE) for details.
 
 This project uses [JUCE](https://juce.com/), licensed under the AGPLv3.
 
+This project uses the [Poppins](https://fonts.google.com/specimen/Poppins) typeface by The Poppins Project Authors, licensed under the [SIL Open Font License 1.1](fonts/OFL.txt).
+
 ---
 
 ## Author
