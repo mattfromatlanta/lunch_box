@@ -85,12 +85,22 @@ MainComponent::MainComponent()
     cubbiTabButton.setTooltip("Cubbi: percussive samples (Tab to toggle)");
     jammiTabButton.setTooltip("Jammi: chromatic / melodic samples (Tab to toggle)");
     cubbiTabButton.onClick = [this] {
-        setCategoryTab(true);
-        bankFocusPanel->switchToCategory(ChompiNamer::Category::Cubbi);
+        if (viewMode == ViewMode::Bank)
+            animateBankCategorySwitch(true);
+        else
+        {
+            setCategoryTab(true, true);
+            bankFocusPanel->switchToCategory(ChompiNamer::Category::Cubbi);
+        }
     };
     jammiTabButton.onClick = [this] {
-        setCategoryTab(false);
-        bankFocusPanel->switchToCategory(ChompiNamer::Category::Jammi);
+        if (viewMode == ViewMode::Bank)
+            animateBankCategorySwitch(false);
+        else
+        {
+            setCategoryTab(false, true);
+            bankFocusPanel->switchToCategory(ChompiNamer::Category::Jammi);
+        }
     };
     addAndMakeVisible(cubbiTabButton);
     addAndMakeVisible(jammiTabButton);
@@ -243,6 +253,13 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
+    // If a wipe is in flight and the window is resized, snap to final state
+    if (isTransitioning)
+    {
+        juce::Desktop::getInstance().getAnimator().cancelAllAnimations(false);
+        isTransitioning = false;
+    }
+
     auto area = getLocalBounds().reduced(12);
 
     // ── Blank header space (matches SVG top area) ─────────
@@ -295,19 +312,34 @@ void MainComponent::resized()
 
 // ─── Mode switching ───────────────────────────────────────────────────────────
 
+juce::Rectangle<int> MainComponent::computeContentArea() const
+{
+    auto area = getLocalBounds().reduced(12);
+    area.removeFromTop(44);
+    area.removeFromTop(32);
+    area.removeFromTop(8);
+    area.removeFromBottom(54 + 12);
+    return area;
+}
+
 void MainComponent::setViewMode(ViewMode mode)
 {
-    // Sync data when leaving Bank mode
+    if (mode == viewMode) return;
+
+    // Snap any in-progress wipe before starting a new one
+    if (isTransitioning)
+    {
+        juce::Desktop::getInstance().getAnimator().cancelAllAnimations(false);
+        isTransitioning = false;
+    }
+
+    // Sync data between modes
     if (viewMode == ViewMode::Bank && mode != ViewMode::Bank)
         syncBankFocusToAdvanced();
-    // Sync data when entering Bank mode
     if (mode == ViewMode::Bank && viewMode != ViewMode::Bank)
         syncPackToBankFocus();
 
     viewMode = mode;
-
-    styleTabButton(packModeButton, mode == ViewMode::Pack);
-    styleTabButton(bankModeButton, mode == ViewMode::Bank);
 
     const bool isPack = (mode == ViewMode::Pack);
     const bool isBank = (mode == ViewMode::Bank);
@@ -319,7 +351,7 @@ void MainComponent::setViewMode(ViewMode mode)
     {
         setCategoryTab(showCubbiEditor);
     }
-    else  // isBank
+    else
     {
         styleTabButton(cubbiTabButton, showCubbiEditor);
         styleTabButton(jammiTabButton, !showCubbiEditor);
@@ -328,13 +360,58 @@ void MainComponent::setViewMode(ViewMode mode)
         bankFocusPanel->switchToCategory(cat);
     }
 
-    // Bank mode
-    bankFocusPanel->setVisible(isBank);
-    if (isBank) bankFocusPanel->grabKeyboardFocus();
-    bankStatusLabel.setVisible(isBank);
-
     updateProcessButtonState();
-    resized();
+
+    // ── Wipe transition ───────────────────────────────────────────────────────
+    auto content = computeContentArea();
+    const int w = content.getWidth();
+    auto& anim = juce::Desktop::getInstance().getAnimator();
+
+    if (isBank)  // Pack wipes out to the left; Bank wipes in from the right
+    {
+        auto* outgoing = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+
+        bankFocusPanel->setBounds(content.withX(content.getX() + w));
+        bankFocusPanel->setVisible(true);
+        bankStatusLabel.setVisible(true);
+        bankFocusPanel->grabKeyboardFocus();
+
+        packModeButton.startWipe(tabInactiveCol, true);
+        bankModeButton.startWipe(tabActiveCol,   true);
+
+        isTransitioning = true;
+        anim.animateComponent(outgoing,         content.withX(content.getX() - w), 1.0f, 200, false, 0.0, 0.0);
+        anim.animateComponent(bankFocusPanel.get(), content,                        1.0f, 200, false, 0.0, 0.0);
+
+        juce::Timer::callAfterDelay(210, [this, outgoing]
+        {
+            outgoing->setVisible(false);
+            isTransitioning = false;
+            resized();
+        });
+    }
+    else  // Bank wipes out to the right; Pack wipes in from the left
+    {
+        auto* incoming = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+
+        incoming->setBounds(content.withX(content.getX() - w));
+        incoming->setVisible(true);
+
+        packModeButton.startWipe(tabActiveCol,   false);
+        bankModeButton.startWipe(tabInactiveCol, false);
+
+        isTransitioning = true;
+        anim.animateComponent(bankFocusPanel.get(), content.withX(content.getX() + w), 1.0f, 200, false, 0.0, 0.0);
+        anim.animateComponent(incoming,             content,                            1.0f, 200, false, 0.0, 0.0);
+
+        juce::Timer::callAfterDelay(210, [this]
+        {
+            bankFocusPanel->setVisible(false);
+            bankStatusLabel.setVisible(false);
+            isTransitioning = false;
+            resized();
+        });
+    }
 }
 
 void MainComponent::syncPackToBankFocus()
@@ -372,19 +449,113 @@ void MainComponent::syncBankFocusToAdvanced()
     }
 }
 
-void MainComponent::setCategoryTab(bool showCubbi)
+void MainComponent::animateBankCategorySwitch(bool showCubbi)
 {
-    showCubbiEditor = showCubbi;
-    styleTabButton(cubbiTabButton, showCubbi);
-    styleTabButton(jammiTabButton, !showCubbi);
+    if (showCubbi == showCubbiEditor) return;
+
+    if (isTransitioning)
+        juce::Desktop::getInstance().getAnimator().cancelAllAnimations(false);
+
+    auto content = computeContentArea();
+    const int w   = content.getWidth();
+    const int dir = showCubbi ? -1 : 1;  // Jammi = right, Cubbi = left
+    auto& anim    = juce::Desktop::getInstance().getAnimator();
+
+    // Wipe button colours before any state change so startWipe captures the current fill
+    const bool fromRight = !showCubbi;
+    cubbiTabButton.startWipe(showCubbi ? tabActiveCol : tabInactiveCol, fromRight);
+    jammiTabButton.startWipe(showCubbi ? tabInactiveCol : tabActiveCol, fromRight);
+
+    // Snapshot the current panel state before any content change
+    auto snapshot = bankFocusPanel->createComponentSnapshot(bankFocusPanel->getLocalBounds());
+    bankTransitionOverlay = std::make_unique<juce::ImageComponent>();
+    bankTransitionOverlay->setImage(snapshot);
+    bankTransitionOverlay->setBounds(content);
+    addAndMakeVisible(bankTransitionOverlay.get());
+    bankTransitionOverlay->toFront(false);
+
+    // Switch content and update state (no styleTabButton — startWipe handles colours)
     stopPreview();
+    showCubbiEditor = showCubbi;
+    bankFocusPanel->switchToCategory(showCubbi ? ChompiNamer::Category::Cubbi
+                                               : ChompiNamer::Category::Jammi);
+    bankFocusPanel->setBounds(content.withX(content.getX() + dir * w));
+
+    isTransitioning = true;
+    anim.animateComponent(bankTransitionOverlay.get(), content.withX(content.getX() - dir * w), 1.0f, 200, false, 0.0, 0.0);
+    anim.animateComponent(bankFocusPanel.get(),        content,                                  1.0f, 200, false, 0.0, 0.0);
+
+    juce::Timer::callAfterDelay(210, [this]
+    {
+        if (bankTransitionOverlay != nullptr)
+        {
+            removeChildComponent(bankTransitionOverlay.get());
+            bankTransitionOverlay.reset();
+        }
+        isTransitioning = false;
+        resized();
+    });
+}
+
+void MainComponent::setCategoryTab(bool showCubbi, bool animate)
+{
+    stopPreview();
+
     if (viewMode == ViewMode::Pack)
     {
         cubbiEditor->clearSelection();
         jammiEditor->clearSelection();
-        cubbiEditor->setVisible(showCubbi);
-        jammiEditor->setVisible(!showCubbi);
+
+        const bool tabChanged = (showCubbi != showCubbiEditor);
+
+        if (animate && tabChanged)
+        {
+            if (isTransitioning)
+                juce::Desktop::getInstance().getAnimator().cancelAllAnimations(false);
+
+            auto content = computeContentArea();
+            const int w   = content.getWidth();
+            auto& anim    = juce::Desktop::getInstance().getAnimator();
+
+            auto* outgoing = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+            auto* incoming = showCubbi       ? cubbiEditor.get() : jammiEditor.get();
+
+            // Jammi is "right" of Cubbi: going to Jammi = dir +1, going to Cubbi = dir -1
+            const int  dir       = showCubbi ? -1 : 1;
+            const bool fromRight = !showCubbi;
+
+            cubbiTabButton.startWipe(showCubbi ? tabActiveCol : tabInactiveCol, fromRight);
+            jammiTabButton.startWipe(showCubbi ? tabInactiveCol : tabActiveCol, fromRight);
+
+            incoming->setBounds(content.withX(content.getX() + dir * w));
+            incoming->setVisible(true);
+
+            isTransitioning = true;
+            anim.animateComponent(outgoing, content.withX(content.getX() - dir * w), 1.0f, 200, false, 0.0, 0.0);
+            anim.animateComponent(incoming, content,                                  1.0f, 200, false, 0.0, 0.0);
+
+            juce::Timer::callAfterDelay(210, [this, outgoing]
+            {
+                outgoing->setVisible(false);
+                isTransitioning = false;
+                resized();
+            });
+        }
+        else
+        {
+            styleTabButton(cubbiTabButton, showCubbi);
+            styleTabButton(jammiTabButton, !showCubbi);
+            cubbiEditor->setVisible(showCubbi);
+            jammiEditor->setVisible(!showCubbi);
+        }
     }
+    else
+    {
+        styleTabButton(cubbiTabButton, showCubbi);
+        styleTabButton(jammiTabButton, !showCubbi);
+    }
+
+    showCubbiEditor = showCubbi;
 }
 
 BankEditorPanel* MainComponent::getActiveEditor()
@@ -392,10 +563,9 @@ BankEditorPanel* MainComponent::getActiveEditor()
     return showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
 }
 
-void MainComponent::styleTabButton(juce::TextButton& btn, bool active)
+void MainComponent::styleTabButton(WipeTabButton& btn, bool active)
 {
-    btn.setColour(juce::TextButton::buttonColourId,
-                  active ? tabActiveCol : tabInactiveCol);
+    btn.snapToColour(active ? tabActiveCol : tabInactiveCol);
     btn.setColour(juce::TextButton::textColourOffId, tabTextCol);
     btn.setColour(juce::TextButton::textColourOnId,  headerColour);
 }
@@ -579,6 +749,12 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     if (dynamic_cast<juce::TextEditor*>(origin) != nullptr)
         return false;
 
+    if (key == juce::KeyPress(juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier, 0))
+    {
+        setViewMode(viewMode == ViewMode::Pack ? ViewMode::Bank : ViewMode::Pack);
+        return true;
+    }
+
     if (key == juce::KeyPress::escapeKey)
     {
         if (viewMode == ViewMode::Bank)
@@ -617,10 +793,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
          || key == juce::KeyPress::backspaceKey) { captureUndoState(); bankFocusPanel->clearFocusedRows(); return true; }
         if (key == juce::KeyPress::tabKey)
         {
-            bool newCubbi = !showCubbiEditor;
-            setCategoryTab(newCubbi);
-            bankFocusPanel->switchToCategory(newCubbi ? ChompiNamer::Category::Cubbi
-                                                      : ChompiNamer::Category::Jammi);
+            animateBankCategorySwitch(!showCubbiEditor);
             return true;
         }
         if (key == juce::KeyPress::returnKey)
@@ -650,7 +823,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
 
     if (key == juce::KeyPress::tabKey)
     {
-        setCategoryTab(!showCubbiEditor);
+        setCategoryTab(!showCubbiEditor, true);  // Pack mode Tab: animate
         bankFocusPanel->switchToCategory(showCubbiEditor ? ChompiNamer::Category::Cubbi
                                                          : ChompiNamer::Category::Jammi);
         return true;

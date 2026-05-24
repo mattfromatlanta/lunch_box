@@ -12,6 +12,91 @@
 class ConsoleWindow;
 
 //==============================================================================
+// WipeTabButton — TextButton with a horizontal colour-wipe animation
+//==============================================================================
+class WipeTabButton : public juce::TextButton,
+                      private juce::Timer
+{
+public:
+    WipeTabButton() = default;
+
+    void snapToColour (juce::Colour col)
+    {
+        stopTimer();
+        currentFill  = col;
+        wipeProgress = 1.0f;
+        repaint();
+    }
+
+    // Animate from current colour to target, sweeping in from the right (fromRight=true)
+    // or from the left (fromRight=false), over durationMs milliseconds.
+    void startWipe (juce::Colour target, bool fromRight, int durationMs = 200)
+    {
+        stopTimer();
+        fromFill      = currentFill;
+        targetFill    = target;
+        wipeFromRight = fromRight;
+        wipeProgress  = 0.0f;
+        stepPerFrame  = 1.0f / (float (durationMs) * 60.0f / 1000.0f);
+        startTimerHz (60);
+    }
+
+private:
+    void timerCallback() override
+    {
+        wipeProgress += stepPerFrame;
+        if (wipeProgress >= 1.0f)
+        {
+            wipeProgress = 1.0f;
+            currentFill  = targetFill;
+            stopTimer();
+        }
+        repaint();
+    }
+
+    void paintButton (juce::Graphics& g, bool, bool) override
+    {
+        auto b = getLocalBounds().toFloat().reduced (0.5f);
+        constexpr float r = 4.0f;
+
+        auto drawHalf = [&] (juce::Rectangle<float> clip, juce::Colour col)
+        {
+            g.saveState();
+            g.reduceClipRegion (clip.toNearestInt());
+            g.setColour (col);
+            g.fillRoundedRectangle (b, r);
+            g.restoreState();
+        };
+
+        if (wipeProgress > 0.0f && wipeProgress < 1.0f)
+        {
+            const float splitX = wipeFromRight ? b.getWidth() * (1.0f - wipeProgress)
+                                               : b.getWidth() * wipeProgress;
+            drawHalf (b.withWidth (splitX),  wipeFromRight ? fromFill   : targetFill);
+            drawHalf (b.withLeft  (splitX),  wipeFromRight ? targetFill : fromFill);
+        }
+        else
+        {
+            g.setColour (currentFill);
+            g.fillRoundedRectangle (b, r);
+        }
+
+        g.setColour (findColour (juce::TextButton::textColourOffId));
+        g.setFont (getLookAndFeel().getTextButtonFont (*this, getHeight()));
+        g.drawText (getButtonText(), getLocalBounds(), juce::Justification::centred, false);
+    }
+
+    juce::Colour fromFill    { juce::Colour (0xff1e2838) };
+    juce::Colour targetFill  { juce::Colour (0xff1e2838) };
+    juce::Colour currentFill { juce::Colour (0xff1e2838) };
+    float        wipeProgress = 1.0f;
+    float        stepPerFrame = 1.0f / 12.0f;
+    bool         wipeFromRight = false;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WipeTabButton)
+};
+
+//==============================================================================
 // MainComponent - Main GUI component for Chompi Pack
 //==============================================================================
 
@@ -72,15 +157,15 @@ private:
     enum class ViewMode { Pack, Bank };
     ViewMode viewMode = ViewMode::Pack;
 
-    juce::TextButton packModeButton;
-    juce::TextButton bankModeButton;
+    WipeTabButton packModeButton;
+    WipeTabButton bankModeButton;
     bool consoleVisible = false;
     juce::String     consoleContent { "Ready to process samples...\n" };
     std::unique_ptr<ConsoleWindow> consoleWindow;
 
     // ── Pack mode ───────────────────────────────────────────
-    juce::TextButton cubbiTabButton;
-    juce::TextButton jammiTabButton;
+    WipeTabButton cubbiTabButton;
+    WipeTabButton jammiTabButton;
     bool showCubbiEditor = true;
 
     std::unique_ptr<BankEditorPanel> cubbiEditor;
@@ -110,8 +195,12 @@ private:
 
     // Mode switching
     void setViewMode(ViewMode mode);
-    void setCategoryTab(bool showCubbi);
-    void styleTabButton(juce::TextButton& btn, bool active);
+    void setCategoryTab(bool showCubbi, bool animate = false);
+    void styleTabButton(WipeTabButton& btn, bool active);
+    juce::Rectangle<int> computeContentArea() const;
+    bool isTransitioning = false;
+    std::unique_ptr<juce::ImageComponent> bankTransitionOverlay;
+    void animateBankCategorySwitch(bool showCubbi);
 
     // Cross-tab data sync
     void syncPackToBankFocus();
