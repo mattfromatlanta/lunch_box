@@ -9,8 +9,6 @@ namespace
     const juce::Colour bgColour        = ChompiColours::DARK_GREY;
     const juce::Colour statusBgColour  { 0xff151a26 };
     const juce::Colour accentColour    { 0xff4caf50 };
-    const juce::Colour tabActiveCol    { 0xff2a4060 };
-    const juce::Colour tabInactiveCol  { 0xff1e2838 };
     const juce::Colour tabTextCol      = ChompiColours::WHITE_CREAM;
 }
 
@@ -146,7 +144,7 @@ MainComponent::MainComponent()
     bankFocusPanel->onLog                = [this](const juce::String& msg) { bankStatusLabel.setText(msg.trimEnd(), juce::dontSendNotification); };
     addChildComponent(bankFocusPanel.get());  // hidden initially
 
-    bankStatusLabel.setFont(juce::Font(10.0f));
+    bankStatusLabel.setFont(ChompiFonts::footer());
     bankStatusLabel.setColour(juce::Label::textColourId, ChompiColours::WHITE_CREAM);
     bankStatusLabel.setJustificationType(juce::Justification::centredLeft);
     addChildComponent(bankStatusLabel);
@@ -165,9 +163,13 @@ MainComponent::MainComponent()
     }
 
     processButton.setButtonText("Pack");
+    processButton.setLookAndFeel(&footerButtonLAF);
+    fillButton.setLookAndFeel(&footerButtonLAF);
+    clearButton.setLookAndFeel(&footerButtonLAF);
+
     processButton.setTooltip("Convert and export all samples to CHOMPI format (Cmd+Return)");
-    processButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
-    processButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xff2b2732));
+    processButton.setColour(juce::TextButton::buttonColourId,  ChompiColours::BUTTON_BG);
+    processButton.setColour(juce::TextButton::buttonOnColourId, ChompiColours::BUTTON_BG);
     processButton.setColour(juce::TextButton::textColourOffId,  ChompiColours::WHITE_CREAM);
     processButton.onClick = [this] { processFiles(); };
     processButton.setEnabled(false);
@@ -175,7 +177,7 @@ MainComponent::MainComponent()
 
     fillButton.setButtonText("Fill");
     fillButton.setTooltip("Auto-fill empty slots from a folder");
-    fillButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
+    fillButton.setColour(juce::TextButton::buttonColourId,  ChompiColours::BUTTON_BG);
     fillButton.setColour(juce::TextButton::textColourOffId, ChompiColours::WHITE_CREAM);
     fillButton.onClick = [this]
     {
@@ -188,7 +190,7 @@ MainComponent::MainComponent()
 
     clearButton.setButtonText("Clear");
     clearButton.setTooltip("Clear all slots in the current view");
-    clearButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
+    clearButton.setColour(juce::TextButton::buttonColourId,  ChompiColours::BUTTON_BG);
     clearButton.setColour(juce::TextButton::textColourOffId, ChompiColours::WHITE_CREAM);
     clearButton.onClick = [this]
     {
@@ -204,10 +206,10 @@ MainComponent::MainComponent()
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
 
     // Apply initial mode styling
-    styleTabButton(packModeButton, true);
-    styleTabButton(bankModeButton, false);
-    styleTabButton(cubbiTabButton, true);
-    styleTabButton(jammiTabButton, false);
+    styleTabButton(packModeButton, true,  ChompiColours::YELLOW);
+    styleTabButton(bankModeButton, false, ChompiColours::YELLOW);
+    styleTabButton(cubbiTabButton, true,  ChompiColours::PURPLE);
+    styleTabButton(jammiTabButton, false, ChompiColours::PURPLE);
 
     setWantsKeyboardFocus(true);
 
@@ -353,8 +355,8 @@ void MainComponent::setViewMode(ViewMode mode)
     }
     else
     {
-        styleTabButton(cubbiTabButton, showCubbiEditor);
-        styleTabButton(jammiTabButton, !showCubbiEditor);
+        styleTabButton(cubbiTabButton, showCubbiEditor,  ChompiColours::PURPLE);
+        styleTabButton(jammiTabButton, !showCubbiEditor, ChompiColours::PURPLE);
         auto cat = showCubbiEditor ? ChompiNamer::Category::Cubbi
                                    : ChompiNamer::Category::Jammi;
         bankFocusPanel->switchToCategory(cat);
@@ -376,8 +378,8 @@ void MainComponent::setViewMode(ViewMode mode)
         bankStatusLabel.setVisible(true);
         bankFocusPanel->grabKeyboardFocus();
 
-        packModeButton.startWipe(tabInactiveCol, true);
-        bankModeButton.startWipe(tabActiveCol,   true);
+        packModeButton.startWipe(ChompiColours::BUTTON_BG,  true);
+        bankModeButton.startWipe(ChompiColours::YELLOW,    true);
 
         isTransitioning = true;
         anim.animateComponent(outgoing,         content.withX(content.getX() - w), 1.0f, 200, false, 0.0, 0.0);
@@ -397,8 +399,8 @@ void MainComponent::setViewMode(ViewMode mode)
         incoming->setBounds(content.withX(content.getX() - w));
         incoming->setVisible(true);
 
-        packModeButton.startWipe(tabActiveCol,   false);
-        bankModeButton.startWipe(tabInactiveCol, false);
+        packModeButton.startWipe(ChompiColours::YELLOW,   false);
+        bankModeButton.startWipe(ChompiColours::BUTTON_BG, false);
 
         isTransitioning = true;
         anim.animateComponent(bankFocusPanel.get(), content.withX(content.getX() + w), 1.0f, 200, false, 0.0, 0.0);
@@ -463,8 +465,8 @@ void MainComponent::animateBankCategorySwitch(bool showCubbi)
 
     // Wipe button colours before any state change so startWipe captures the current fill
     const bool fromRight = !showCubbi;
-    cubbiTabButton.startWipe(showCubbi ? tabActiveCol : tabInactiveCol, fromRight);
-    jammiTabButton.startWipe(showCubbi ? tabInactiveCol : tabActiveCol, fromRight);
+    cubbiTabButton.startWipe(showCubbi ? ChompiColours::PURPLE : ChompiColours::BUTTON_BG, fromRight);
+    jammiTabButton.startWipe(showCubbi ? ChompiColours::BUTTON_BG : ChompiColours::PURPLE, fromRight);
 
     // Snapshot the current panel state before any content change
     auto snapshot = bankFocusPanel->createComponentSnapshot(bankFocusPanel->getLocalBounds());
@@ -524,8 +526,8 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
             const int  dir       = showCubbi ? -1 : 1;
             const bool fromRight = !showCubbi;
 
-            cubbiTabButton.startWipe(showCubbi ? tabActiveCol : tabInactiveCol, fromRight);
-            jammiTabButton.startWipe(showCubbi ? tabInactiveCol : tabActiveCol, fromRight);
+            cubbiTabButton.startWipe(showCubbi ? ChompiColours::PURPLE : ChompiColours::BUTTON_BG, fromRight);
+            jammiTabButton.startWipe(showCubbi ? ChompiColours::BUTTON_BG : ChompiColours::PURPLE, fromRight);
 
             incoming->setBounds(content.withX(content.getX() + dir * w));
             incoming->setVisible(true);
@@ -543,16 +545,16 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
         }
         else
         {
-            styleTabButton(cubbiTabButton, showCubbi);
-            styleTabButton(jammiTabButton, !showCubbi);
+            styleTabButton(cubbiTabButton, showCubbi,  ChompiColours::PURPLE);
+            styleTabButton(jammiTabButton, !showCubbi, ChompiColours::PURPLE);
             cubbiEditor->setVisible(showCubbi);
             jammiEditor->setVisible(!showCubbi);
         }
     }
     else
     {
-        styleTabButton(cubbiTabButton, showCubbi);
-        styleTabButton(jammiTabButton, !showCubbi);
+        styleTabButton(cubbiTabButton, showCubbi,  ChompiColours::PURPLE);
+        styleTabButton(jammiTabButton, !showCubbi, ChompiColours::PURPLE);
     }
 
     showCubbiEditor = showCubbi;
@@ -563,9 +565,9 @@ BankEditorPanel* MainComponent::getActiveEditor()
     return showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
 }
 
-void MainComponent::styleTabButton(WipeTabButton& btn, bool active)
+void MainComponent::styleTabButton(WipeTabButton& btn, bool active, juce::Colour activeCol)
 {
-    btn.snapToColour(active ? tabActiveCol : tabInactiveCol);
+    btn.snapToColour(active ? activeCol : ChompiColours::BUTTON_BG);
     btn.setColour(juce::TextButton::textColourOffId, tabTextCol);
     btn.setColour(juce::TextButton::textColourOnId,  ChompiColours::WHITE_CREAM);
 }

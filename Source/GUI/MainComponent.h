@@ -5,6 +5,9 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <functional>
 #include "GuiProcessor.h"
+#include "ChompiFonts.h"
+#include "UIColours.h"
+#include "UIConstants.h"
 #include "PreviewPanel.h"
 #include "BankEditorPanel.h"
 #include "BankFocusPanel.h"
@@ -60,13 +63,13 @@ private:
     void paintButton (juce::Graphics& g, bool, bool) override
     {
         auto b = getLocalBounds().toFloat().reduced (0.5f);
-        constexpr float r = 4.0f;
+        const float r = ChompiConstants::CORNER_RADIUS;
 
         auto drawHalf = [&] (juce::Rectangle<float> clip, juce::Colour col)
         {
             g.saveState();
             g.reduceClipRegion (clip.toNearestInt());
-            g.setColour (col);
+            g.setColour (ChompiColours::getTabBg(col));
             g.fillRoundedRectangle (b, r);
             g.restoreState();
         };
@@ -80,18 +83,21 @@ private:
         }
         else
         {
-            g.setColour (currentFill);
+            g.setColour (ChompiColours::getTabBg(currentFill));
             g.fillRoundedRectangle (b, r);
         }
 
+        g.setColour (ChompiColours::WHITE_CREAM.withAlpha(0.3f));
+        g.drawRoundedRectangle (b, r, ChompiConstants::BORDER_WIDTH_ACTIVE);
+
         g.setColour (findColour (juce::TextButton::textColourOffId));
-        g.setFont (getLookAndFeel().getTextButtonFont (*this, getHeight()));
+        g.setFont (ChompiFonts::nav());
         g.drawText (getButtonText(), getLocalBounds(), juce::Justification::centred, false);
     }
 
-    juce::Colour fromFill    { juce::Colour (0xff1e2838) };
-    juce::Colour targetFill  { juce::Colour (0xff1e2838) };
-    juce::Colour currentFill { juce::Colour (0xff1e2838) };
+    juce::Colour fromFill    = ChompiColours::BUTTON_BG;
+    juce::Colour targetFill  = ChompiColours::BUTTON_BG;
+    juce::Colour currentFill = ChompiColours::BUTTON_BG;
     float        wipeProgress = 1.0f;
     float        stepPerFrame = 1.0f / 12.0f;
     bool         wipeFromRight = false;
@@ -181,6 +187,22 @@ private:
     // ── Output folder (shared) ────────────────────────────
     juce::File         outputBaseFolder;     // full output folder path
 
+    struct FooterButtonLAF : public juce::LookAndFeel_V4
+    {
+        juce::Font getTextButtonFont(juce::TextButton&, int) override { return ChompiFonts::h3(); }
+
+        void drawButtonBackground(juce::Graphics& g, juce::Button& btn,
+                                  const juce::Colour& backgroundColour,
+                                  bool isHighlighted, bool) override
+        {
+            auto bounds = btn.getLocalBounds().reduced(1).toFloat();
+            g.setColour(isHighlighted ? backgroundColour.brighter(0.1f) : backgroundColour);
+            g.fillRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS);
+            g.setColour(ChompiColours::WHITE_CREAM.withAlpha(0.3f));
+            g.drawRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS, ChompiConstants::BORDER_WIDTH_ACTIVE);
+        }
+    } footerButtonLAF;
+
     juce::TextButton processButton;
     juce::TextButton fillButton;
     juce::TextButton clearButton;
@@ -199,7 +221,7 @@ private:
     // Mode switching
     void setViewMode(ViewMode mode);
     void setCategoryTab(bool showCubbi, bool animate = false);
-    void styleTabButton(WipeTabButton& btn, bool active);
+    void styleTabButton(WipeTabButton& btn, bool active, juce::Colour activeCol);
     juce::Rectangle<int> computeContentArea() const;
     bool isTransitioning = false;
     std::unique_ptr<juce::ImageComponent> bankTransitionOverlay;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankSlotComponent.h"
 #include "UIColours.h"
+#include "UIConstants.h"
+#include "ChompiFonts.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -65,31 +67,46 @@ void BankSlotComponent::paint(juce::Graphics& g)
     const juce::File& displayFile   = showingPreview ? previewFile : sample;
     const bool        displayFilled = (displayFile != juce::File{});
 
+    const juce::Colour filledBg = ChompiColours::getFocused(bankBorderColour(bankLetter));
+
     juce::Colour bg;
-    if      (dragTarget)                 bg = displayFilled ? slotFilledBg.brighter(0.25f) : slotDragTargetBg;
+    if      (dragTarget)                 bg = displayFilled ? filledBg.brighter(0.25f)      : slotDragTargetBg;
     else if (swapHighlight && selected)  bg = displayFilled ? slotSwapSourceBg.brighter(0.1f) : slotSwapSourceBg;
-    else if (selected)                   bg = displayFilled ? slotFilledBg.brighter(0.15f) : slotSelectedBg;
-    else                                 bg = displayFilled ? slotFilledBg                  : slotEmptyBg;
+    else if (selected)                   bg = displayFilled ? filledBg.brighter(0.15f)      : slotSelectedBg;
+    else                                 bg = displayFilled ? filledBg                       : slotEmptyBg;
     g.setColour(bg);
-    g.fillRoundedRectangle(bounds, 3.0f);
+    g.fillRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS);
 
     juce::Colour border;
-    float bw = 2.0f;
-    if      (isDraggingOver)            { border = slotDropBdr;              bw = 4.0f; }
-    else if (dragTarget)                { border = slotDragTargetBdr;        bw = 4.0f; }
-    else if (focused)                   { border = slotFocusBdr;             bw = 4.0f; }
+    float bw = ChompiConstants::BORDER_WIDTH;
+    if      (isDraggingOver)            { border = slotDropBdr;              bw = ChompiConstants::BORDER_WIDTH_ACTIVE; }
+    else if (dragTarget)                { border = slotDragTargetBdr;        bw = ChompiConstants::BORDER_WIDTH_ACTIVE; }
+    else if (focused)                   { border = slotFocusBdr;             bw = ChompiConstants::BORDER_WIDTH_ACTIVE; }
     else if (swapHighlight && selected) { border = slotSwapSourceBdr; }
     else if (selected)                  { border = slotSelectedBdr; }
     else if (isHovered)                 { border = slotHoverBdr; }
-    else                                { border = bankBorderColour(bankLetter).withAlpha(0.6f); }
+    else                                { border = ChompiColours::getBorder(bankBorderColour(bankLetter)); }
     g.setColour(border);
-    g.drawRoundedRectangle(bounds, 3.0f, bw);
+    g.drawRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS, bw);
 
     // Always show cell label (e.g. "A1", "E14") at 16pt
     const juce::String cellLabel = juce::String::charToString((juce::juce_wchar)bankLetter)
                                    + juce::String(slotNumber);
-    g.setColour(displayFilled ? slotTxtCol.withAlpha(0.55f) : slotNumCol);
-    g.setFont(juce::Font(16.0f));
+    g.setFont(ChompiFonts::body());
+
+    if (displayFilled)
+    {
+        const int pillW = (int)((getWidth() - 4) * 0.6f);
+        const int pillH = static_cast<int>(g.getCurrentFont().getHeight()) + 8;
+        const float pillR = pillH / 2.0f;
+        auto pill = juce::Rectangle<int>(pillW, pillH).withCentre(getLocalBounds().getCentre()).toFloat();
+        g.setColour(ChompiColours::getLabelBg(bankBorderColour(bankLetter)));
+        g.fillRoundedRectangle(pill, pillR);
+        g.setColour(ChompiColours::WHITE_CREAM);
+        g.drawRoundedRectangle(pill, pillR, 2.0f);
+    }
+
+    g.setColour(displayFilled ? slotTxtCol : slotNumCol);
     g.drawText(cellLabel, getLocalBounds(), juce::Justification::centred);
 }
 

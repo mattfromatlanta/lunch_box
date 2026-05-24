@@ -117,7 +117,7 @@ private:
     bool isDragging       = false;
     bool deferredDeselect = false; // plain click on multi-selected row: wait for mouseUp
 
-    static constexpr int BANK_COL_WIDTH  = 36;
+    static constexpr int BANK_COL_WIDTH  = 45;
     static constexpr int ROW_HEIGHT      = 55;
     static constexpr int ROW_GAP         = 1;
 
@@ -151,7 +151,7 @@ private:
     void commitReorder(int fromIdx, int toIdx);
     void clearReorderState();
 
-    void styleTabButton(juce::TextButton& btn, bool active);
+    void styleTabButton(juce::TextButton& btn, bool active, int bankIdx);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BankFocusPanel)
 };

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankEditorPanel.h"
 #include "UIColours.h"
+#include "UIConstants.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -674,17 +675,16 @@ void BankEditorPanel::resized()
 {
     auto area = getLocalBounds();
 
-    // Bank rows: 8px gap between each bank pair, flush at top and bottom
-    const int numBanks = banks.size();
-    if (numBanks == 0) return;
-    const int gapH    = 8;
-    const int numGaps = numBanks - 1;
-    const int rowH    = (area.getHeight() - numGaps * gapH) / numBanks;
-    for (int i = 0; i < numBanks; ++i)
+    if (banks.size() == 0) return;
+    const float elemH = ((float)area.getHeight() - (ChompiNamer::NUM_BANKS - 1) * ChompiConstants::BANK_GAP)
+                        / (float)ChompiNamer::NUM_BANKS;
+    float y = (float)area.getY();
+    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
     {
-        banks[i]->setBounds(area.removeFromTop(rowH));
-        if (i < numBanks - 1)
-            area.removeFromTop(gapH);
+        const int top = juce::roundToInt(y);
+        const int bot = juce::roundToInt(y + elemH);
+        banks[i]->setBounds(area.getX(), top, area.getWidth(), bot - top);
+        y += elemH + ChompiConstants::BANK_GAP;
     }
 
 }

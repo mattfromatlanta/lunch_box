@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "FocusedSlotRow.h"
+#include "ChompiFonts.h"
 #include "../FileSystemHelper.h"
 
 namespace
 {
-    const juce::Colour rowEmptyBg      { 0xff1d2228 };
-    const juce::Colour rowFilledBg     { 0xff1e3a52 };
-    const juce::Colour rowSelectedBg   { 0xff1e2a4a };
-    const juce::Colour rowBorderCol    { 0xff2a3040 };
     const juce::Colour rowHoverBdr     { 0xff5577aa };
     const juce::Colour rowDropBdr      { 0xff4caf50 };
     const juce::Colour rowSelectedBdr  { 0xff4455aa };
-    const juce::Colour slotNumCol      { 0xff4a5a6a };
-    const juce::Colour waveColour      { 0xff3d8a5c };
-    const juce::Colour filenameCol     { 0xff8899aa };
     const juce::Colour insertionCol    { 0xffddaa33 };
 }
 
@@ -97,69 +91,72 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     auto bounds = getLocalBounds();
 
     // Resolve display content — preview overrides actual state during drag
-    const juce::File&     displayFile  = showingPreview ? previewFile  : sample;
+    const juce::File&     displayFile   = showingPreview ? previewFile  : sample;
     const bool            displayFilled = (displayFile != juce::File{});
     juce::AudioThumbnail& displayThumb  = showingPreview ? previewThumbnail : thumbnail;
 
     // Background
     juce::Colour bg;
-    if      (selected) bg = displayFilled ? rowFilledBg.brighter(0.15f) : rowSelectedBg;
-    else               bg = displayFilled ? rowFilledBg : rowEmptyBg;
+    if (displayFilled)
+        bg = selected ? ChompiColours::getTabBg(bankColour).brighter(0.15f)
+                      : ChompiColours::getTabBg(bankColour);
+    else
+        bg = selected ? ChompiColours::BUTTON_BG.brighter(0.15f)
+                      : ChompiColours::BUTTON_BG;
+    constexpr float rowRadius = 3.0f;
+    auto fbounds = bounds.toFloat();
     g.setColour(bg);
-    g.fillRect(bounds);
+    g.fillRoundedRectangle(fbounds, rowRadius);
 
-    // Bottom border separator
-    g.setColour(rowBorderCol);
-    g.drawLine(0.0f, (float)bounds.getBottom() - 1.0f,
-               (float)bounds.getWidth(), (float)bounds.getBottom() - 1.0f, 1.0f);
-
-    // Border priority: drag-source → file-drop → selected → hovered
+    // Border
+    auto borderBounds = fbounds.reduced(1.0f);
     if (isDragSrc)
     {
-        g.setColour(juce::Colour(0xffdd7722));
-        g.drawRect(bounds, 4);
+        g.setColour(insertionCol);
+        g.drawRoundedRectangle(borderBounds, rowRadius, 4.0f);
     }
     else if (isDraggingOver)
     {
         g.setColour(rowDropBdr);
-        g.drawRect(bounds, 4);
+        g.drawRoundedRectangle(borderBounds, rowRadius, 4.0f);
     }
     else if (selected)
     {
-        g.setColour(rowSelectedBdr);
-        g.drawRect(bounds, 2);
+        g.setColour(displayFilled ? ChompiColours::getFocused(bankColour).brighter(0.3f)
+                                  : rowSelectedBdr);
+        g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f);
     }
     else if (isHovered)
     {
-        g.setColour(rowHoverBdr.withAlpha(0.5f));
-        g.drawRect(bounds, 2);
+        g.setColour(displayFilled ? ChompiColours::getFocused(bankColour)
+                                  : rowHoverBdr.withAlpha(0.5f));
+        g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f);
+    }
+    else if (displayFilled)
+    {
+        g.setColour(ChompiColours::getFocused(bankColour));
+        g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f);
     }
 
     // Slot number (left column, 28px)
     const int numW = 28;
     auto numArea = bounds.removeFromLeft(numW);
-    g.setColour(slotNumCol);
-    g.setFont(juce::Font(16.0f));
+    g.setFont(ChompiFonts::body());
+    g.setColour(displayFilled ? ChompiColours::WHITE_CREAM
+                              : ChompiColours::WHITE_CREAM.withAlpha(0.4f));
     g.drawText(juce::String(slotNumber).paddedLeft('0', 2),
                numArea, juce::Justification::centred);
 
     if (!displayFilled)
         return;
 
-    // Waveform (slightly dimmed when showing preview content)
+    // Waveform drawn with bank colour
     if (displayThumb.getTotalLength() > 0.0)
     {
-        g.setColour(waveColour.withAlpha(showingPreview ? 0.5f : 0.75f));
+        g.setColour(bankColour.withAlpha(showingPreview ? 0.5f : 0.85f));
         displayThumb.drawChannels(g, bounds.reduced(0, 4),
                                   0.0, displayThumb.getTotalLength(), 1.0f);
     }
-
-    // Filename overlay — right-aligned, drawn on top of waveform
-    g.setColour(filenameCol.withAlpha(showingPreview ? 0.6f : 0.9f));
-    g.setFont(juce::Font(9.5f));
-    g.drawText(displayFile.getFileNameWithoutExtension(),
-               bounds.reduced(4, 0),
-               juce::Justification::centredRight, true);
 }
 
 void FocusedSlotRow::mouseDown(const juce::MouseEvent& e)

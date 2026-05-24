@@ -3,6 +3,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "UIColours.h"
 
 //==============================================================================
 // FocusedSlotRow - A single bank slot rendered as a tall horizontal bar.
@@ -32,6 +33,7 @@ public:
     // Visual state (managed by BankFocusPanel)
     void setSelected(bool s);
     void setDragSource(bool s);       // this row is the current drag destination (orange border)
+    void setBankColour(juce::Colour c) { bankColour = c; repaint(); }
 
     // Drag preview: show a different file's waveform without changing the actual sample
     void setPreviewSample(const juce::File& f);  // showingPreview=true, previewFile=f
@@ -81,6 +83,7 @@ private:
     bool isHovered        = false;
     bool selected         = false;
     bool isDragSrc        = false;
+    juce::Colour bankColour = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 

@@ -146,13 +146,22 @@ void BankRowComponent::resized()
 {
     auto area = getLocalBounds();
     constexpr int half = ChompiNamer::SLOTS_PER_BANK / 2;  // 7
-    const int rowH = area.getHeight() / 2;
-    const int slotW = area.getWidth() / half;
+    const float cellW = (float)area.getWidth()  / (float)half;
+    const float cellH = (float)area.getHeight() / 2.0f;
+    const int   midY  = juce::roundToInt((float)area.getY() + cellH);
 
-    auto topRow = area.removeFromTop(rowH);
+    float x = (float)area.getX();
     for (int i = 0; i < half; ++i)
-        slots[i]->setBounds(topRow.removeFromLeft(slotW));
-
+    {
+        const int l = juce::roundToInt(x), r = juce::roundToInt(x + cellW);
+        slots[i]->setBounds(l, area.getY(), r - l, midY - area.getY());
+        x += cellW;
+    }
+    x = (float)area.getX();
     for (int i = half; i < ChompiNamer::SLOTS_PER_BANK; ++i)
-        slots[i]->setBounds(area.removeFromLeft(slotW));
+    {
+        const int l = juce::roundToInt(x), r = juce::roundToInt(x + cellW);
+        slots[i]->setBounds(l, midY, r - l, area.getBottom() - midY);
+        x += cellW;
+    }
 }

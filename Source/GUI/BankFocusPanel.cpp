@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankFocusPanel.h"
 #include "UIColours.h"
+#include "UIConstants.h"
+#include "ChompiFonts.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -14,9 +16,21 @@ namespace
     const juce::Colour slotBorder    { 0xff3a4a5a };
     const juce::Colour slotFocusBdr  { 0xff99aaff };
     const juce::Colour slotNumCol    = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
-    const juce::Colour slotTxtCol    = ChompiColours::WHITE_CREAM;
 
-    // LookAndFeel that paints TextButtons identically to BankSlotComponent cells
+    static juce::Colour bankColourForIndex(int idx)
+    {
+        switch (idx)
+        {
+            case 0: return ChompiColours::RED;
+            case 1: return ChompiColours::PINK_SALMON;
+            case 2: return ChompiColours::YELLOW;
+            case 3: return ChompiColours::TEAL;
+            case 4: return ChompiColours::PURPLE;
+            default: return ChompiColours::WHITE_CREAM;
+        }
+    }
+
+    // LookAndFeel for bank selector buttons
     struct SlotStyleLAF : public juce::LookAndFeel_V4
     {
         void drawButtonBackground(juce::Graphics& g, juce::Button& btn,
@@ -24,20 +38,32 @@ namespace
                                   bool isHighlighted, bool) override
         {
             auto bounds = btn.getLocalBounds().reduced(2).toFloat();
-            g.setColour(isHighlighted ? backgroundColour.brighter(0.1f) : backgroundColour);
-            g.fillRoundedRectangle(bounds, 3.0f);
-
-            const bool active = btn.getToggleState();
-            g.setColour(active ? slotFocusBdr : slotBorder);
-            g.drawRoundedRectangle(bounds, 3.0f, active ? 4.0f : 2.0f);
+            const juce::Colour fill = btn.getToggleState()
+                ? ChompiColours::getFocused(backgroundColour)
+                : backgroundColour;
+            g.setColour(isHighlighted ? fill.brighter(0.1f) : fill);
+            g.fillRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS);
+            g.setColour(ChompiColours::WHITE_CREAM.withAlpha(0.3f));
+            g.drawRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS, ChompiConstants::BORDER_WIDTH_ACTIVE);
         }
 
         void drawButtonText(juce::Graphics& g, juce::TextButton& btn, bool, bool) override
         {
-            g.setColour(btn.findColour(btn.getToggleState()
-                ? juce::TextButton::textColourOnId
-                : juce::TextButton::textColourOffId));
-            g.setFont(juce::Font(16.0f));
+            const bool active = btn.getToggleState();
+
+            if (active)
+            {
+                const float circleR = 14.0f;
+                auto centre = btn.getLocalBounds().getCentre().toFloat();
+                g.setColour(ChompiColours::getLabelBg(btn.findColour(juce::TextButton::buttonOnColourId)));
+                g.fillEllipse(centre.x - circleR, centre.y - circleR, circleR * 2.0f, circleR * 2.0f);
+                g.setColour(ChompiColours::WHITE_CREAM.withAlpha(0.5f));
+                g.drawEllipse(centre.x - circleR, centre.y - circleR, circleR * 2.0f, circleR * 2.0f, 1.5f);
+            }
+
+            g.setColour(btn.findColour(active ? juce::TextButton::textColourOnId
+                                              : juce::TextButton::textColourOffId));
+            g.setFont(ChompiFonts::h3());
             g.drawText(btn.getButtonText(), btn.getLocalBounds(), juce::Justification::centred);
         }
     };
@@ -126,6 +152,10 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
     // Initialise selection to row 0
     selection.add(0);
     updateRowVisuals();
+
+    // Set initial bank colour on all rows
+    for (auto* row : rows)
+        row->setBankColour(bankColourForIndex(activeBank));
 
     bankButtonLAF.reset(new SlotStyleLAF());
     for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
@@ -317,9 +347,13 @@ void BankFocusPanel::flushRowsToStorage()
 void BankFocusPanel::populateRowsFromStorage()
 {
     const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const juce::Colour bankCol = bankColourForIndex(activeBank);
     isPopulating = true;
     for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    {
+        rows[s]->setBankColour(bankCol);
         rows[s]->setSample(slots[catIdx][activeBank][s]);
+    }
     isPopulating = false;
     if (onAssignmentsChanged) onAssignmentsChanged();
 }
@@ -831,19 +865,20 @@ void BankFocusPanel::modifierKeysChanged(const juce::ModifierKeys&)
 
 // ─── Styling ──────────────────────────────────────────────────────────────────
 
-void BankFocusPanel::styleTabButton(juce::TextButton& btn, bool active)
+void BankFocusPanel::styleTabButton(juce::TextButton& btn, bool active, int bankIdx)
 {
+    const juce::Colour bankCol = bankColourForIndex(bankIdx);
     btn.setToggleState(active, juce::dontSendNotification);
-    btn.setColour(juce::TextButton::buttonColourId,   slotEmptyBg);
-    btn.setColour(juce::TextButton::buttonOnColourId, slotFilledBg);
-    btn.setColour(juce::TextButton::textColourOffId,  slotNumCol);
-    btn.setColour(juce::TextButton::textColourOnId,   slotTxtCol);
+    btn.setColour(juce::TextButton::buttonColourId,   ChompiColours::BUTTON_BG);
+    btn.setColour(juce::TextButton::buttonOnColourId, bankCol);
+    btn.setColour(juce::TextButton::textColourOffId,  ChompiColours::WHITE_CREAM.withAlpha(0.7f));
+    btn.setColour(juce::TextButton::textColourOnId,   ChompiColours::WHITE_CREAM);
 }
 
 void BankFocusPanel::updateBankButtonStyles()
 {
     for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
-        styleTabButton(bankButtons[i], i == activeBank);
+        styleTabButton(bankButtons[i], i == activeBank, i);
 }
 
 // ─── Paint / layout ───────────────────────────────────────────────────────────
@@ -851,26 +886,44 @@ void BankFocusPanel::updateBankButtonStyles()
 void BankFocusPanel::paint(juce::Graphics& g)
 {
     g.fillAll(panelBg);
-
-    // Left bank column background
-    g.setColour(bankColBg);
-    g.fillRect(0, 0, BANK_COL_WIDTH, getHeight());
 }
 
 void BankFocusPanel::resized()
 {
     auto area = getLocalBounds();
 
-    // Left column: bank selector buttons (A-E), evenly distributed vertically
-    auto bankCol = area.removeFromLeft(BANK_COL_WIDTH);
-    int bankBtnH = bankCol.getHeight() / ChompiNamer::NUM_BANKS;
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
-        bankButtons[i].setBounds(bankCol.removeFromTop(bankBtnH));
+    // Bank column: width = one cell width (W/7), height matches Pack bank rows exactly
+    const float bankColWf  = (float)area.getWidth() / 7.0f;
+    const float bankBtnHf  = ((float)area.getHeight() - (ChompiNamer::NUM_BANKS - 1) * ChompiConstants::BANK_GAP)
+                             / (float)ChompiNamer::NUM_BANKS;
+    const float totalBankHf = bankBtnHf * ChompiNamer::NUM_BANKS
+                              + ChompiConstants::BANK_GAP * (ChompiNamer::NUM_BANKS - 1);
 
-    // Single column of 14 rows, height divided evenly
-    const int rowH = area.getHeight() / ChompiNamer::SLOTS_PER_BANK;
+    const int bankColW = juce::roundToInt(bankColWf);
+    auto bankCol = area.removeFromLeft(bankColW);
+    area.removeFromLeft(juce::roundToInt(ChompiConstants::BANK_GAP));
+
+    float y = (float)bankCol.getY();
+    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    {
+        const int top = juce::roundToInt(y);
+        const int bot = juce::roundToInt(y + bankBtnHf);
+        bankButtons[i].setBounds(bankCol.getX(), top, bankCol.getWidth(), bot - top);
+        y += bankBtnHf + ChompiConstants::BANK_GAP;
+    }
+
+    // Slot rows: derived from totalBankHf so they scale in exact sync with bank buttons
+    const float rowHf = (totalBankHf - (ChompiNamer::SLOTS_PER_BANK - 1) * ChompiConstants::SLOT_ROW_GAP)
+                        / (float)ChompiNamer::SLOTS_PER_BANK;
+
+    y = (float)area.getY();
     for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
-        rows[i]->setBounds(area.removeFromTop(rowH));
+    {
+        const int top = juce::roundToInt(y);
+        const int bot = juce::roundToInt(y + rowHf);
+        rows[i]->setBounds(area.getX(), top, area.getWidth(), bot - top);
+        y += rowHf + ChompiConstants::SLOT_ROW_GAP;
+    }
 }
 
 // ─── External file drag (FileDragAndDropTarget) ───────────────────────────────
