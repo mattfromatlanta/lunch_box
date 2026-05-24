@@ -47,22 +47,6 @@
 
 ---
 
-## Audio Dev MCP
-
-**At the start of every session, load all `audio-dev-mcp` tools using ToolSearch before doing any work.** Use `select:mcp__audio-dev-mcp__get_workspace,mcp__audio-dev-mcp__get_workflow,mcp__audio-dev-mcp__get_approved_dependencies,mcp__audio-dev-mcp__get_build_rules,mcp__audio-dev-mcp__get_media_storage,mcp__audio-dev-mcp__get_project_structure` to load them all at once.
-
-Workspace-wide conventions are managed by the `audio-dev-mcp` MCP server. Query these tools before making decisions about toolchain, dependencies, or build destinations:
-
-| Tool | Use for |
-|------|---------|
-| `get_workflow` | JUCE location, CMake-only policy, toolchain setup |
-| `get_approved_dependencies` (stack: `cpp`) | Approved libraries and versions |
-| `get_build_rules` | Where test builds live; where to copy stable releases |
-| `get_media_storage` | dev_assets conventions; Dropbox library paths |
-| `get_project_structure` (type: `juce_app`) | Canonical folder layout and gitignore entries |
-
----
-
 ## Architecture
 
 ### Core Design Principle
@@ -550,8 +534,7 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ---
 
-**Last Updated:** 2026-03-10
-**Maintainer:** Matt from Atlanta
+**Author:** [Matt from Atlanta](https://github.com/mattfromatlanta) — [Bluesky](https://bsky.app/profile/mattfromatlanta.bsky.social) · [Bandcamp](https://angsttanks.bandcamp.com/)
 **AI Assistant:** This document is specifically for AI assistants working on the codebase
 
 ---

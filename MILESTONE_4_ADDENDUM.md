@@ -72,12 +72,12 @@ Added output folder selection to the GUI, matching the functionality and style o
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │  Cubbi Folder:                                     │
-│  ┌──────────────────┐  /Users/matt/samples/cubbi  │
+│  ┌──────────────────┐  /path/to/samples/cubbi  │
 │  │ Select Cubbi... │                              │
 │  └──────────────────┘                              │
 │                                                     │
 │  Jammi Folder:                                     │
-│  ┌──────────────────┐  /Users/matt/samples/jammi  │
+│  ┌──────────────────┐  /path/to/samples/jammi  │
 │  │ Select Jammi... │                              │
 │  └──────────────────┘                              │
 │                                                     │
@@ -94,7 +94,7 @@ Added output folder selection to the GUI, matching the functionality and style o
 │ Status:                                            │
 │ ┌───────────────────────────────────────────────┐ │
 │ │ Ready to process samples...                   │ │
-│ │ Output folder selected: /Users/matt/output    │ │
+│ │ Output folder selected: /path/to/output    │ │
 │ │ ...                                           │ │
 │ └───────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
@@ -182,7 +182,7 @@ The output folder selection follows the exact same pattern as cubbi and jammi se
 2. Select cubbi folder
 3. Select jammi folder
 4. **Click "Select Output Folder..."**
-5. **Choose `/Users/matt/projects/techno_track/samples/`**
+5. **Choose `/path/to/projects/techno_track/samples/`**
 6. Click "Process Samples"
 7. Files saved to custom location
 
@@ -221,7 +221,7 @@ This approach:
 ### Path Display
 The label shows the full absolute path when selected:
 ```
-/Users/matthewfishel/projects/music/samples
+/path/to/music/samples
 ```
 
 This provides:

@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankFocusPanel.h"
+#include "UIColours.h"
 #include "../FileSystemHelper.h"
 
 namespace
 {
-    const juce::Colour panelBg       { 0xff151a26 };
+    const juce::Colour panelBg       = ChompiColours::DARK_GREY;
     const juce::Colour bankColBg     { 0xff0f1420 };
 
     // Slot-cell palette (matches BankSlotComponent)
@@ -11,8 +13,8 @@ namespace
     const juce::Colour slotFilledBg  { 0xff3a5060 };
     const juce::Colour slotBorder    { 0xff3a4a5a };
     const juce::Colour slotFocusBdr  { 0xff99aaff };
-    const juce::Colour slotNumCol    { 0xff4a5a6a };
-    const juce::Colour slotTxtCol    { 0xffaabbcc };
+    const juce::Colour slotNumCol    = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
+    const juce::Colour slotTxtCol    = ChompiColours::WHITE_CREAM;
 
     // LookAndFeel that paints TextButtons identically to BankSlotComponent cells
     struct SlotStyleLAF : public juce::LookAndFeel_V4
@@ -21,13 +23,13 @@ namespace
                                   const juce::Colour& backgroundColour,
                                   bool isHighlighted, bool) override
         {
-            auto bounds = btn.getLocalBounds().reduced(1).toFloat();
+            auto bounds = btn.getLocalBounds().reduced(2).toFloat();
             g.setColour(isHighlighted ? backgroundColour.brighter(0.1f) : backgroundColour);
             g.fillRoundedRectangle(bounds, 3.0f);
 
             const bool active = btn.getToggleState();
             g.setColour(active ? slotFocusBdr : slotBorder);
-            g.drawRoundedRectangle(bounds, 3.0f, active ? 2.0f : 1.0f);
+            g.drawRoundedRectangle(bounds, 3.0f, active ? 4.0f : 2.0f);
         }
 
         void drawButtonText(juce::Graphics& g, juce::TextButton& btn, bool, bool) override

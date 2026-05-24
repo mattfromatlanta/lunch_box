@@ -7,11 +7,41 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add JUCE
-add_subdirectory(/Users/matthewfishel/Repos/JUCE ${CMAKE_BINARY_DIR}/JUCE)
+# Set JUCE_DIR via: cmake .. -DJUCE_DIR=/path/to/JUCE
+# Or clone JUCE alongside this repo: git clone https://github.com/juce-framework/JUCE.git ../JUCE
+set(JUCE_DIR "" CACHE PATH "Path to JUCE framework source")
+if(NOT JUCE_DIR)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/../JUCE/CMakeLists.txt")
+        set(JUCE_DIR "${CMAKE_SOURCE_DIR}/../JUCE")
+    else()
+        message(FATAL_ERROR
+            "JUCE not found. Either:\n"
+            "  1. Clone JUCE next to this repo: git clone https://github.com/juce-framework/JUCE.git ../JUCE\n"
+            "  2. Pass the path: cmake .. -DJUCE_DIR=/path/to/JUCE")
+    endif()
+endif()
+add_subdirectory(${JUCE_DIR} ${CMAKE_BINARY_DIR}/JUCE)
 
-add_subdirectory(/Users/matthewfishel/Repos/melatonin_inspector ${CMAKE_BINARY_DIR}/melatonin_inspector)
+# Optional dev tool: melatonin_inspector (JUCE component inspector)
+# Enable with: cmake .. -DCHOMPI_MELATONIN_INSPECTOR=ON -DMELATONIN_INSPECTOR_DIR=/path/to/melatonin_inspector
+option(CHOMPI_MELATONIN_INSPECTOR "Enable melatonin_inspector dev tool" OFF)
+if(CHOMPI_MELATONIN_INSPECTOR)
+    add_compile_definitions(CHOMPI_MELATONIN_INSPECTOR=1)
+endif()
+if(CHOMPI_MELATONIN_INSPECTOR)
+    set(MELATONIN_INSPECTOR_DIR "" CACHE PATH "Path to melatonin_inspector")
+    if(NOT MELATONIN_INSPECTOR_DIR)
+        message(FATAL_ERROR "MELATONIN_INSPECTOR_DIR not set. Pass -DMELATONIN_INSPECTOR_DIR=/path/to/melatonin_inspector")
+    endif()
+    add_subdirectory(${MELATONIN_INSPECTOR_DIR} ${CMAKE_BINARY_DIR}/melatonin_inspector)
+endif()
 
-juce_add_binary_data(chompi_assets SOURCES dev_assets/chompi_logo.png)
+juce_add_binary_data(chompi_assets SOURCES
+    dev_assets/chompi_logo.png
+    fonts/Poppins-Regular.ttf
+    fonts/Poppins-Medium.ttf
+    fonts/Poppins-SemiBold.ttf
+    fonts/Poppins-Bold.ttf)
 
 # Create the GUI application
 juce_add_gui_app(chompi_pack
@@ -77,7 +107,7 @@ target_link_libraries(chompi_pack
         juce::juce_audio_utils
         juce::juce_gui_basics
         juce::juce_gui_extra
-        melatonin_inspector
+        $<$<BOOL:${CHOMPI_MELATONIN_INSPECTOR}>:melatonin_inspector>
         chompi_assets
     PUBLIC
         juce::juce_recommended_config_flags

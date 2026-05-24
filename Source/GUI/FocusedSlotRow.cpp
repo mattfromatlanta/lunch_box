@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "FocusedSlotRow.h"
 #include "../FileSystemHelper.h"
 
@@ -116,22 +117,22 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     if (isDragSrc)
     {
         g.setColour(juce::Colour(0xffdd7722));
-        g.drawRect(bounds, 2);
+        g.drawRect(bounds, 4);
     }
     else if (isDraggingOver)
     {
         g.setColour(rowDropBdr);
-        g.drawRect(bounds, 2);
+        g.drawRect(bounds, 4);
     }
     else if (selected)
     {
         g.setColour(rowSelectedBdr);
-        g.drawRect(bounds, 1);
+        g.drawRect(bounds, 2);
     }
     else if (isHovered)
     {
         g.setColour(rowHoverBdr.withAlpha(0.5f));
-        g.drawRect(bounds, 1);
+        g.drawRect(bounds, 2);
     }
 
     // Slot number (left column, 28px)

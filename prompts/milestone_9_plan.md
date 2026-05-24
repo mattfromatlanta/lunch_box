@@ -278,7 +278,7 @@ Polish the GUI with professional aesthetics, improved usability, and modern desi
 │  Cubbi Samples                                          │ ← Section (16pt)
 │  ╭─────────────────────────────────────────────────╮   │
 │  │  📁 Select Cubbi Folder...                      │   │ ← Button with icon
-│  │  /Users/matt/samples/cubbi                      │   │ ← Path (14pt)
+│  │  /path/to/samples/cubbi                      │   │ ← Path (14pt)
 │  │                                                   │   │
 │  │  14 WAV files found                              │   │ ← Status (14pt, green)
 │  ╰─────────────────────────────────────────────────╯   │

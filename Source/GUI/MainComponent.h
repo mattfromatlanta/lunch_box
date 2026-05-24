@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -7,7 +8,9 @@
 #include "PreviewPanel.h"
 #include "BankEditorPanel.h"
 #include "BankFocusPanel.h"
+#if CHOMPI_MELATONIN_INSPECTOR
 #include "melatonin_inspector/melatonin_inspector.h"
+#endif
 
 class ConsoleWindow;
 
@@ -247,7 +250,9 @@ private:
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
 
+#if CHOMPI_MELATONIN_INSPECTOR
     std::unique_ptr<melatonin::Inspector> inspector;
+#endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

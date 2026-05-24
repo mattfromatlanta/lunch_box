@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include <juce_core/juce_core.h>
 #include <juce_audio_formats/juce_audio_formats.h>
 

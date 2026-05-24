@@ -574,7 +574,7 @@ chompi_pack \
 
 ## Support & Resources
 
-- **Project Files:** `/Users/matthewfishel/Repos/chompi_pack/`
+- **Project Files:** `/path/to/chompi_pack/`
 - **Logs:** `logs/chompi_pack_log_*.txt`
 - **Test Results:** `dev_assets/TESTING_SUMMARY.md`
 - **Planning Docs:** `prompts/milestone_*.md`

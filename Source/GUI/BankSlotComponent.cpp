@@ -1,4 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankSlotComponent.h"
+#include "UIColours.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -8,8 +10,21 @@ namespace
     const juce::Colour slotBorder        { 0xff3a4a5a };
     const juce::Colour slotHoverBdr      { 0xff5577aa };
     const juce::Colour slotDropBdr       { 0xff4caf50 };
-    const juce::Colour slotNumCol        { 0xff4a5a6a };
-    const juce::Colour slotTxtCol        { 0xffaabbcc };
+    const juce::Colour slotNumCol        = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
+    const juce::Colour slotTxtCol        = ChompiColours::WHITE_CREAM;
+
+    static juce::Colour bankBorderColour(char bankLetter)
+    {
+        switch (bankLetter)
+        {
+            case 'A': return ChompiColours::RED;
+            case 'B': return ChompiColours::PINK_SALMON;
+            case 'C': return ChompiColours::YELLOW;
+            case 'D': return ChompiColours::TEAL;
+            case 'E': return ChompiColours::PURPLE;
+            default:  return slotBorder;
+        }
+    }
     const juce::Colour slotSelectedBg    { 0xff1e2a4a };
     const juce::Colour slotFocusBdr      { 0xff99aaff };
     const juce::Colour slotSelectedBdr   { 0xff4455aa };
@@ -44,7 +59,7 @@ void BankSlotComponent::clearSample()
 
 void BankSlotComponent::paint(juce::Graphics& g)
 {
-    auto bounds = getLocalBounds().reduced(1).toFloat();
+    auto bounds = getLocalBounds().reduced(2).toFloat();
 
     // For display purposes: use preview file during drag previews, else actual sample
     const juce::File& displayFile   = showingPreview ? previewFile : sample;
@@ -59,14 +74,14 @@ void BankSlotComponent::paint(juce::Graphics& g)
     g.fillRoundedRectangle(bounds, 3.0f);
 
     juce::Colour border;
-    float bw = 1.0f;
-    if      (isDraggingOver)            { border = slotDropBdr;       bw = 2.0f; }
-    else if (dragTarget)                { border = slotDragTargetBdr; bw = 2.0f; }
-    else if (focused)                   { border = slotFocusBdr;      bw = 2.0f; }
+    float bw = 2.0f;
+    if      (isDraggingOver)            { border = slotDropBdr;              bw = 4.0f; }
+    else if (dragTarget)                { border = slotDragTargetBdr;        bw = 4.0f; }
+    else if (focused)                   { border = slotFocusBdr;             bw = 4.0f; }
     else if (swapHighlight && selected) { border = slotSwapSourceBdr; }
     else if (selected)                  { border = slotSelectedBdr; }
     else if (isHovered)                 { border = slotHoverBdr; }
-    else                                { border = slotBorder; }
+    else                                { border = bankBorderColour(bankLetter).withAlpha(0.6f); }
     g.setColour(border);
     g.drawRoundedRectangle(bounds, 3.0f, bw);
 

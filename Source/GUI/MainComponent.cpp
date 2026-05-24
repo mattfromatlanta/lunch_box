@@ -1,19 +1,17 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "MainComponent.h"
 #include "ClipboardHelper.h"
+#include "UIColours.h"
 #include <BinaryData.h>
 
-// M9 color palette
 namespace
 {
-    const juce::Colour bgColour        { 0xff1a1f2e };
-    const juce::Colour sectionColour   { 0xff8899aa };
-    const juce::Colour headerColour    { 0xffe0e8f0 };
+    const juce::Colour bgColour        = ChompiColours::DARK_GREY;
     const juce::Colour statusBgColour  { 0xff151a26 };
-    const juce::Colour statusFgColour  { 0xffaabbcc };
     const juce::Colour accentColour    { 0xff4caf50 };
     const juce::Colour tabActiveCol    { 0xff2a4060 };
     const juce::Colour tabInactiveCol  { 0xff1e2838 };
-    const juce::Colour tabTextCol      { 0xffaabbcc };
+    const juce::Colour tabTextCol      = ChompiColours::WHITE_CREAM;
 }
 
 //==============================================================================
@@ -149,7 +147,7 @@ MainComponent::MainComponent()
     addChildComponent(bankFocusPanel.get());  // hidden initially
 
     bankStatusLabel.setFont(juce::Font(10.0f));
-    bankStatusLabel.setColour(juce::Label::textColourId, juce::Colour(0xff667788));
+    bankStatusLabel.setColour(juce::Label::textColourId, ChompiColours::WHITE_CREAM);
     bankStatusLabel.setJustificationType(juce::Justification::centredLeft);
     addChildComponent(bankStatusLabel);
 
@@ -170,7 +168,7 @@ MainComponent::MainComponent()
     processButton.setTooltip("Convert and export all samples to CHOMPI format (Cmd+Return)");
     processButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
     processButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xff2b2732));
-    processButton.setColour(juce::TextButton::textColourOffId,  juce::Colours::white);
+    processButton.setColour(juce::TextButton::textColourOffId,  ChompiColours::WHITE_CREAM);
     processButton.onClick = [this] { processFiles(); };
     processButton.setEnabled(false);
     addAndMakeVisible(processButton);
@@ -178,7 +176,7 @@ MainComponent::MainComponent()
     fillButton.setButtonText("Fill");
     fillButton.setTooltip("Auto-fill empty slots from a folder");
     fillButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
-    fillButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    fillButton.setColour(juce::TextButton::textColourOffId, ChompiColours::WHITE_CREAM);
     fillButton.onClick = [this]
     {
         if (viewMode == ViewMode::Pack)
@@ -191,7 +189,7 @@ MainComponent::MainComponent()
     clearButton.setButtonText("Clear");
     clearButton.setTooltip("Clear all slots in the current view");
     clearButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
-    clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    clearButton.setColour(juce::TextButton::textColourOffId, ChompiColours::WHITE_CREAM);
     clearButton.onClick = [this]
     {
         captureUndoState();
@@ -219,8 +217,10 @@ MainComponent::MainComponent()
 
     setSize(493, 890);
 
+#if CHOMPI_MELATONIN_INSPECTOR
     inspector = std::make_unique<melatonin::Inspector>(*this);
     inspector->setVisible(true);
+#endif
 }
 
 MainComponent::~MainComponent()
@@ -567,7 +567,7 @@ void MainComponent::styleTabButton(WipeTabButton& btn, bool active)
 {
     btn.snapToColour(active ? tabActiveCol : tabInactiveCol);
     btn.setColour(juce::TextButton::textColourOffId, tabTextCol);
-    btn.setColour(juce::TextButton::textColourOnId,  headerColour);
+    btn.setColour(juce::TextButton::textColourOnId,  ChompiColours::WHITE_CREAM);
 }
 
 // ─── Output folder ────────────────────────────────────────────────────────────

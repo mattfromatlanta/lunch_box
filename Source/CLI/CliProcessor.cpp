@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "CliProcessor.h"
 #include "../Processing/AudioConverter.h"
 #include "../FileSystemHelper.h"

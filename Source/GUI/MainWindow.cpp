@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "MainWindow.h"
 
 // Tooltip that only appears after the cursor has been still for the full delay,

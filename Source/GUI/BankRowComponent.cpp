@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankRowComponent.h"
+#include "UIColours.h"
 
 namespace
 {
-    const juce::Colour rowBgColour    { 0xff1a1f2e };
+    const juce::Colour rowBgColour = ChompiColours::DARK_GREY;
 }
 
 BankRowComponent::BankRowComponent(char letter)

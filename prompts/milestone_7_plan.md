@@ -454,7 +454,7 @@ Dragging Over:
 After Drop:
 ┌─────────────────────────┐
 │ [Select Cubbi...]       │
-│ /Users/matt/samples     │ ← White text
+│ /path/to/samples     │ ← White text
 └─────────────────────────┘
 ```
 

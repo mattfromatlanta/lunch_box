@@ -750,12 +750,12 @@ Recommendation: Start with setBounds() for simplicity, refactor to FlexBox if ne
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │  Cubbi Folder:                                     │
-│  ┌──────────────────┐  /Users/matt/samples/cubbi  │
+│  ┌──────────────────┐  /path/to/samples/cubbi  │
 │  │ Select Cubbi... │                              │
 │  └──────────────────┘                              │
 │                                                     │
 │  Jammi Folder:                                     │
-│  ┌──────────────────┐  /Users/matt/samples/jammi  │
+│  ┌──────────────────┐  /path/to/samples/jammi  │
 │  │ Select Jammi... │                              │
 │  └──────────────────┘                              │
 │                                                     │

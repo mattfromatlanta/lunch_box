@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include "BankEditorPanel.h"
+#include "UIColours.h"
 #include "../FileSystemHelper.h"
 
 namespace
 {
-    const juce::Colour panelBg     { 0xff1a1f2e };
+    const juce::Colour panelBg     = ChompiColours::DARK_GREY;
     const juce::Colour accentCol   { 0xff4caf50 };
     const juce::Colour buttonCol   { 0xff2a3a4a };
     const juce::Colour buttonTxt   { 0xffaabbcc };
