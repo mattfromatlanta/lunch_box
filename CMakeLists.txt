@@ -93,7 +93,40 @@ target_compile_definitions(chompi_pack
         JUCE_USE_FLAC=1
         JUCE_USE_MP3AUDIOFORMAT=1)
 
-# Create test executable for ChompiNamer unit tests
+# M11 unit test suite (JUCE UnitTest framework, no extra dependencies)
+juce_add_console_app(chompi_pack_tests
+    PRODUCT_NAME "Chompi Pack Tests")
+
+target_sources(chompi_pack_tests
+    PRIVATE
+        tests/TestMain.cpp
+        Source/Logger.h
+        Source/Logger.cpp
+        Source/FileSystemHelper.h
+        Source/FileSystemHelper.cpp
+        Source/Processing/ChompiNamer.h
+        Source/Processing/ChompiNamer.cpp
+        Source/Processing/BankFolderParser.h
+        Source/Processing/BankFolderParser.cpp)
+
+target_link_libraries(chompi_pack_tests
+    PRIVATE
+        juce::juce_core
+        juce::juce_audio_formats
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+
+target_compile_definitions(chompi_pack_tests
+    PRIVATE
+        JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CAMERA=0
+        JUCE_USE_FLAC=1
+        JUCE_USE_MP3AUDIOFORMAT=1)
+
+# Legacy ChompiNamer test executable
 juce_add_console_app(test_chompi_namer
     PRODUCT_NAME "Test Chompi Namer")
 
