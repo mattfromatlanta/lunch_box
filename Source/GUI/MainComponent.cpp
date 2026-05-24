@@ -70,6 +70,8 @@ MainComponent::MainComponent()
     // Mode toggle buttons
     packModeButton.setButtonText("Pack");
     bankModeButton.setButtonText("Bank");
+    packModeButton.setTooltip("Pack view: 5-bank x 14-slot grid");
+    bankModeButton.setTooltip("Bank view: focused single-bank waveform list");
     packModeButton.onClick = [this] { setViewMode(ViewMode::Pack); };
     bankModeButton.onClick = [this] { setViewMode(ViewMode::Bank); };
     addAndMakeVisible(packModeButton);
@@ -80,6 +82,8 @@ MainComponent::MainComponent()
 
     cubbiTabButton.setButtonText("Cubbi");
     jammiTabButton.setButtonText("Jammi");
+    cubbiTabButton.setTooltip("Cubbi: percussive samples (Tab to toggle)");
+    jammiTabButton.setTooltip("Jammi: chromatic / melodic samples (Tab to toggle)");
     cubbiTabButton.onClick = [this] {
         setCategoryTab(true);
         bankFocusPanel->switchToCategory(ChompiNamer::Category::Cubbi);
@@ -153,6 +157,7 @@ MainComponent::MainComponent()
     }
 
     processButton.setButtonText("Pack");
+    processButton.setTooltip("Convert and export all samples to CHOMPI format (Cmd+Return)");
     processButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
     processButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xff2b2732));
     processButton.setColour(juce::TextButton::textColourOffId,  juce::Colours::white);
@@ -161,6 +166,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(processButton);
 
     fillButton.setButtonText("Fill");
+    fillButton.setTooltip("Auto-fill empty slots from a folder");
     fillButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
     fillButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     fillButton.onClick = [this]
@@ -173,6 +179,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(fillButton);
 
     clearButton.setButtonText("Clear");
+    clearButton.setTooltip("Clear all slots in the current view");
     clearButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xff1b1722));
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     clearButton.onClick = [this]

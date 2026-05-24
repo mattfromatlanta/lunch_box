@@ -23,11 +23,13 @@ BankSlotComponent::BankSlotComponent(char bank, int slot)
     : bankLetter(bank >= 'a' ? (char)(bank - ('a' - 'A')) : bank)
     , slotNumber(slot)
 {
+    setTooltip("Drop a file, click to browse, or paste (Cmd+V)");
 }
 
 void BankSlotComponent::setSample(const juce::File& file)
 {
     sample = file;
+    setTooltip(file.getFileName());
     repaint();
     if (onSampleChanged) onSampleChanged(this);
 }
@@ -35,6 +37,7 @@ void BankSlotComponent::setSample(const juce::File& file)
 void BankSlotComponent::clearSample()
 {
     sample = juce::File{};
+    setTooltip("Drop a file, click to browse, or paste (Cmd+V)");
     repaint();
     if (onSampleChanged) onSampleChanged(this);
 }

@@ -108,6 +108,7 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
     for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
     {
         bankButtons[i].setButtonText(juce::String::charToString(bankLetters[i]));
+        bankButtons[i].setTooltip("Bank " + juce::String::charToString(bankLetters[i]) + " (slots 1-14)");
         bankButtons[i].onClick = [this, i] { switchToBank(i); };
         addAndMakeVisible(bankButtons[i]);
     }

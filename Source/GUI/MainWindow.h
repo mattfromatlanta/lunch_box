@@ -19,6 +19,7 @@ public:
 
 private:
     std::unique_ptr<MainComponent> mainComponent;
+    std::unique_ptr<juce::TooltipWindow> tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
 };

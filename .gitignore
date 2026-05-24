@@ -1,5 +1,7 @@
+.air/
 .claude/
 .vscode/
+.cache/
 build/
 test_builds/
 dev_assets/

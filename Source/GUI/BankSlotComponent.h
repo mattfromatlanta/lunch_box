@@ -11,6 +11,7 @@
 //==============================================================================
 
 class BankSlotComponent : public juce::Component,
+                          public juce::SettableTooltipClient,
                           public juce::FileDragAndDropTarget,
                           public juce::DragAndDropTarget
 {

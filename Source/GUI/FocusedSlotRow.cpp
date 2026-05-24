@@ -25,6 +25,7 @@ FocusedSlotRow::FocusedSlotRow(int slot,
 {
     thumbnail.addChangeListener(this);
     previewThumbnail.addChangeListener(this);
+    setTooltip("Drop a file, double-click to browse, or paste (Cmd+V)");
 }
 
 FocusedSlotRow::~FocusedSlotRow()
@@ -37,9 +38,15 @@ void FocusedSlotRow::setSample(const juce::File& file)
 {
     sample = file;
     if (file != juce::File{})
+    {
         thumbnail.setSource(new juce::FileInputSource(file));
+        setTooltip(file.getFileName());
+    }
     else
+    {
         thumbnail.clear();
+        setTooltip("Drop a file, double-click to browse, or paste (Cmd+V)");
+    }
     repaint();
     if (onSampleChanged) onSampleChanged(this);
 }
@@ -48,6 +55,7 @@ void FocusedSlotRow::clearSample()
 {
     sample = juce::File{};
     thumbnail.clear();
+    setTooltip("Drop a file, double-click to browse, or paste (Cmd+V)");
     repaint();
     if (onSampleChanged) onSampleChanged(this);
 }
