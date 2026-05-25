@@ -8,6 +8,7 @@
 
 bool BankFocusPanel::isInterestedInFileDrag(const juce::StringArray& files)
 {
+    if (dragController.isDragging()) return false;
     if (files.isEmpty() || files.size() > LunchBoxNamer::SLOTS_PER_BANK) return false;
     for (const auto& f : files)
     {
@@ -32,7 +33,7 @@ void BankFocusPanel::fileDragMove(const juce::StringArray& files, int x, int y)
 void BankFocusPanel::fileDragExit(const juce::StringArray&)
 {
     externalDragFiles.clear();
-    clearAllPreviews();
+    clearAllCellPreviews();
 }
 
 void BankFocusPanel::filesDropped(const juce::StringArray& files, int x, int y)
@@ -40,7 +41,7 @@ void BankFocusPanel::filesDropped(const juce::StringArray& files, int x, int y)
     int startRow = rowAtPoint(x, y);
 
     externalDragFiles.clear();
-    clearAllPreviews();
+    clearAllCellPreviews();
 
     if (onBeforeChange) onBeforeChange();
 
@@ -58,7 +59,7 @@ void BankFocusPanel::filesDropped(const juce::StringArray& files, int x, int y)
 
 void BankFocusPanel::updateExternalDragHighlight(int x, int y)
 {
-    clearAllPreviews();
+    clearAllCellPreviews();
 
     int startRow = rowAtPoint(x, y);
     if (startRow < 0 || startRow >= rows.size()) return;

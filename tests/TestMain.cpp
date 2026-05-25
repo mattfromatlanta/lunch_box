@@ -7,6 +7,7 @@
 #include "ChompiNamerTests.cpp"
 #include "BankFolderParserTests.cpp"
 #include "FileSystemHelperTests.cpp"
+#include "DragModelTests.cpp"
 
 int main ()
 {

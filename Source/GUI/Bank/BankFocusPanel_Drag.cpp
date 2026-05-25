@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Drag-to-reorder + cross-row drag state machine for the Bank focus list.
-// Mouse down/drag/up handlers, commit, and preview/visual update helpers.
+// Bank-focus drag-move: thin wiring from row mouse events into the shared
+// DragController. Bank mode is intra-bank — the controller clamps the drag
+// to the active bank via getBankClampRange().
 
 #include "BankFocusPanel.h"
 #include "BankFocusPanel_Private.h"
@@ -9,6 +10,7 @@
 #include "UIConstants.h"
 
 using namespace BankFocusImpl;
+using LunchBoxDrag::GridCell;
 
 void BankFocusPanel::handleRowMouseDown(FocusedSlotRow* row, const juce::MouseEvent& e)
 {
@@ -16,8 +18,7 @@ void BankFocusPanel::handleRowMouseDown(FocusedSlotRow* row, const juce::MouseEv
     if (idx < 0) return;
 
     grabKeyboardFocus();
-    dragSourceIdx    = idx;
-    isDragging       = false;
+    mouseDownRowIdx  = idx;
     deferredDeselect = false;
 
     if (e.mods.isShiftDown())
@@ -50,234 +51,183 @@ void BankFocusPanel::handleRowMouseDown(FocusedSlotRow* row, const juce::MouseEv
 
 void BankFocusPanel::handleRowMouseDrag(FocusedSlotRow* row, const juce::MouseEvent& e)
 {
-    int idx = rowIndexFor(row);
-    if (idx < 0) return;
+    if (mouseDownRowIdx < 0) return;
+    if (e.getDistanceFromDragStart() < 6) return;
 
-    // Begin drag after a small threshold
-    if (!isDragging && e.getDistanceFromDragStart() > 6)
-        isDragging = true;
+    // Convert row-relative mouse point to panel coords.
+    const auto panelPt = juce::Point<int>(row->getX() + e.getPosition().x,
+                                          row->getY() + e.getPosition().y);
 
-    if (!isDragging) return;
-
-    int panelX    = row->getX() + e.getPosition().getX();
-    int panelY    = row->getY() + e.getPosition().getY();
-    int newInsert = rowAtPoint(panelX, panelY);
-
-    if (newInsert != dragInsertIdx)
+    if (!dragController.isDragging())
     {
-        dragInsertIdx = newInsert;
-        updateDragPreviews();
-    }
-}
-
-void BankFocusPanel::handleRowMouseUp(FocusedSlotRow* row, const juce::MouseEvent& /*e*/)
-{
-    if (isDragging && dragSourceIdx >= 0 && dragInsertIdx >= 0
-        && dragSourceIdx != dragInsertIdx)
-    {
-        if (onBeforeChange) onBeforeChange();
-        flushRowsToStorage();
-        const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-        const int N      = LunchBoxNamer::SLOTS_PER_BANK;
-
-        const bool isMultiDrag = (selection.size() > 1 && selection.contains(dragSourceIdx));
-
-        if (isMultiDrag)
+        // Build the source-cell list from the current selection (or just the
+        // mouseDown row if it isn't part of a multi-selection).
+        juce::Array<GridCell> sourceCells;
+        if (selection.size() > 1 && selection.contains(mouseDownRowIdx))
         {
-            juce::Array<int> sortedSel = selection;
-            sortedSel.sort();
-
-            juce::Array<juce::File> current;
-            for (int i = 0; i < N; ++i)
-                current.add(slots[catIdx][activeBank][i]);
-
-            auto result = computeMultiRowDrag(current, sortedSel, dragSourceIdx, dragInsertIdx);
-            for (int i = 0; i < N; ++i)
-                slots[catIdx][activeBank][i] = result[i];
+            for (int i : selection) sourceCells.add({ activeBank, i });
         }
         else
         {
-            bool destEmpty = (slots[catIdx][activeBank][dragInsertIdx] == juce::File{});
-
-            if (destEmpty)
-            {
-                slots[catIdx][activeBank][dragInsertIdx] = slots[catIdx][activeBank][dragSourceIdx];
-                slots[catIdx][activeBank][dragSourceIdx] = juce::File{};
-            }
-            else
-            {
-                commitReorder(dragSourceIdx, dragInsertIdx);
-            }
+            sourceCells.add({ activeBank, mouseDownRowIdx });
         }
 
-        // Focus collapses to the landing position — no preview trigger
-        focusedRowIdx   = dragInsertIdx;
-        selectionAnchor = dragInsertIdx;
-        selection.clear();
-        selection.add(dragInsertIdx);
-
-        clearReorderState();
-        populateRowsFromStorage();
-        updateRowVisuals();
-        if (onAssignmentsChanged) onAssignmentsChanged();
-    }
-    else
-    {
-        // No drag: if we deferred deselection (plain click on selected row), apply it now
-        if (deferredDeselect)
-            setFocusedRow(dragSourceIdx, true);
-
+        // The controller reads file contents via getFileAt(), which (per
+        // DragHost) returns the row's current sample — keep it that way for
+        // consistency, no flushRowsToStorage() needed here.
+        dragController.begin(sourceCells,
+                             { activeBank, mouseDownRowIdx },
+                             panelPt,
+                             getLocalBounds());
         deferredDeselect = false;
-        clearReorderState();
     }
 
-    (void)row;
+    dragController.update(panelPt);
 }
 
-void BankFocusPanel::commitReorder(int fromIdx, int toIdx)
+void BankFocusPanel::handleRowMouseUp(FocusedSlotRow*, const juce::MouseEvent& /*e*/)
 {
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    auto& bank = slots[catIdx][activeBank];
-
-    juce::File dragged = bank[fromIdx];
-
-    if (toIdx > fromIdx)  // dragging down
+    if (dragController.isDragging())
     {
-        // Find contiguous populated block ending at toIdx, going left toward fromIdx
-        int blockStart = toIdx;
-        while (blockStart > fromIdx + 1 && bank[blockStart - 1] != juce::File{})
-            --blockStart;
-
-        // Shift that block one slot left (into the nearest gap or the fromIdx slot)
-        for (int i = blockStart; i <= toIdx; ++i)
-            bank[i - 1] = bank[i];
-
-        bank[toIdx] = dragged;
-
-        // If block didn't reach fromIdx+1, fromIdx was not overwritten — clear it
-        if (blockStart > fromIdx + 1)
-            bank[fromIdx] = juce::File{};
+        dragController.commit();
+        if (onPreviewStop) onPreviewStop();
     }
-    else  // dragging up
+    else if (deferredDeselect)
     {
-        // Find contiguous populated block starting at toIdx, going right toward fromIdx
-        int blockEnd = toIdx;
-        while (blockEnd < fromIdx - 1 && bank[blockEnd + 1] != juce::File{})
-            ++blockEnd;
-
-        // Shift that block one slot right (into the nearest gap or the fromIdx slot)
-        for (int i = blockEnd; i >= toIdx; --i)
-            bank[i + 1] = bank[i];
-
-        bank[toIdx] = dragged;
-
-        // If block didn't reach fromIdx-1, fromIdx was not overwritten — clear it
-        if (blockEnd < fromIdx - 1)
-            bank[fromIdx] = juce::File{};
+        setFocusedRow(mouseDownRowIdx, true);
     }
+
+    deferredDeselect = false;
+    mouseDownRowIdx  = -1;
 }
 
-void BankFocusPanel::updateDragPreviews()
+// ─── DragHost implementation ─────────────────────────────────────────────────
+
+LunchBoxDrag::GridDims BankFocusPanel::getGridDims() const
 {
-    clearAllPreviews();
-
-    if (dragSourceIdx < 0 || dragInsertIdx < 0 || dragSourceIdx == dragInsertIdx)
-        return;
-
-    const int from = dragSourceIdx;
-    const int to   = dragInsertIdx;
-    const int N    = LunchBoxNamer::SLOTS_PER_BANK;
-
-    // getSample() always returns actual data (not preview), safe to read mid-drag
-    juce::Array<juce::File> current;
-    for (int i = 0; i < N; ++i)
-        current.add(rows[i]->getSample());
-
-    if (selection.size() > 1 && selection.contains(from))
-    {
-        // ── Multi-row drag ──────────────────────────────────────────────────
-        juce::Array<int> sortedSel = selection;
-        sortedSel.sort();
-
-        auto result = computeMultiRowDrag(current, sortedSel, from, to);
-
-        for (int i = 0; i < N; ++i)
-            if (result[i] != current[i])
-                rows[i]->setPreviewSample(result[i]);
-
-        // Highlight every row in the landing block (all populated group files)
-        int groupSize = 0;
-        for (int i : sortedSel)
-            if (current[i] != juce::File{}) ++groupSize;
-
-        int dragPosInGroup = 0;
-        for (int i : sortedSel)
-        {
-            if (i == from) break;
-            if (current[i] != juce::File{}) ++dragPosInGroup;
-        }
-
-        int targetStart = juce::jlimit(0, N - groupSize, to - dragPosInGroup);
-        for (int i = targetStart; i < targetStart + groupSize; ++i)
-            rows[i]->setDragSource(true);
-    }
-    else
-    {
-        // ── Single-row drag ─────────────────────────────────────────────────
-        juce::File dragged = current[from];
-
-        rows[to]->setPreviewSample(dragged);
-        rows[to]->setDragSource(true);
-
-        if (current[to] == juce::File{})
-        {
-            // Simple move to empty slot: source becomes empty, nothing else shifts
-            rows[from]->setPreviewSample(juce::File{});
-        }
-        else if (to > from)
-        {
-            int blockStart = to;
-            while (blockStart > from + 1 && current[blockStart - 1] != juce::File{})
-                --blockStart;
-
-            for (int i = blockStart; i <= to; ++i)
-                rows[i - 1]->setPreviewSample(current[i]);
-
-            if (blockStart > from + 1)
-                rows[from]->setPreviewSample(juce::File{});
-        }
-        else
-        {
-            int blockEnd = to;
-            while (blockEnd < from - 1 && current[blockEnd + 1] != juce::File{})
-                ++blockEnd;
-
-            for (int i = blockEnd; i >= to; --i)
-                rows[i + 1]->setPreviewSample(current[i]);
-
-            if (blockEnd < from - 1)
-                rows[from]->setPreviewSample(juce::File{});
-        }
-    }
+    return { LunchBoxNamer::NUM_BANKS, LunchBoxNamer::SLOTS_PER_BANK };
 }
 
-void BankFocusPanel::clearAllPreviews()
+// Bank mode shows one bank as a single-column vertical list of 14 rows. The
+// visual grid is therefore 14 rows × 1 col. Data bank stays at activeBank.
+LunchBoxDrag::GridDims BankFocusPanel::getVisualDims() const
+{
+    return { LunchBoxNamer::SLOTS_PER_BANK, 1 };
+}
+
+LunchBoxDrag::GridCell BankFocusPanel::toVisual(LunchBoxDrag::GridCell c) const
+{
+    // c.bank is expected to equal activeBank during a drag.
+    return { c.slot, 0 };
+}
+
+LunchBoxDrag::GridCell BankFocusPanel::fromVisual(LunchBoxDrag::GridCell c) const
+{
+    return { activeBank, c.bank };
+}
+
+std::pair<int,int> BankFocusPanel::getBankClampRange() const
+{
+    // Intra-bank only — cascade stays in active bank.
+    return { activeBank, activeBank };
+}
+
+LunchBoxDrag::GridCell BankFocusPanel::cellAtPoint(juce::Point<int> panelPt) const
+{
+    int idx = rowAtPoint(panelPt.x, panelPt.y);
+    if (idx < 0) return {};
+    return { activeBank, idx };
+}
+
+juce::Rectangle<int> BankFocusPanel::cellBoundsInPanel(LunchBoxDrag::GridCell c) const
+{
+    if (c.bank != activeBank) return {};
+    if (c.slot < 0 || c.slot >= rows.size()) return {};
+    return rows[c.slot]->getBounds();
+}
+
+juce::File BankFocusPanel::getFileAt(LunchBoxDrag::GridCell c) const
+{
+    if (c.bank != activeBank) return {};
+    if (c.slot < 0 || c.slot >= rows.size()) return {};
+    return rows[c.slot]->getSample();
+}
+
+void BankFocusPanel::setFileAt(LunchBoxDrag::GridCell c, const juce::File& f)
+{
+    if (c.bank != activeBank) return;
+    if (c.slot < 0 || c.slot >= rows.size()) return;
+
+    if (f != juce::File{}) rows[c.slot]->setSample(f);
+    else                   rows[c.slot]->clearSample();
+}
+
+void BankFocusPanel::setCellPreview(LunchBoxDrag::GridCell c, const juce::File& f)
+{
+    if (c.bank != activeBank) return;
+    if (c.slot < 0 || c.slot >= rows.size()) return;
+    rows[c.slot]->setPreviewSample(f);
+}
+
+void BankFocusPanel::setCellDragRoleSource(LunchBoxDrag::GridCell c, bool s)
+{
+    if (c.bank != activeBank) return;
+    if (c.slot < 0 || c.slot >= rows.size()) return;
+    rows[c.slot]->setDragRoleSource(s);
+}
+
+void BankFocusPanel::setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s)
+{
+    if (c.bank != activeBank) return;
+    if (c.slot < 0 || c.slot >= rows.size()) return;
+    rows[c.slot]->setDragRoleDestination(s);
+}
+
+void BankFocusPanel::setCellDragRoleDisplace(LunchBoxDrag::GridCell c, bool s)
+{
+    if (c.bank != activeBank) return;
+    if (c.slot < 0 || c.slot >= rows.size()) return;
+    rows[c.slot]->setDragRoleDisplace(s);
+}
+
+void BankFocusPanel::clearAllCellPreviews()
 {
     for (auto* row : rows)
     {
         row->clearPreviewSample();
         row->setDragSource(false);
+        row->setDragRoleSource(false);
+        row->setDragRoleDestination(false);
+        row->setDragRoleDisplace(false);
     }
 }
 
-void BankFocusPanel::clearReorderState()
+void BankFocusPanel::onDragCommitWillBegin()
 {
-    clearAllPreviews();
+    if (onBeforeChange) onBeforeChange();
+    // Make sure the row UI state is mirrored into slots[] before we mutate via
+    // setFileAt() — keeps cross-bank syncing consistent.
+    flushRowsToStorage();
+}
 
-    if (dragSourceIdx >= 0 && dragSourceIdx < rows.size())
-        rows[dragSourceIdx]->setDragSource(false);
+void BankFocusPanel::onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection)
+{
+    flushRowsToStorage();
 
-    dragSourceIdx = -1;
-    dragInsertIdx = -1;
-    isDragging    = false;
+    selection.clear();
+    int newFocus = focusedRowIdx;
+    for (const auto& g : newSelection)
+        if (g.bank == activeBank)
+            selection.add(g.slot);
+
+    if (! newSelection.isEmpty())
+        newFocus = newSelection.getFirst().slot;
+
+    focusedRowIdx   = newFocus;
+    selectionAnchor = newFocus;
+
+    populateRowsFromStorage();
+    updateRowVisuals();
+
+    if (onAssignmentsChanged) onAssignmentsChanged();
 }

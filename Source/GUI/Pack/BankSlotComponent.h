@@ -57,6 +57,11 @@ public:
     // Swap-mode source highlight: warm tint on selected cells when cmd is held during drag
     void setSwapHighlight(bool s);
 
+    // Drag-preview visual roles (all reset between drags). Each is independent.
+    void setDragRoleSource     (bool s);   // content has been picked up — render vacated, suppress selection
+    void setDragRoleDestination(bool s);   // moving content lands here — render with selection style
+    void setDragRoleDisplace   (bool s);   // displaced content lands here — thicker accent border
+
     // Selection callbacks (wired by BankEditorPanel)
     std::function<void(BankSlotComponent*, const juce::MouseEvent&)> onSlotMouseDown;
     std::function<void(BankSlotComponent*, const juce::MouseEvent&)> onSlotMouseDrag;
@@ -94,6 +99,9 @@ private:
     bool dragTarget     = false;
     bool showingPreview = false;
     bool swapHighlight  = false;
+    bool dragRoleSource      = false;
+    bool dragRoleDestination = false;
+    bool dragRoleDisplace    = false;
     juce::File previewFile;
 
     std::unique_ptr<juce::FileChooser> fileChooser;

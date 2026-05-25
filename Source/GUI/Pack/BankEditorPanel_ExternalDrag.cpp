@@ -2,6 +2,9 @@
 //
 // FileDragAndDropTarget implementation — accepts file drags from outside the
 // app (Finder) and routes them into the grid starting at the drop cell.
+//
+// External and internal drags are mutually exclusive. If an internal drag is
+// already in flight we refuse external interest.
 
 #include "BankEditorPanel.h"
 #include "BankEditorPanel_Private.h"
@@ -11,7 +14,8 @@ using namespace BankEditorImpl;
 
 bool BankEditorPanel::isInterestedInFileDrag(const juce::StringArray& files)
 {
-    if (files.isEmpty() || files.size() > LunchBoxNamer::SLOTS_PER_BANK) return false;
+    if (dragController.isDragging())                                       return false;
+    if (files.isEmpty() || files.size() > LunchBoxNamer::SLOTS_PER_BANK)   return false;
     for (const auto& f : files)
     {
         auto ext = "*" + juce::File(f).getFileExtension().toLowerCase();
@@ -35,9 +39,8 @@ void BankEditorPanel::fileDragMove(const juce::StringArray& files, int x, int y)
 void BankEditorPanel::fileDragExit(const juce::StringArray&)
 {
     externalDragFiles.clear();
-    dragTargetCells.clear();
-    clearAllPreviews();
-    updateDragTargetVisuals();
+    externalDropTargets.clear();
+    clearAllCellPreviews();
 }
 
 void BankEditorPanel::filesDropped(const juce::StringArray& files, int x, int y)
@@ -46,9 +49,8 @@ void BankEditorPanel::filesDropped(const juce::StringArray& files, int x, int y)
     auto targets = getExternalDropCells(target, files.size());
 
     externalDragFiles.clear();
-    dragTargetCells.clear();
-    clearAllPreviews();
-    updateDragTargetVisuals();
+    externalDropTargets.clear();
+    clearAllCellPreviews();
 
     if (onBeforeChange) onBeforeChange();
 
@@ -78,13 +80,14 @@ juce::Array<BankEditorPanel::Cell> BankEditorPanel::getExternalDropCells(Cell st
 
 void BankEditorPanel::updateExternalDragHighlight(int x, int y)
 {
-    Cell target   = getCellAtPoint({ x, y });
-    dragTargetCells = getExternalDropCells(target, externalDragFiles.size());
+    Cell target = getCellAtPoint({ x, y });
+    externalDropTargets = getExternalDropCells(target, externalDragFiles.size());
 
-    clearAllPreviews();
-    for (int i = 0; i < dragTargetCells.size(); ++i)
-        if (auto* slot = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col))
+    clearAllCellPreviews();
+    for (int i = 0; i < externalDropTargets.size(); ++i)
+        if (auto* slot = getSlotAt(externalDropTargets[i].row, externalDropTargets[i].col))
+        {
             slot->setPreviewSample(juce::File(externalDragFiles[i]));
-
-    updateDragTargetVisuals();
+            slot->setDragTarget(true);
+        }
 }

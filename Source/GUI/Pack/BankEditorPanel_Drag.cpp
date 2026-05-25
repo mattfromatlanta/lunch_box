@@ -1,20 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Drag-move + swap state machine for the Pack 5×14 grid. Mouse handlers,
-// commit, preview/highlight visuals, and modifier-key handling.
+// Pack-grid drag-move: thin wiring from mouse events into the shared
+// DragController. Click-collapse on an unmoved mouseDown stays here since
+// that's selection-collapse semantics, not drag.
 
 #include "BankEditorPanel.h"
 #include "BankEditorPanel_Private.h"
 #include "UIColours.h"
 
 using namespace BankEditorImpl;
+using LunchBoxDrag::GridCell;
+
+namespace
+{
+    GridCell toGridCell(BankEditorPanel::Cell c) { return { c.row, c.col }; }
+    BankEditorPanel::Cell toCell(GridCell g)     { return { g.bank, g.slot }; }
+
+    juce::Array<GridCell> toGridCells(const juce::Array<BankEditorPanel::Cell>& src)
+    {
+        juce::Array<GridCell> out;
+        out.ensureStorageAllocated(src.size());
+        for (const auto& c : src) out.add(toGridCell(c));
+        return out;
+    }
+}
 
 void BankEditorPanel::handleSlotMouseDown(BankSlotComponent* src, const juce::MouseEvent& e)
 {
     Cell c = getCellFor(src);
     if (!c.isValid()) return;
 
-    mouseDownCell = c;
+    mouseDownCell       = c;
     mouseDownOnSelected = false;
 
     if (e.mods.isShiftDown())
@@ -36,7 +52,6 @@ void BankEditorPanel::handleSlotMouseDown(BankSlotComponent* src, const juce::Mo
     {
         selectCell(c, true);
         mouseDownOnSelected = true;  // plain drag from here = move, not box select
-        // Preview fires on mouseUp (via mouseDownOnSelected path), not here
     }
 
     grabKeyboardFocus();
@@ -46,182 +61,134 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* /*src*/, const juce
 {
     if (e.mods.isRightButtonDown()) return;
     if (e.getDistanceFromDragStart() < 5) return;
+    if (!mouseDownCell.isValid())      return;
 
-    auto panelPt = e.getEventRelativeTo(this).getPosition();
-    Cell hover   = getCellAtPoint(panelPt);
+    const auto panelPt = e.getEventRelativeTo(this).getPosition();
 
-    // All drags move the selection
-    if (!isSelectionDragging)
+    if (!dragController.isDragging())
     {
-        isSelectionDragging = true;
-        selectionDragStart  = mouseDownCell;
+        dragController.begin(toGridCells(selection),
+                             toGridCell(mouseDownCell),
+                             panelPt,
+                             getLocalBounds());
         mouseDownOnSelected = false;
     }
 
-    if (isSelectionDragging)
-    {
-        if (!hover.isValid() || !selectionDragStart.isValid()) return;
-
-        // Unclamped delta: how far the cursor has moved from the drag-start cell
-        int dr = hover.row - selectionDragStart.row;
-        int dc = hover.col - selectionDragStart.col;
-
-        // Bounding box of the current selection
-        int minRow = LunchBoxNamer::NUM_BANKS,      maxRow = -1;
-        int minCol = LunchBoxNamer::SLOTS_PER_BANK, maxCol = -1;
-        for (const auto& c : selection)
-        {
-            minRow = std::min(minRow, c.row);  maxRow = std::max(maxRow, c.row);
-            minCol = std::min(minCol, c.col);  maxCol = std::max(maxCol, c.col);
-        }
-
-        // Clamp so entire selection stays within the grid
-        dr = juce::jlimit(-minRow, (LunchBoxNamer::NUM_BANKS      - 1) - maxRow, dr);
-        dc = juce::jlimit(-minCol, (LunchBoxNamer::SLOTS_PER_BANK - 1) - maxCol, dc);
-
-        dragTargetCells.clear();
-        for (const auto& c : selection)
-            dragTargetCells.add({ c.row + dr, c.col + dc });
-
-        updateDragTargetVisuals();
-        updateDragPreviews();
-    }
+    dragController.update(panelPt);
 }
 
 void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEvent& /*e*/)
 {
-    if (isSelectionDragging && !dragTargetCells.isEmpty())
+    if (dragController.isDragging())
     {
-        commitSelectionDrag();
-        if (onPreviewStop) onPreviewStop();  // no auto-play on drag release
+        dragController.commit();
+        if (onPreviewStop) onPreviewStop();   // no auto-play on drag release
     }
     else if (mouseDownOnSelected)
     {
-        // Simple click on a selected cell — collapse selection to just that cell
+        // Plain click on a selected cell — collapse selection to just that cell
         selectCell(mouseDownCell, true);
         notifyPreviewForSelection();
     }
 
-    clearDragState();
+    mouseDownOnSelected = false;
+    mouseDownCell       = { -1, -1 };
 }
 
-void BankEditorPanel::commitSelectionDrag()
+void BankEditorPanel::modifierKeysChanged(const juce::ModifierKeys&)
 {
-    if (dragTargetCells.size() != selection.size()) return;
-    if (onBeforeChange) onBeforeChange();
-
-    // 1. Snapshot all source and target files before any mutation.
-    //    Sorting by position ensures geometrically stable pairing regardless
-    //    of how the selection was built (drag-select vs cmd-click).
-    juce::Array<juce::File> sourceFiles, targetFiles;
-    for (int i = 0; i < selection.size(); ++i)
-    {
-        auto* s = getSlotAt(selection[i].row,       selection[i].col);
-        auto* t = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col);
-        sourceFiles.add(s ? s->getSample() : juce::File{});
-        targetFiles.add(t ? t->getSample() : juce::File{});
-    }
-
-    // 2. Build source-only and target-only (cell, file) pairs, sorted row-major.
-    //    Source-only cells will receive displaced content; overlap cells carry
-    //    the moving-set content and are excluded.
-    juce::Array<CellFile> srcOnly, tgtOnly;
-    for (int i = 0; i < selection.size(); ++i)
-        if (!dragTargetCells.contains(selection[i]))
-            srcOnly.add({ selection[i], sourceFiles[i] });
-    for (int j = 0; j < dragTargetCells.size(); ++j)
-        if (!selection.contains(dragTargetCells[j]))
-            tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
-
-    sortCellsRowMajor(srcOnly);
-    sortCellsRowMajor(tgtOnly);
-
-    // 3. Clear all source slots (overlap slots re-filled in step 4)
-    for (const auto& c : selection)
-        if (auto* slot = getSlotAt(c.row, c.col))
-            slot->clearSample();
-
-    // 4. Write moving-set content into every target slot
-    for (int i = 0; i < dragTargetCells.size(); ++i)
-    {
-        if (auto* slot = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col))
-        {
-            if (sourceFiles[i] != juce::File{}) slot->setSample(sourceFiles[i]);
-            else                                slot->clearSample();
-        }
-    }
-
-    // 5. Write displaced target-only content into the vacated source-only cells
-    int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
-    for (int k = 0; k < pairs; ++k)
-    {
-        if (auto* slot = getSlotAt(srcOnly[k].c.row, srcOnly[k].c.col))
-        {
-            if (tgtOnly[k].f != juce::File{}) slot->setSample(tgtOnly[k].f);
-            else                              slot->clearSample();
-        }
-    }
-
-    // 6. Selection follows moved cells; focus tracks its relative position
-    int dr = dragTargetCells[0].row - selection[0].row;
-    int dc = dragTargetCells[0].col - selection[0].col;
-    focusCell = { focusCell.row + dr, focusCell.col + dc };
-    selection = dragTargetCells;
-
-    dragTargetCells.clear();
-    updateDragTargetVisuals();
-    updateSlotVisuals();
+    // Drag behaviour no longer depends on modifier keys held during the drag itself
 }
 
-void BankEditorPanel::updateDragTargetVisuals()
+void BankEditorPanel::mouseDown(const juce::MouseEvent&)
 {
-    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-            if (auto* slot = getSlotAt(b, s))
-                slot->setDragTarget(dragTargetCells.contains({b, s}));
+    if (dragController.isDragging())
+        dragController.cancel();
+    clearSelection();
+    if (onBackgroundClicked) onBackgroundClicked();
 }
 
-void BankEditorPanel::updateDragPreviews()
+// ─── DragHost implementation ─────────────────────────────────────────────────
+
+LunchBoxDrag::GridDims BankEditorPanel::getGridDims() const
 {
-    clearAllPreviews();
-
-    if (dragTargetCells.size() != selection.size()) return;
-
-    // Snapshot actual (non-preview) files before setting any previews
-    juce::Array<juce::File> sourceFiles, targetFiles;
-    for (int i = 0; i < selection.size(); ++i)
-    {
-        auto* s = getSlotAt(selection[i].row,       selection[i].col);
-        auto* t = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col);
-        sourceFiles.add(s ? s->getSample() : juce::File{});
-        targetFiles.add(t ? t->getSample() : juce::File{});
-    }
-
-    // Target cells: show the incoming content
-    for (int i = 0; i < dragTargetCells.size(); ++i)
-        if (auto* slot = getSlotAt(dragTargetCells[i].row, dragTargetCells[i].col))
-            slot->setPreviewSample(sourceFiles[i]);
-
-    // Source-only cells: show the displaced content that will shift back there.
-    // Mirrors the row-major pairing used in commitSelectionDrag.
-    juce::Array<CellFile> srcOnly, tgtOnly;
-    for (int i = 0; i < selection.size(); ++i)
-        if (!dragTargetCells.contains(selection[i]))
-            srcOnly.add({ selection[i], sourceFiles[i] });
-    for (int j = 0; j < dragTargetCells.size(); ++j)
-        if (!selection.contains(dragTargetCells[j]))
-            tgtOnly.add({ dragTargetCells[j], targetFiles[j] });
-
-    sortCellsRowMajor(srcOnly);
-    sortCellsRowMajor(tgtOnly);
-
-    int pairs = juce::jmin(srcOnly.size(), tgtOnly.size());
-    for (int k = 0; k < pairs; ++k)
-        if (auto* slot = getSlotAt(srcOnly[k].c.row, srcOnly[k].c.col))
-            slot->setPreviewSample(tgtOnly[k].f);
+    return { LunchBoxNamer::NUM_BANKS, LunchBoxNamer::SLOTS_PER_BANK };
 }
 
-void BankEditorPanel::clearAllPreviews()
+// Pack lays each bank's 14 slots out as two 7-cell visual rows. So the panel
+// the user sees is 10 rows × 7 cols, not 5 × 14. Drag clamping must use this.
+LunchBoxDrag::GridDims BankEditorPanel::getVisualDims() const
+{
+    return { LunchBoxNamer::NUM_BANKS * 2, LunchBoxNamer::SLOTS_PER_BANK / 2 };
+}
+
+LunchBoxDrag::GridCell BankEditorPanel::toVisual(LunchBoxDrag::GridCell c) const
+{
+    constexpr int half = LunchBoxNamer::SLOTS_PER_BANK / 2;     // 7
+    return { c.bank * 2 + c.slot / half, c.slot % half };
+}
+
+LunchBoxDrag::GridCell BankEditorPanel::fromVisual(LunchBoxDrag::GridCell c) const
+{
+    constexpr int half = LunchBoxNamer::SLOTS_PER_BANK / 2;     // 7
+    return { c.bank / 2, (c.bank % 2) * half + c.slot };
+}
+
+std::pair<int,int> BankEditorPanel::getBankClampRange() const
+{
+    return { 0, LunchBoxNamer::NUM_BANKS - 1 };
+}
+
+LunchBoxDrag::GridCell BankEditorPanel::cellAtPoint(juce::Point<int> panelPt) const
+{
+    auto c = getCellAtPoint(panelPt);
+    return toGridCell(c);
+}
+
+juce::Rectangle<int> BankEditorPanel::cellBoundsInPanel(LunchBoxDrag::GridCell c) const
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot))
+        return getLocalArea(slot, slot->getLocalBounds());
+    return {};
+}
+
+juce::File BankEditorPanel::getFileAt(LunchBoxDrag::GridCell c) const
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot)) return slot->getSample();
+    return {};
+}
+
+void BankEditorPanel::setFileAt(LunchBoxDrag::GridCell c, const juce::File& f)
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot))
+    {
+        if (f != juce::File{}) slot->setSample(f);
+        else                   slot->clearSample();
+    }
+}
+
+void BankEditorPanel::setCellPreview(LunchBoxDrag::GridCell c, const juce::File& f)
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot))
+        slot->setPreviewSample(f);
+}
+
+void BankEditorPanel::setCellDragRoleSource(LunchBoxDrag::GridCell c, bool s)
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot)) slot->setDragRoleSource(s);
+}
+
+void BankEditorPanel::setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s)
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot)) slot->setDragRoleDestination(s);
+}
+
+void BankEditorPanel::setCellDragRoleDisplace(LunchBoxDrag::GridCell c, bool s)
+{
+    if (auto* slot = getSlotAt(c.bank, c.slot)) slot->setDragRoleDisplace(s);
+}
+
+void BankEditorPanel::clearAllCellPreviews()
 {
     for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
         for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
@@ -229,29 +196,29 @@ void BankEditorPanel::clearAllPreviews()
             {
                 slot->clearPreviewSample();
                 slot->setSwapHighlight(false);
+                slot->setDragTarget(false);
+                slot->setDragRoleSource(false);
+                slot->setDragRoleDestination(false);
+                slot->setDragRoleDisplace(false);
             }
 }
 
-void BankEditorPanel::clearDragState()
+void BankEditorPanel::onDragCommitWillBegin()
 {
-    isDragSelecting      = false;
-    isSelectionDragging  = false;
-    mouseDownOnSelected  = false;
-    dragTargetCells.clear();
-    clearAllPreviews();
-    updateDragTargetVisuals();
+    if (onBeforeChange) onBeforeChange();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-void BankEditorPanel::modifierKeysChanged(const juce::ModifierKeys&)
+void BankEditorPanel::onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection)
 {
-    // Drag mode no longer depends on modifier keys
-}
+    selection.clear();
+    for (const auto& g : newSelection) selection.add(toCell(g));
 
-void BankEditorPanel::mouseDown(const juce::MouseEvent&)
-{
-    clearDragState();
-    clearSelection();
-    if (onBackgroundClicked) onBackgroundClicked();
+    if (! selection.isEmpty())
+    {
+        // Focus tracks the first moved cell's destination relative to its pre-drag position.
+        focusCell = selection.getFirst();
+    }
+
+    updateSlotVisuals();
+    if (onAssignmentsChanged) onAssignmentsChanged();
 }

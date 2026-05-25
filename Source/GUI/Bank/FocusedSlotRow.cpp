@@ -72,6 +72,21 @@ void FocusedSlotRow::setDragSource(bool s)
     if (isDragSrc != s) { isDragSrc = s; repaint(); }
 }
 
+void FocusedSlotRow::setDragRoleSource(bool s)
+{
+    if (dragRoleSource != s) { dragRoleSource = s; repaint(); }
+}
+
+void FocusedSlotRow::setDragRoleDestination(bool s)
+{
+    if (dragRoleDestination != s) { dragRoleDestination = s; repaint(); }
+}
+
+void FocusedSlotRow::setDragRoleDisplace(bool s)
+{
+    if (dragRoleDisplace != s) { dragRoleDisplace = s; repaint(); }
+}
+
 
 void FocusedSlotRow::setPreviewSample(const juce::File& f)
 {
@@ -102,20 +117,27 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     const bool            displayFilled = (displayFile != juce::File{});
     juce::AudioThumbnail& displayThumb  = showingPreview ? previewThumbnail : thumbnail;
 
+    // Drag-preview overrides regular selection visuals:
+    //   Source cells vacate; Destination cells take over the selection look;
+    //   Displace cells render normally with a thicker accent border.
+    const bool effectiveSelected = dragRoleDestination ? true
+                                 : dragRoleSource      ? false
+                                                       : selected;
+
     // Background
     juce::Colour bg;
     if (displayFilled)
-        bg = selected ? LunchBoxColours::getTabBg(bankColour).brighter(0.15f)
-                      : LunchBoxColours::getTabBg(bankColour);
+        bg = effectiveSelected ? LunchBoxColours::getTabBg(bankColour).brighter(0.15f)
+                               : LunchBoxColours::getTabBg(bankColour);
     else
-        bg = selected ? LunchBoxColours::BUTTON_BG.brighter(0.15f)
-                      : LunchBoxColours::BUTTON_BG;
+        bg = effectiveSelected ? LunchBoxColours::BUTTON_BG.brighter(0.15f)
+                               : LunchBoxColours::BUTTON_BG;
     constexpr float rowRadius = LunchBoxConstants::CORNER_RADIUS;
     auto fbounds = bounds.toFloat();
     g.setColour(bg);
     g.fillRoundedRectangle(fbounds, rowRadius);
 
-    if (selected && !focused && !isDragSrc && !isDraggingOver)
+    if (effectiveSelected && !focused && !isDragSrc && !isDraggingOver)
     {
         auto* top = getTopLevelComponent();
         auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
@@ -135,12 +157,21 @@ void FocusedSlotRow::paint(juce::Graphics& g)
         g.setColour(rowDropBdr);
         g.drawRoundedRectangle(borderBounds, rowRadius, 4.0f);
     }
+    else if (dragRoleDisplace)
+    {
+        g.setColour(LunchBoxColours::WHITE_CREAM.withAlpha(0.7f));
+        g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f * 1.25f);
+    }
+    else if (dragRoleSource)
+    {
+        // Vacated source — render neutral, no focus/selection visuals.
+    }
     else if (focused)
     {
         g.setColour(LunchBoxColours::FOCUS_BORDER);
         g.drawRoundedRectangle(borderBounds, rowRadius, LunchBoxConstants::BORDER_WIDTH_ACTIVE);
     }
-    else if (selected)
+    else if (effectiveSelected)
     {
         g.setColour(displayFilled ? LunchBoxColours::getFocused(bankColour).brighter(0.3f)
                                   : rowSelectedBdr);

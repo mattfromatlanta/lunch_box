@@ -3,6 +3,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "BankRowComponent.h"
+#include "../Common/DragController.h"
+#include "../Common/DragHost.h"
 #include "../Processing/LunchBoxNamer.h"
 #include "../Processing/BankFolderParser.h"
 
@@ -14,7 +16,8 @@
 
 class BankEditorPanel : public juce::Component,
                         public juce::DragAndDropContainer,
-                        public juce::FileDragAndDropTarget
+                        public juce::FileDragAndDropTarget,
+                        public DragHost
 {
 public:
     // Grid cell coordinate (row = bank 0-4, col = slot 0-13)
@@ -96,6 +99,24 @@ public:
     void fileDragExit (const juce::StringArray& files) override;
     void filesDropped (const juce::StringArray& files, int x, int y) override;
 
+    // DragHost
+    LunchBoxDrag::GridDims  getGridDims() const override;
+    LunchBoxDrag::GridDims  getVisualDims() const override;
+    LunchBoxDrag::GridCell  toVisual  (LunchBoxDrag::GridCell c) const override;
+    LunchBoxDrag::GridCell  fromVisual(LunchBoxDrag::GridCell c) const override;
+    std::pair<int,int>      getBankClampRange() const override;
+    LunchBoxDrag::GridCell  cellAtPoint(juce::Point<int> panelPt) const override;
+    juce::Rectangle<int>    cellBoundsInPanel(LunchBoxDrag::GridCell c) const override;
+    juce::File              getFileAt(LunchBoxDrag::GridCell c) const override;
+    void                    setFileAt(LunchBoxDrag::GridCell c, const juce::File& f) override;
+    void                    setCellPreview(LunchBoxDrag::GridCell c, const juce::File& f) override;
+    void                    setCellDragRoleSource     (LunchBoxDrag::GridCell c, bool s) override;
+    void                    setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s) override;
+    void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, bool s) override;
+    void                    clearAllCellPreviews() override;
+    void                    onDragCommitWillBegin() override;
+    void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection) override;
+
 private:
     LunchBoxNamer::Category category;
     juce::OwnedArray<BankRowComponent> banks;  // A–E
@@ -109,21 +130,20 @@ private:
     juce::Array<Cell> selection;
     Cell focusCell        { 0, 0 };
 
-    // Drag-select (rubber-band)
+    // Drag-select (rubber-band) — unchanged from prior behavior
     bool isDragSelecting  = false;
     Cell dragAnchor       { -1, -1 };
 
-    // Drag-move (relocate selection)
-    bool isSelectionDragging  = false;
-    Cell selectionDragStart   { -1, -1 };   // cell within selection where drag began
-    juce::Array<Cell> dragTargetCells;
-
-    // Deferred click: clicking on an already-selected cell defers the collapse
+    // Drag-move state is owned by the shared DragController. Click-collapse
+    // (mouseDown on a selected cell, no drag) is still handled here.
     bool mouseDownOnSelected = false;
     Cell mouseDownCell       { -1, -1 };
 
+    DragController dragController { *this };
+
     // External file drag state
     juce::StringArray externalDragFiles;
+    juce::Array<Cell> externalDropTargets;     // cells highlighted while external drag is active
 
     // External drag helpers
     juce::Array<Cell> getExternalDropCells(Cell start, int count) const;
@@ -143,12 +163,6 @@ private:
     void handleSlotMouseDown(BankSlotComponent* src, const juce::MouseEvent& e);
     void handleSlotMouseDrag(BankSlotComponent* src, const juce::MouseEvent& e);
     void handleSlotMouseUp  (BankSlotComponent* src, const juce::MouseEvent& e);
-
-    void commitSelectionDrag();
-    void updateDragTargetVisuals();
-    void updateDragPreviews();              // live preview during drag
-    void clearAllPreviews();                // clears preview + swap highlight on all slots
-    void clearDragState();                  // clears drag targets + resets drag flags
 
     void wireRowCallbacks(BankRowComponent* row, int bankIdx);
     void notifyPreviewForSelection();   // play if single filled cell; stop otherwise

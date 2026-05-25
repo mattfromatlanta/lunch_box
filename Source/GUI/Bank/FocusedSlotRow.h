@@ -33,7 +33,12 @@ public:
     // Visual state (managed by BankFocusPanel)
     void setSelected(bool s);
     void setFocused(bool f);
-    void setDragSource(bool s);       // this row is the current drag destination (orange border)
+    void setDragSource(bool s);       // legacy: orange highlight (kept for transition)
+
+    // Drag-preview visual roles (all reset between drags). Each is independent.
+    void setDragRoleSource     (bool s);   // content has been picked up — render vacated, suppress selection
+    void setDragRoleDestination(bool s);   // moving content lands here — render with selection style
+    void setDragRoleDisplace   (bool s);   // displaced content lands here — thicker accent border
     void setBankColour(juce::Colour c) { bankColour = c; repaint(); }
 
     // Drag preview: show a different file's waveform without changing the actual sample
@@ -85,6 +90,9 @@ private:
     bool selected         = false;
     bool focused          = false;
     bool isDragSrc        = false;
+    bool dragRoleSource      = false;
+    bool dragRoleDestination = false;
+    bool dragRoleDisplace    = false;
     juce::Colour bankColour = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
 
     std::unique_ptr<juce::FileChooser> fileChooser;

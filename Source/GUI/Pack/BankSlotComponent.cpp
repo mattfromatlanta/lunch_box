@@ -69,15 +69,23 @@ void BankSlotComponent::paint(juce::Graphics& g)
 
     const juce::Colour filledBg = LunchBoxColours::getFocused(bankBorderColour(bankLetter));
 
+    // Drag preview overrides regular selection visuals:
+    //   Source cells vacate (suppress selection look)
+    //   Destination cells take over the selection look
+    //   Displace cells render normally but get a thicker accent border
+    const bool effectiveSelected = (dragRoleDestination)
+                                    ? true
+                                    : (dragRoleSource ? false : selected);
+
     juce::Colour bg;
-    if      (dragTarget)                 bg = displayFilled ? filledBg.brighter(0.25f)      : slotDragTargetBg;
-    else if (swapHighlight && selected)  bg = displayFilled ? slotSwapSourceBg.brighter(0.1f) : slotSwapSourceBg;
-    else if (selected)                   bg = displayFilled ? filledBg.brighter(0.15f)      : slotSelectedBg;
-    else                                 bg = displayFilled ? filledBg                       : slotEmptyBg;
+    if      (dragTarget)                          bg = displayFilled ? filledBg.brighter(0.25f)      : slotDragTargetBg;
+    else if (swapHighlight && effectiveSelected)  bg = displayFilled ? slotSwapSourceBg.brighter(0.1f) : slotSwapSourceBg;
+    else if (effectiveSelected)                   bg = displayFilled ? filledBg.brighter(0.15f)      : slotSelectedBg;
+    else                                          bg = displayFilled ? filledBg                       : slotEmptyBg;
     g.setColour(bg);
     g.fillRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS);
 
-    if (selected && !focused && !dragTarget && !swapHighlight)
+    if (effectiveSelected && !focused && !dragTarget && !swapHighlight)
     {
         auto* top = getTopLevelComponent();
         auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
@@ -87,13 +95,16 @@ void BankSlotComponent::paint(juce::Graphics& g)
 
     juce::Colour border;
     float bw = LunchBoxConstants::BORDER_WIDTH;
-    if      (isDraggingOver)            { border = slotDropBdr;              bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
-    else if (dragTarget)                { border = slotDragTargetBdr;        bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
-    else if (focused)                   { border = slotFocusBdr;             bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
-    else if (swapHighlight && selected) { border = slotSwapSourceBdr; }
-    else if (selected)                  { border = slotSelectedBdr; }
-    else if (isHovered)                 { border = slotHoverBdr; }
-    else                                { border = LunchBoxColours::getBorder(bankBorderColour(bankLetter)); }
+    if      (isDraggingOver)                     { border = slotDropBdr;              bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
+    else if (dragTarget)                         { border = slotDragTargetBdr;        bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
+    else if (dragRoleDisplace)                   { border = LunchBoxColours::WHITE_CREAM.withAlpha(0.7f);
+                                                   bw     = LunchBoxConstants::BORDER_WIDTH * 1.25f; }
+    else if (dragRoleSource)                     { border = LunchBoxColours::getBorder(bankBorderColour(bankLetter)); }
+    else if (focused)                            { border = slotFocusBdr;             bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
+    else if (swapHighlight && effectiveSelected) { border = slotSwapSourceBdr; }
+    else if (effectiveSelected)                  { border = slotSelectedBdr; }
+    else if (isHovered)                          { border = slotHoverBdr; }
+    else                                         { border = LunchBoxColours::getBorder(bankBorderColour(bankLetter)); }
     g.setColour(border);
     g.drawRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS, bw);
 
@@ -169,6 +180,21 @@ void BankSlotComponent::clearPreviewSample()
     showingPreview = false;
     previewFile    = juce::File{};
     repaint();
+}
+
+void BankSlotComponent::setDragRoleSource(bool s)
+{
+    if (dragRoleSource != s) { dragRoleSource = s; repaint(); }
+}
+
+void BankSlotComponent::setDragRoleDestination(bool s)
+{
+    if (dragRoleDestination != s) { dragRoleDestination = s; repaint(); }
+}
+
+void BankSlotComponent::setDragRoleDisplace(bool s)
+{
+    if (dragRoleDisplace != s) { dragRoleDisplace = s; repaint(); }
 }
 
 void BankSlotComponent::setSwapHighlight(bool s)

@@ -4,6 +4,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "FocusedSlotRow.h"
+#include "../Common/DragController.h"
+#include "../Common/DragHost.h"
 #include "../Processing/LunchBoxNamer.h"
 #include "../Processing/BankFolderParser.h"
 
@@ -18,7 +20,8 @@
 //==============================================================================
 
 class BankFocusPanel : public juce::Component,
-                       public juce::FileDragAndDropTarget
+                       public juce::FileDragAndDropTarget,
+                       public DragHost
 {
 public:
     BankFocusPanel(juce::AudioFormatManager& fmt, juce::AudioThumbnailCache& cache);
@@ -88,6 +91,24 @@ public:
     void fileDragExit (const juce::StringArray& files) override;
     void filesDropped (const juce::StringArray& files, int x, int y) override;
 
+    // --- DragHost ---
+    LunchBoxDrag::GridDims  getGridDims() const override;
+    LunchBoxDrag::GridDims  getVisualDims() const override;
+    LunchBoxDrag::GridCell  toVisual  (LunchBoxDrag::GridCell c) const override;
+    LunchBoxDrag::GridCell  fromVisual(LunchBoxDrag::GridCell c) const override;
+    std::pair<int,int>      getBankClampRange() const override;
+    LunchBoxDrag::GridCell  cellAtPoint(juce::Point<int> panelPt) const override;
+    juce::Rectangle<int>    cellBoundsInPanel(LunchBoxDrag::GridCell c) const override;
+    juce::File              getFileAt(LunchBoxDrag::GridCell c) const override;
+    void                    setFileAt(LunchBoxDrag::GridCell c, const juce::File& f) override;
+    void                    setCellPreview(LunchBoxDrag::GridCell c, const juce::File& f) override;
+    void                    setCellDragRoleSource     (LunchBoxDrag::GridCell c, bool s) override;
+    void                    setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s) override;
+    void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, bool s) override;
+    void                    clearAllCellPreviews() override;
+    void                    onDragCommitWillBegin() override;
+    void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection) override;
+
 private:
     // Shared audio resources (from AudioPreviewPlayer, owned by MainComponent)
     juce::AudioFormatManager&  formatManager;
@@ -126,11 +147,12 @@ private:
     int  selectionAnchor = 0;
     juce::Array<int> selection;
 
-    // Drag-to-reorder state
-    int  dragSourceIdx    = -1;    // row index being dragged
-    int  dragInsertIdx    = -1;    // current drag destination row
-    bool isDragging       = false;
-    bool deferredDeselect = false; // plain click on multi-selected row: wait for mouseUp
+    // Drag-move state is owned by the shared DragController. Deferred-deselect
+    // (plain mouseDown on a multi-selected row, decide on mouseUp) stays here.
+    bool deferredDeselect = false;
+    int  mouseDownRowIdx  = -1;
+
+    DragController dragController { *this };
 
     static constexpr int BANK_COL_WIDTH  = 45;
     static constexpr int ROW_HEIGHT      = 55;
@@ -158,13 +180,8 @@ private:
     void handleRowMouseDrag(FocusedSlotRow* row, const juce::MouseEvent& e);
     void handleRowMouseUp  (FocusedSlotRow* row, const juce::MouseEvent& e);
 
-    void updateDragPreviews();  // live waveform preview + shift highlights during drag
-    void clearAllPreviews();    // clears preview and shift-highlight state on all rows
-
     int rowIndexFor(FocusedSlotRow* row) const;
     int rowAtPoint(int x, int y) const;
-    void commitReorder(int fromIdx, int toIdx);
-    void clearReorderState();
 
     void styleTabButton(juce::TextButton& btn, bool active, int bankIdx);
 

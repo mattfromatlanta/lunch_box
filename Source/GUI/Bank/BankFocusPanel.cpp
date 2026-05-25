@@ -54,6 +54,8 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
 
     setWantsKeyboardFocus(true);
     updateBankButtonStyles();
+
+    addAndMakeVisible(dragController.getProxy());
 }
 
 BankFocusPanel::~BankFocusPanel()
@@ -341,12 +343,29 @@ int BankFocusPanel::rowAtPoint(int /*x*/, int y) const
 {
     if (rows.isEmpty()) return 0;
 
+    // Inside a row's bounds — exact hit.
     for (int i = 0; i < rows.size(); ++i)
         if (rows[i]->getY() <= y && y < rows[i]->getBottom())
             return i;
 
+    // Above the first row → clamp to 0.
     if (y < rows[0]->getY()) return 0;
-    return rows.size() - 1;
+
+    // Below the last row → clamp to last.
+    if (y >= rows.getLast()->getBottom()) return rows.size() - 1;
+
+    // In an inter-row gap: snap to whichever side's midpoint is closer.
+    // Without this, falling through to the last-row return causes a visible
+    // jump in the drag preview every time the cursor crosses a boundary.
+    int best = 0;
+    int bestDist = std::numeric_limits<int>::max();
+    for (int i = 0; i < rows.size(); ++i)
+    {
+        const int centre = rows[i]->getY() + rows[i]->getHeight() / 2;
+        const int dist   = std::abs(centre - y);
+        if (dist < bestDist) { bestDist = dist; best = i; }
+    }
+    return best;
 }
 // ─── Styling ──────────────────────────────────────────────────────────────────
 
