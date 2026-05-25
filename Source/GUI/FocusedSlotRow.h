@@ -32,6 +32,7 @@ public:
 
     // Visual state (managed by BankFocusPanel)
     void setSelected(bool s);
+    void setFocused(bool f);
     void setDragSource(bool s);       // this row is the current drag destination (orange border)
     void setBankColour(juce::Colour c) { bankColour = c; repaint(); }
 
@@ -82,8 +83,9 @@ private:
     bool isDraggingOver   = false;
     bool isHovered        = false;
     bool selected         = false;
+    bool focused          = false;
     bool isDragSrc        = false;
-    juce::Colour bankColour = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
+    juce::Colour bankColour = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 

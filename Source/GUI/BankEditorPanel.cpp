@@ -6,7 +6,7 @@
 
 namespace
 {
-    const juce::Colour panelBg     = ChompiColours::DARK_GREY;
+    const juce::Colour panelBg     = LunchBoxColours::DARK_GREY;
     const juce::Colour accentCol   { 0xff4caf50 };
     const juce::Colour buttonCol   { 0xff2a3a4a };
     const juce::Colour buttonTxt   { 0xffaabbcc };
@@ -30,11 +30,11 @@ namespace
     }
 }
 
-BankEditorPanel::BankEditorPanel(ChompiNamer::Category cat)
+BankEditorPanel::BankEditorPanel(LunchBoxNamer::Category cat)
     : category(cat)
 {
     const char letters[] = {'a', 'b', 'c', 'd', 'e'};
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
     {
         auto* row = banks.add(new BankRowComponent(letters[i]));
         wireRowCallbacks(row, i);
@@ -50,7 +50,7 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
     row->getStartDirectory    = [this]() -> juce::File { return (getStartDirectory) ? getStartDirectory() : juce::File{}; };
     row->onFolderBrowsed      = [this](juce::File dir)  { if (onFolderBrowsed) onFolderBrowsed(dir); };
 
-    for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
     {
         if (auto* slot = row->getSlotComponent(s))
         {
@@ -153,7 +153,7 @@ void BankEditorPanel::autoFillFromFolder(const juce::File&)
         for (const auto& a : assignments)
         {
             int bankIdx = (int)(a.bankLetter - 'a');
-            if (bankIdx >= 0 && bankIdx < ChompiNamer::NUM_BANKS)
+            if (bankIdx >= 0 && bankIdx < LunchBoxNamer::NUM_BANKS)
                 banks[bankIdx]->setSlot(a.slotNumber - 1, a.sourceFile);
         }
 
@@ -172,7 +172,7 @@ BankSlotComponent* BankEditorPanel::getSlotAt(int b, int s) const
 BankEditorPanel::Cell BankEditorPanel::getCellFor(BankSlotComponent* slot) const
 {
     for (int b = 0; b < banks.size(); ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             if (banks[b]->getSlotComponent(s) == slot)
                 return {b, s};
     return {-1, -1};
@@ -185,7 +185,7 @@ BankEditorPanel::Cell BankEditorPanel::getCellAtPoint(juce::Point<int> pt) const
         auto* bank = banks[b];
         if (!bank->getBounds().contains(pt)) continue;
         auto local = pt - bank->getBounds().getPosition();
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = bank->getSlotComponent(s))
                 if (slot->getBounds().contains(local))
                     return {b, s};
@@ -237,6 +237,14 @@ void BankEditorPanel::selectRange(Cell a, Cell b)
     updateSlotVisuals();
 }
 
+void BankEditorPanel::setFocusCellAndSelect(Cell cell)
+{
+    focusCell = cell;
+    selection.clear();
+    selection.add(cell);
+    updateSlotVisuals();
+}
+
 void BankEditorPanel::clearSelection()
 {
     selection.clear();
@@ -246,8 +254,8 @@ void BankEditorPanel::clearSelection()
 void BankEditorPanel::selectAll()
 {
     selection.clear();
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             selection.add({ b, s });
     focusCell = { 0, 0 };
     updateSlotVisuals();
@@ -256,8 +264,8 @@ void BankEditorPanel::selectAll()
 
 void BankEditorPanel::updateSlotVisuals()
 {
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = getSlotAt(b, s))
             {
                 Cell c = {b, s};
@@ -293,7 +301,7 @@ void BankEditorPanel::moveFocus(int dr, int dc)
     int vc = anchor.col % 7;
 
     // Move in visual space — no wrapping at the 7/8 slot boundary
-    vr = juce::jlimit(0, ChompiNamer::NUM_BANKS * 2 - 1, vr + dr);
+    vr = juce::jlimit(0, LunchBoxNamer::NUM_BANKS * 2 - 1, vr + dr);
     vc = juce::jlimit(0, 6, vc + dc);
 
     Cell next = { vr / 2, (vr % 2) * 7 + vc };
@@ -308,7 +316,7 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
 {
     if (selection.isEmpty()) return;
 
-    const int maxVisRow = ChompiNamer::NUM_BANKS * 2 - 1;
+    const int maxVisRow = LunchBoxNamer::NUM_BANKS * 2 - 1;
     const int maxVisCol = 6;
 
     // Compute bounding box in visual coords
@@ -356,7 +364,7 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
 
 void BankEditorPanel::tabFocus()
 {
-    Cell next = { (focusCell.row + 1) % ChompiNamer::NUM_BANKS, focusCell.col };
+    Cell next = { (focusCell.row + 1) % LunchBoxNamer::NUM_BANKS, focusCell.col };
     selection.clear();
     selection.add(next);
     focusCell = next;
@@ -477,8 +485,8 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* /*src*/, const juce
         int dc = hover.col - selectionDragStart.col;
 
         // Bounding box of the current selection
-        int minRow = ChompiNamer::NUM_BANKS,      maxRow = -1;
-        int minCol = ChompiNamer::SLOTS_PER_BANK, maxCol = -1;
+        int minRow = LunchBoxNamer::NUM_BANKS,      maxRow = -1;
+        int minCol = LunchBoxNamer::SLOTS_PER_BANK, maxCol = -1;
         for (const auto& c : selection)
         {
             minRow = std::min(minRow, c.row);  maxRow = std::max(maxRow, c.row);
@@ -486,8 +494,8 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* /*src*/, const juce
         }
 
         // Clamp so entire selection stays within the grid
-        dr = juce::jlimit(-minRow, (ChompiNamer::NUM_BANKS      - 1) - maxRow, dr);
-        dc = juce::jlimit(-minCol, (ChompiNamer::SLOTS_PER_BANK - 1) - maxCol, dc);
+        dr = juce::jlimit(-minRow, (LunchBoxNamer::NUM_BANKS      - 1) - maxRow, dr);
+        dc = juce::jlimit(-minCol, (LunchBoxNamer::SLOTS_PER_BANK - 1) - maxCol, dc);
 
         dragTargetCells.clear();
         for (const auto& c : selection)
@@ -585,8 +593,8 @@ void BankEditorPanel::commitSelectionDrag()
 
 void BankEditorPanel::updateDragTargetVisuals()
 {
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = getSlotAt(b, s))
                 slot->setDragTarget(dragTargetCells.contains({b, s}));
 }
@@ -633,8 +641,8 @@ void BankEditorPanel::updateDragPreviews()
 
 void BankEditorPanel::clearAllPreviews()
 {
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             if (auto* slot = getSlotAt(b, s))
             {
                 slot->clearPreviewSample();
@@ -676,15 +684,15 @@ void BankEditorPanel::resized()
     auto area = getLocalBounds();
 
     if (banks.size() == 0) return;
-    const float elemH = ((float)area.getHeight() - (ChompiNamer::NUM_BANKS - 1) * ChompiConstants::BANK_GAP)
-                        / (float)ChompiNamer::NUM_BANKS;
+    const float elemH = ((float)area.getHeight() - (LunchBoxNamer::NUM_BANKS - 1) * LunchBoxConstants::BANK_GAP)
+                        / (float)LunchBoxNamer::NUM_BANKS;
     float y = (float)area.getY();
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
     {
         const int top = juce::roundToInt(y);
         const int bot = juce::roundToInt(y + elemH);
         banks[i]->setBounds(area.getX(), top, area.getWidth(), bot - top);
-        y += elemH + ChompiConstants::BANK_GAP;
+        y += elemH + LunchBoxConstants::BANK_GAP;
     }
 
 }
@@ -693,7 +701,7 @@ void BankEditorPanel::resized()
 
 bool BankEditorPanel::isInterestedInFileDrag(const juce::StringArray& files)
 {
-    if (files.isEmpty() || files.size() > ChompiNamer::SLOTS_PER_BANK) return false;
+    if (files.isEmpty() || files.size() > LunchBoxNamer::SLOTS_PER_BANK) return false;
     for (const auto& f : files)
     {
         auto ext = "*" + juce::File(f).getFileExtension().toLowerCase();
@@ -746,14 +754,14 @@ juce::Array<BankEditorPanel::Cell> BankEditorPanel::getExternalDropCells(Cell st
     juce::Array<Cell> result;
     if (!start.isValid()) return result;
 
-    const int total       = ChompiNamer::NUM_BANKS * ChompiNamer::SLOTS_PER_BANK;
-    const int startLinear = start.row * ChompiNamer::SLOTS_PER_BANK + start.col;
+    const int total       = LunchBoxNamer::NUM_BANKS * LunchBoxNamer::SLOTS_PER_BANK;
+    const int startLinear = start.row * LunchBoxNamer::SLOTS_PER_BANK + start.col;
 
     for (int i = 0; i < count; ++i)
     {
         int linear = startLinear + i;
         if (linear >= total) break;
-        result.add({ linear / ChompiNamer::SLOTS_PER_BANK, linear % ChompiNamer::SLOTS_PER_BANK });
+        result.add({ linear / LunchBoxNamer::SLOTS_PER_BANK, linear % LunchBoxNamer::SLOTS_PER_BANK });
     }
     return result;
 }

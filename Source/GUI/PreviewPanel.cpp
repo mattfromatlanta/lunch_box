@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "PreviewPanel.h"
-#include "ChompiFonts.h"
+#include "LunchBoxFonts.h"
 
 namespace
 {
@@ -46,7 +46,7 @@ PreviewPanel::PreviewPanel()
     stopButton.setEnabled(false);
     addAndMakeVisible(stopButton);
 
-    fileInfoLabel.setFont(ChompiFonts::footer());
+    fileInfoLabel.setFont(LunchBoxFonts::footer());
     fileInfoLabel.setColour(juce::Label::textColourId, mutedText);
     fileInfoLabel.setText("PREVIEW", juce::dontSendNotification);
     addAndMakeVisible(fileInfoLabel);

@@ -5,15 +5,15 @@
 #include "GUI/AppMenuBar.h"
 
 //==============================================================================
-// ChompiPackApplication - JUCE application wrapper
+// LunchBoxApplication - JUCE application wrapper
 //==============================================================================
 
-class ChompiPackApplication : public juce::JUCEApplication
+class LunchBoxApplication : public juce::JUCEApplication
 {
 public:
-    ChompiPackApplication() {}
+    LunchBoxApplication() {}
 
-    const juce::String getApplicationName() override { return "Chompi Pack"; }
+    const juce::String getApplicationName() override { return "Lunch Box"; }
     const juce::String getApplicationVersion() override { return "0.1.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
 
@@ -73,4 +73,4 @@ private:
 
 //==============================================================================
 // This macro generates the main() routine that launches the app.
-START_JUCE_APPLICATION(ChompiPackApplication)
+START_JUCE_APPLICATION(LunchBoxApplication)

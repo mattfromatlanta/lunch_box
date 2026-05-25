@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a problem with Chompi Pack
+about: Report a problem with Lunch Box
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -23,7 +23,7 @@ If applicable.
 
 **System Information**
 - OS: [e.g. macOS 14.2]
-- Chompi Pack version: [e.g. 2.4.0]
+- Lunch Box version: [e.g. 2.4.0]
 - Interface used: [GUI / CLI]
 
 **Log output**

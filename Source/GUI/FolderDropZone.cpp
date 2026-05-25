@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "FolderDropZone.h"
-#include "ChompiFonts.h"
+#include "LunchBoxFonts.h"
 
 namespace
 {
@@ -22,7 +22,7 @@ FolderDropZone::FolderDropZone(const juce::String& buttonText,
     addAndMakeVisible(selectButton);
 
     pathLabel.setText(placeholder, juce::dontSendNotification);
-    pathLabel.setFont(ChompiFonts::nav());
+    pathLabel.setFont(LunchBoxFonts::nav());
     pathLabel.setColour(juce::Label::textColourId, placeholderColour);
     addAndMakeVisible(pathLabel);
 }
@@ -52,7 +52,7 @@ void FolderDropZone::paint(juce::Graphics& g)
 
         // Overlay text
         g.setColour(hoverBorder);
-        g.setFont(ChompiFonts::cta());
+        g.setFont(LunchBoxFonts::cta());
         g.drawText("Drop folder here", getLocalBounds(), juce::Justification::centred);
     }
     else

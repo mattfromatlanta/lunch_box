@@ -6,10 +6,10 @@
 
 namespace
 {
-    const juce::Colour bgColour        = ChompiColours::DARK_GREY;
+    const juce::Colour bgColour        = LunchBoxColours::DARK_GREY;
     const juce::Colour statusBgColour  { 0xff151a26 };
     const juce::Colour accentColour    { 0xff4caf50 };
-    const juce::Colour tabTextCol      = ChompiColours::WHITE_CREAM;
+    const juce::Colour tabTextCol      = LunchBoxColours::WHITE_CREAM;
 }
 
 //==============================================================================
@@ -54,22 +54,21 @@ MainComponent::MainComponent()
     // Persistent preferences
     {
         juce::PropertiesFile::Options opts;
-        opts.applicationName     = "ChompiPack";
+        opts.applicationName     = "LunchBox";
         opts.filenameSuffix      = "settings";
         opts.osxLibrarySubFolder = "Application Support";
         appProperties.setStorageParameters(opts);
     }
 
-    logoImage = juce::ImageCache::getFromMemory(BinaryData::chompi_logo_png,
-                                                BinaryData::chompi_logo_pngSize);
+    lastPackName = getSavedString("lastPackName", lastPackName);
 
     // Mode toggle buttons
     packModeButton.setButtonText("Pack");
     bankModeButton.setButtonText("Bank");
     packModeButton.setTooltip("Pack view: 5-bank x 14-slot grid");
     bankModeButton.setTooltip("Bank view: focused single-bank waveform list");
-    packModeButton.onClick = [this] { setViewMode(ViewMode::Pack); };
-    bankModeButton.onClick = [this] { setViewMode(ViewMode::Bank); };
+    packModeButton.onClick = [this] { if (!isTransitioning) setViewMode(ViewMode::Pack); };
+    bankModeButton.onClick = [this] { if (!isTransitioning) setViewMode(ViewMode::Bank); };
     addAndMakeVisible(packModeButton);
     addAndMakeVisible(bankModeButton);
 
@@ -81,21 +80,23 @@ MainComponent::MainComponent()
     cubbiTabButton.setTooltip("Cubbi: percussive samples (Tab to toggle)");
     jammiTabButton.setTooltip("Jammi: chromatic / melodic samples (Tab to toggle)");
     cubbiTabButton.onClick = [this] {
+        if (isTransitioning) return;
         if (viewMode == ViewMode::Bank)
             animateBankCategorySwitch(true);
         else
         {
             setCategoryTab(true, true);
-            bankFocusPanel->switchToCategory(ChompiNamer::Category::Cubbi);
+            bankFocusPanel->switchToCategory(LunchBoxNamer::Category::Cubbi);
         }
     };
     jammiTabButton.onClick = [this] {
+        if (isTransitioning) return;
         if (viewMode == ViewMode::Bank)
             animateBankCategorySwitch(false);
         else
         {
             setCategoryTab(false, true);
-            bankFocusPanel->switchToCategory(ChompiNamer::Category::Jammi);
+            bankFocusPanel->switchToCategory(LunchBoxNamer::Category::Jammi);
         }
     };
     addAndMakeVisible(cubbiTabButton);
@@ -108,7 +109,7 @@ MainComponent::MainComponent()
 
     auto stopPreviewFn = [this] { stopPreview(); };
 
-    cubbiEditor = std::make_unique<BankEditorPanel>(ChompiNamer::Category::Cubbi);
+    cubbiEditor = std::make_unique<BankEditorPanel>(LunchBoxNamer::Category::Cubbi);
     cubbiEditor->onBeforeChange        = [this] { captureUndoState(); };
     cubbiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     cubbiEditor->onSlotClicked         = packSlotClicked;
@@ -119,7 +120,7 @@ MainComponent::MainComponent()
     cubbiEditor->onBackgroundClicked   = stopPreviewFn;
     addAndMakeVisible(cubbiEditor.get());
 
-    jammiEditor = std::make_unique<BankEditorPanel>(ChompiNamer::Category::Jammi);
+    jammiEditor = std::make_unique<BankEditorPanel>(LunchBoxNamer::Category::Jammi);
     jammiEditor->onBeforeChange        = [this] { captureUndoState(); };
     jammiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     jammiEditor->onSlotClicked         = packSlotClicked;
@@ -144,8 +145,8 @@ MainComponent::MainComponent()
     bankFocusPanel->onLog                = [this](const juce::String& msg) { bankStatusLabel.setText(msg.trimEnd(), juce::dontSendNotification); };
     addChildComponent(bankFocusPanel.get());  // hidden initially
 
-    bankStatusLabel.setFont(ChompiFonts::footer());
-    bankStatusLabel.setColour(juce::Label::textColourId, ChompiColours::WHITE_CREAM);
+    bankStatusLabel.setFont(LunchBoxFonts::footer());
+    bankStatusLabel.setColour(juce::Label::textColourId, LunchBoxColours::WHITE_CREAM);
     bankStatusLabel.setJustificationType(juce::Justification::centredLeft);
     addChildComponent(bankStatusLabel);
 
@@ -168,17 +169,17 @@ MainComponent::MainComponent()
     clearButton.setLookAndFeel(&footerButtonLAF);
 
     processButton.setTooltip("Convert and export all samples to CHOMPI format (Cmd+Return)");
-    processButton.setColour(juce::TextButton::buttonColourId,  ChompiColours::BUTTON_BG);
-    processButton.setColour(juce::TextButton::buttonOnColourId, ChompiColours::BUTTON_BG);
-    processButton.setColour(juce::TextButton::textColourOffId,  ChompiColours::WHITE_CREAM);
+    processButton.setColour(juce::TextButton::buttonColourId,  LunchBoxColours::BUTTON_BG);
+    processButton.setColour(juce::TextButton::buttonOnColourId, LunchBoxColours::BUTTON_BG);
+    processButton.setColour(juce::TextButton::textColourOffId,  LunchBoxColours::WHITE_CREAM);
     processButton.onClick = [this] { processFiles(); };
     processButton.setEnabled(false);
     addAndMakeVisible(processButton);
 
     fillButton.setButtonText("Fill");
     fillButton.setTooltip("Auto-fill empty slots from a folder");
-    fillButton.setColour(juce::TextButton::buttonColourId,  ChompiColours::BUTTON_BG);
-    fillButton.setColour(juce::TextButton::textColourOffId, ChompiColours::WHITE_CREAM);
+    fillButton.setColour(juce::TextButton::buttonColourId,  LunchBoxColours::BUTTON_BG);
+    fillButton.setColour(juce::TextButton::textColourOffId, LunchBoxColours::WHITE_CREAM);
     fillButton.onClick = [this]
     {
         if (viewMode == ViewMode::Pack)
@@ -190,8 +191,8 @@ MainComponent::MainComponent()
 
     clearButton.setButtonText("Clear");
     clearButton.setTooltip("Clear all slots in the current view");
-    clearButton.setColour(juce::TextButton::buttonColourId,  ChompiColours::BUTTON_BG);
-    clearButton.setColour(juce::TextButton::textColourOffId, ChompiColours::WHITE_CREAM);
+    clearButton.setColour(juce::TextButton::buttonColourId,  LunchBoxColours::BUTTON_BG);
+    clearButton.setColour(juce::TextButton::textColourOffId, LunchBoxColours::WHITE_CREAM);
     clearButton.onClick = [this]
     {
         captureUndoState();
@@ -204,12 +205,13 @@ MainComponent::MainComponent()
 
     processor = std::make_unique<GuiProcessor>();
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
+    addChildComponent(packNameOverlay);
 
     // Apply initial mode styling
-    styleTabButton(packModeButton, true,  ChompiColours::YELLOW);
-    styleTabButton(bankModeButton, false, ChompiColours::YELLOW);
-    styleTabButton(cubbiTabButton, true,  ChompiColours::PURPLE);
-    styleTabButton(jammiTabButton, false, ChompiColours::PURPLE);
+    styleTabButton(packModeButton, true,  LunchBoxColours::YELLOW);
+    styleTabButton(bankModeButton, false, LunchBoxColours::YELLOW);
+    styleTabButton(cubbiTabButton, true,  LunchBoxColours::PURPLE);
+    styleTabButton(jammiTabButton, false, LunchBoxColours::PURPLE);
 
     setWantsKeyboardFocus(true);
 
@@ -218,6 +220,8 @@ MainComponent::MainComponent()
     commandManager.setFirstCommandTarget(this);
 
     setSize(493, 890);
+
+    loadSessionState();
 
 #if CHOMPI_MELATONIN_INSPECTOR
     inspector = std::make_unique<melatonin::Inspector>(*this);
@@ -241,15 +245,11 @@ void MainComponent::paint(juce::Graphics& g)
 {
     g.fillAll(bgColour);
 
-    if (logoImage.isValid())
     {
-        auto headerArea = getLocalBounds().reduced(12).removeFromTop(44);
-        const float logoAspect = (float)logoImage.getWidth() / (float)logoImage.getHeight();
-        const int logoH = headerArea.getHeight();
-        const int logoW = juce::roundToInt(logoH * logoAspect);
-        auto logoRect = juce::Rectangle<int>(logoW, logoH)
-                            .withCentre(headerArea.getCentre());
-        g.drawImage(logoImage, logoRect.toFloat());
+        auto headerArea = getLocalBounds().removeFromTop(64).toFloat();
+        g.setFont(LunchBoxFonts::logoTitle(60.0f));
+        g.setColour(LunchBoxColours::WHITE_CREAM);
+        g.drawText("LUNCH BOX", headerArea, juce::Justification::centred, false);
     }
 }
 
@@ -262,10 +262,9 @@ void MainComponent::resized()
         isTransitioning = false;
     }
 
-    auto area = getLocalBounds().reduced(12);
-
-    // ── Blank header space (matches SVG top area) ─────────
-    area.removeFromTop(44);
+    auto bounds = getLocalBounds();
+    bounds.removeFromTop(64);
+    auto area = bounds.reduced(12, 0).withTrimmedBottom(12);
 
     // ── Nav row: [Cubbi][Jammi]  gap  [Pack][Bank] ────────
     {
@@ -310,14 +309,17 @@ void MainComponent::resized()
         fillButton.setBounds(footer.removeFromLeft(bW).reduced(2, 0));
         processButton.setBounds(footer.reduced(2, 0));
     }
+
+    packNameOverlay.setBounds(getLocalBounds());
 }
 
 // ─── Mode switching ───────────────────────────────────────────────────────────
 
 juce::Rectangle<int> MainComponent::computeContentArea() const
 {
-    auto area = getLocalBounds().reduced(12);
-    area.removeFromTop(44);
+    auto bounds = getLocalBounds();
+    bounds.removeFromTop(64);
+    auto area = bounds.reduced(12, 0).withTrimmedBottom(12);
     area.removeFromTop(32);
     area.removeFromTop(8);
     area.removeFromBottom(54 + 12);
@@ -352,14 +354,21 @@ void MainComponent::setViewMode(ViewMode mode)
     if (isPack)
     {
         setCategoryTab(showCubbiEditor);
+        // Translate Bank focus → Pack cell so the incoming editor lands on the right slot
+        auto* incoming = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+        incoming->setFocusCellAndSelect({ bankFocusPanel->getActiveBank(),
+                                          bankFocusPanel->getFocusedRow() });
     }
     else
     {
-        styleTabButton(cubbiTabButton, showCubbiEditor,  ChompiColours::PURPLE);
-        styleTabButton(jammiTabButton, !showCubbiEditor, ChompiColours::PURPLE);
-        auto cat = showCubbiEditor ? ChompiNamer::Category::Cubbi
-                                   : ChompiNamer::Category::Jammi;
+        styleTabButton(cubbiTabButton, showCubbiEditor,  LunchBoxColours::PURPLE);
+        styleTabButton(jammiTabButton, !showCubbiEditor, LunchBoxColours::PURPLE);
+        auto cat = showCubbiEditor ? LunchBoxNamer::Category::Cubbi
+                                   : LunchBoxNamer::Category::Jammi;
         bankFocusPanel->switchToCategory(cat);
+        // Translate Pack focus → Bank bank+row so the incoming panel lands on the right slot
+        auto fc = (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->getFocusCell();
+        bankFocusPanel->setActiveFocus(fc.row, fc.col);
     }
 
     updateProcessButtonState();
@@ -378,14 +387,14 @@ void MainComponent::setViewMode(ViewMode mode)
         bankStatusLabel.setVisible(true);
         bankFocusPanel->grabKeyboardFocus();
 
-        packModeButton.startWipe(ChompiColours::BUTTON_BG,  true);
-        bankModeButton.startWipe(ChompiColours::YELLOW,    true);
+        packModeButton.startWipe(LunchBoxColours::BUTTON_BG,  true);
+        bankModeButton.startWipe(LunchBoxColours::YELLOW,    true);
 
         isTransitioning = true;
-        anim.animateComponent(outgoing,         content.withX(content.getX() - w), 1.0f, 200, false, 0.0, 0.0);
-        anim.animateComponent(bankFocusPanel.get(), content,                        1.0f, 200, false, 0.0, 0.0);
+        anim.animateComponent(outgoing,         content.withX(content.getX() - w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
+        anim.animateComponent(bankFocusPanel.get(), content,                        1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-        juce::Timer::callAfterDelay(210, [this, outgoing]
+        juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this, outgoing]
         {
             outgoing->setVisible(false);
             isTransitioning = false;
@@ -399,14 +408,14 @@ void MainComponent::setViewMode(ViewMode mode)
         incoming->setBounds(content.withX(content.getX() - w));
         incoming->setVisible(true);
 
-        packModeButton.startWipe(ChompiColours::YELLOW,   false);
-        bankModeButton.startWipe(ChompiColours::BUTTON_BG, false);
+        packModeButton.startWipe(LunchBoxColours::YELLOW,   false);
+        bankModeButton.startWipe(LunchBoxColours::BUTTON_BG, false);
 
         isTransitioning = true;
-        anim.animateComponent(bankFocusPanel.get(), content.withX(content.getX() + w), 1.0f, 200, false, 0.0, 0.0);
-        anim.animateComponent(incoming,             content,                            1.0f, 200, false, 0.0, 0.0);
+        anim.animateComponent(bankFocusPanel.get(), content.withX(content.getX() + w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
+        anim.animateComponent(incoming,             content,                            1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-        juce::Timer::callAfterDelay(210, [this]
+        juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this]
         {
             bankFocusPanel->setVisible(false);
             bankStatusLabel.setVisible(false);
@@ -423,13 +432,13 @@ void MainComponent::syncPackToBankFocus()
     for (const auto& a : cubbiEditor->getAssignments())
     {
         int bankIdx = (int)(a.bankLetter - 'a');
-        bankFocusPanel->setSlot(ChompiNamer::Category::Cubbi, bankIdx, a.slotNumber - 1, a.sourceFile);
+        bankFocusPanel->setSlot(LunchBoxNamer::Category::Cubbi, bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 
     for (const auto& a : jammiEditor->getAssignments())
     {
         int bankIdx = (int)(a.bankLetter - 'a');
-        bankFocusPanel->setSlot(ChompiNamer::Category::Jammi, bankIdx, a.slotNumber - 1, a.sourceFile);
+        bankFocusPanel->setSlot(LunchBoxNamer::Category::Jammi, bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 }
 
@@ -438,13 +447,13 @@ void MainComponent::syncBankFocusToAdvanced()
     cubbiEditor->clearAllBanks();
     jammiEditor->clearAllBanks();
 
-    for (const auto& a : bankFocusPanel->getAssignments(ChompiNamer::Category::Cubbi))
+    for (const auto& a : bankFocusPanel->getAssignments(LunchBoxNamer::Category::Cubbi))
     {
         int bankIdx = (int)(a.bankLetter - 'a');
         cubbiEditor->setSlotFile(bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 
-    for (const auto& a : bankFocusPanel->getAssignments(ChompiNamer::Category::Jammi))
+    for (const auto& a : bankFocusPanel->getAssignments(LunchBoxNamer::Category::Jammi))
     {
         int bankIdx = (int)(a.bankLetter - 'a');
         jammiEditor->setSlotFile(bankIdx, a.slotNumber - 1, a.sourceFile);
@@ -465,8 +474,8 @@ void MainComponent::animateBankCategorySwitch(bool showCubbi)
 
     // Wipe button colours before any state change so startWipe captures the current fill
     const bool fromRight = !showCubbi;
-    cubbiTabButton.startWipe(showCubbi ? ChompiColours::PURPLE : ChompiColours::BUTTON_BG, fromRight);
-    jammiTabButton.startWipe(showCubbi ? ChompiColours::BUTTON_BG : ChompiColours::PURPLE, fromRight);
+    cubbiTabButton.startWipe(showCubbi ? LunchBoxColours::PURPLE : LunchBoxColours::BUTTON_BG, fromRight);
+    jammiTabButton.startWipe(showCubbi ? LunchBoxColours::BUTTON_BG : LunchBoxColours::PURPLE, fromRight);
 
     // Snapshot the current panel state before any content change
     auto snapshot = bankFocusPanel->createComponentSnapshot(bankFocusPanel->getLocalBounds());
@@ -479,15 +488,15 @@ void MainComponent::animateBankCategorySwitch(bool showCubbi)
     // Switch content and update state (no styleTabButton — startWipe handles colours)
     stopPreview();
     showCubbiEditor = showCubbi;
-    bankFocusPanel->switchToCategory(showCubbi ? ChompiNamer::Category::Cubbi
-                                               : ChompiNamer::Category::Jammi);
+    bankFocusPanel->switchToCategory(showCubbi ? LunchBoxNamer::Category::Cubbi
+                                               : LunchBoxNamer::Category::Jammi);
     bankFocusPanel->setBounds(content.withX(content.getX() + dir * w));
 
     isTransitioning = true;
-    anim.animateComponent(bankTransitionOverlay.get(), content.withX(content.getX() - dir * w), 1.0f, 200, false, 0.0, 0.0);
-    anim.animateComponent(bankFocusPanel.get(),        content,                                  1.0f, 200, false, 0.0, 0.0);
+    anim.animateComponent(bankTransitionOverlay.get(), content.withX(content.getX() - dir * w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
+    anim.animateComponent(bankFocusPanel.get(),        content,                                  1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-    juce::Timer::callAfterDelay(210, [this]
+    juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this]
     {
         if (bankTransitionOverlay != nullptr)
         {
@@ -505,9 +514,6 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
 
     if (viewMode == ViewMode::Pack)
     {
-        cubbiEditor->clearSelection();
-        jammiEditor->clearSelection();
-
         const bool tabChanged = (showCubbi != showCubbiEditor);
 
         if (animate && tabChanged)
@@ -526,17 +532,17 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
             const int  dir       = showCubbi ? -1 : 1;
             const bool fromRight = !showCubbi;
 
-            cubbiTabButton.startWipe(showCubbi ? ChompiColours::PURPLE : ChompiColours::BUTTON_BG, fromRight);
-            jammiTabButton.startWipe(showCubbi ? ChompiColours::BUTTON_BG : ChompiColours::PURPLE, fromRight);
+            cubbiTabButton.startWipe(showCubbi ? LunchBoxColours::PURPLE : LunchBoxColours::BUTTON_BG, fromRight);
+            jammiTabButton.startWipe(showCubbi ? LunchBoxColours::BUTTON_BG : LunchBoxColours::PURPLE, fromRight);
 
             incoming->setBounds(content.withX(content.getX() + dir * w));
             incoming->setVisible(true);
 
             isTransitioning = true;
-            anim.animateComponent(outgoing, content.withX(content.getX() - dir * w), 1.0f, 200, false, 0.0, 0.0);
-            anim.animateComponent(incoming, content,                                  1.0f, 200, false, 0.0, 0.0);
+            anim.animateComponent(outgoing, content.withX(content.getX() - dir * w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
+            anim.animateComponent(incoming, content,                                  1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-            juce::Timer::callAfterDelay(210, [this, outgoing]
+            juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this, outgoing]
             {
                 outgoing->setVisible(false);
                 isTransitioning = false;
@@ -545,16 +551,16 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
         }
         else
         {
-            styleTabButton(cubbiTabButton, showCubbi,  ChompiColours::PURPLE);
-            styleTabButton(jammiTabButton, !showCubbi, ChompiColours::PURPLE);
+            styleTabButton(cubbiTabButton, showCubbi,  LunchBoxColours::PURPLE);
+            styleTabButton(jammiTabButton, !showCubbi, LunchBoxColours::PURPLE);
             cubbiEditor->setVisible(showCubbi);
             jammiEditor->setVisible(!showCubbi);
         }
     }
     else
     {
-        styleTabButton(cubbiTabButton, showCubbi,  ChompiColours::PURPLE);
-        styleTabButton(jammiTabButton, !showCubbi, ChompiColours::PURPLE);
+        styleTabButton(cubbiTabButton, showCubbi,  LunchBoxColours::PURPLE);
+        styleTabButton(jammiTabButton, !showCubbi, LunchBoxColours::PURPLE);
     }
 
     showCubbiEditor = showCubbi;
@@ -567,16 +573,16 @@ BankEditorPanel* MainComponent::getActiveEditor()
 
 void MainComponent::styleTabButton(WipeTabButton& btn, bool active, juce::Colour activeCol)
 {
-    btn.snapToColour(active ? activeCol : ChompiColours::BUTTON_BG);
+    btn.snapToColour(active ? activeCol : LunchBoxColours::BUTTON_BG);
     btn.setColour(juce::TextButton::textColourOffId, tabTextCol);
-    btn.setColour(juce::TextButton::textColourOnId,  ChompiColours::WHITE_CREAM);
+    btn.setColour(juce::TextButton::textColourOnId,  LunchBoxColours::WHITE_CREAM);
 }
 
 // ─── Output folder ────────────────────────────────────────────────────────────
 
 juce::File MainComponent::getResolvedOutputFolder()
 {
-    return outputBaseFolder;
+    return outputBaseFolder.getChildFile(lastPackName);
 }
 
 juce::File MainComponent::getSavedFolder(const juce::String& key)
@@ -622,6 +628,65 @@ void MainComponent::saveString(const juce::String& key, const juce::String& valu
     }
 }
 
+void MainComponent::saveSessionState()
+{
+    auto* props = appProperties.getUserSettings();
+    if (!props) return;
+
+    auto state = readCurrentState();
+
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
+        {
+            props->setValue("session_cubbi_b" + juce::String(b) + "_s" + juce::String(s),
+                            state.cubbiSlots[b][s].getFullPathName());
+            props->setValue("session_jammi_b" + juce::String(b) + "_s" + juce::String(s),
+                            state.jammiSlots[b][s].getFullPathName());
+        }
+
+    props->saveIfNeeded();
+}
+
+void MainComponent::loadSessionState()
+{
+    auto* props = appProperties.getUserSettings();
+    if (!props) return;
+
+    juce::StringArray missing;
+
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
+        {
+            for (int cat = 0; cat < 2; ++cat)
+            {
+                auto prefix = (cat == 0) ? "cubbi" : "jammi";
+                auto path = props->getValue("session_" + juce::String(prefix)
+                                            + "_b" + juce::String(b) + "_s" + juce::String(s));
+                if (path.isEmpty()) continue;
+
+                juce::File f(path);
+                if (f.existsAsFile())
+                {
+                    auto* editor = (cat == 0) ? cubbiEditor.get() : jammiEditor.get();
+                    editor->setSlotFile(b, s, f);
+                }
+                else
+                {
+                    missing.add(path);
+                }
+            }
+        }
+
+    if (!missing.isEmpty())
+    {
+        appendStatus("Session restore: " + juce::String(missing.size()) + " file(s) not available:");
+        for (auto& path : missing)
+            appendStatus("  Missing: " + path);
+    }
+
+    updateProcessButtonState();
+}
+
 // ─── File browser launchers ───────────────────────────────────────────────────
 
 void MainComponent::selectOutputFolder()
@@ -653,14 +718,115 @@ void MainComponent::selectOutputFolder()
 void MainComponent::processFiles()
 {
     processButton.setEnabled(false);
-    appendStatus("\n=== Starting CHOMPI Processing ===");
 
-    if (viewMode == ViewMode::Bank)
-        syncBankFocusToAdvanced();
+    packNameOverlay.onResult = [this](bool confirmed, juce::String packName)
+    {
+        if (!confirmed || packName.isEmpty())
+        {
+            processButton.setEnabled(true);
+            return;
+        }
 
-    processFilesFromEditors();
+        lastPackName = packName;
+        saveString("lastPackName", lastPackName);
 
-    processButton.setEnabled(true);
+        auto startDir = outputBaseFolder.exists() ? outputBaseFolder
+                                                  : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
+
+        fileChooser = std::make_unique<juce::FileChooser>(
+            "Please select a folder for your pack.", startDir, "", true);
+
+        auto flags = juce::FileBrowserComponent::openMode
+                   | juce::FileBrowserComponent::canSelectDirectories;
+
+        fileChooser->launchAsync(flags, [this, packName](const juce::FileChooser& chooser)
+        {
+            auto f = chooser.getResult();
+            if (!f.isDirectory())
+            {
+                processButton.setEnabled(true);
+                return;
+            }
+
+            auto homeDir = juce::File::getSpecialLocation(juce::File::userHomeDirectory);
+            bool outsideHome = (f != homeDir && !f.isAChildOf(homeDir));
+
+            auto continueWithFolder = [this, f, packName]()
+            {
+                outputBaseFolder = f;
+                saveFolder("lastOutputParent", outputBaseFolder);
+
+                auto packFolder = f.getChildFile(packName);
+
+                auto runExport = [this]()
+                {
+                    appendStatus("\n=== Starting CHOMPI Processing ===");
+                    if (viewMode == ViewMode::Bank)
+                        syncBankFocusToAdvanced();
+                    processFilesFromEditors();
+                    processButton.setEnabled(true);
+                };
+
+                if (!packFolder.exists())
+                {
+                    runExport();
+                    return;
+                }
+
+                auto children = packFolder.findChildFiles(juce::File::findFilesAndDirectories, false, "[!.]*");
+                if (children.isEmpty())
+                {
+                    runExport();
+                    return;
+                }
+
+                int fileCount = 0, dirCount = 0;
+                for (auto& c : children)
+                    (c.isDirectory() ? dirCount : fileCount)++;
+
+                juce::String countStr;
+                if (fileCount > 0)
+                    countStr += juce::String(fileCount) + (fileCount == 1 ? " file" : " files");
+                if (fileCount > 0 && dirCount > 0)
+                    countStr += " and ";
+                if (dirCount > 0)
+                    countStr += juce::String(dirCount) + (dirCount == 1 ? " folder" : " folders");
+
+                juce::NativeMessageBox::showOkCancelBox(
+                    juce::MessageBoxIconType::WarningIcon,
+                    packName + " is not empty.",
+                    "The export folder already exists:\n" + packFolder.getFullPathName() + "\n\n"
+                    + countStr + " will be deleted before exporting.\n\nContinue?",
+                    nullptr,
+                    juce::ModalCallbackFunction::create([this, children, runExport](int res2) mutable
+                    {
+                        if (res2 == 0) { processButton.setEnabled(true); return; }
+                        for (auto& child : children) child.deleteRecursively();
+                        runExport();
+                    }));
+            };
+
+            if (outsideHome)
+            {
+                juce::NativeMessageBox::showOkCancelBox(
+                    juce::MessageBoxIconType::WarningIcon,
+                    "Folder Outside Home Directory",
+                    "\"" + f.getFullPathName() + "\" is outside your home directory.\n\n"
+                    "A \"" + packName + "\" folder will be created there. Are you sure?",
+                    nullptr,
+                    juce::ModalCallbackFunction::create([this, continueWithFolder](int res2) mutable
+                    {
+                        if (res2 == 0) { processButton.setEnabled(true); return; }
+                        continueWithFolder();
+                    }));
+                return;
+            }
+
+            continueWithFolder();
+        });
+    };
+
+    packNameOverlay.show(lastPackName);
 }
 
 void MainComponent::processFilesFromEditors()
@@ -674,7 +840,10 @@ void MainComponent::processFilesFromEditors()
         cubbiAssignments, jammiAssignments, outputFolder);
 
     if (result.success)
+    {
         appendProcessingResult(result, outputFolder);
+        processButton.triggerSuccessAnimation();
+    }
     else
     {
         appendStatus("\n=== Processing Failed ===");
@@ -703,8 +872,8 @@ void MainComponent::updateProcessButtonState()
     if (viewMode == ViewMode::Pack)
         ready = (cubbiEditor->getFilledCount() + jammiEditor->getFilledCount()) > 0;
     else  // Bank
-        ready = (bankFocusPanel->getFilledCount(ChompiNamer::Category::Cubbi)
-               + bankFocusPanel->getFilledCount(ChompiNamer::Category::Jammi)) > 0;
+        ready = (bankFocusPanel->getFilledCount(LunchBoxNamer::Category::Cubbi)
+               + bankFocusPanel->getFilledCount(LunchBoxNamer::Category::Jammi)) > 0;
 
     processButton.setEnabled(ready);
 }
@@ -747,22 +916,29 @@ void MainComponent::stopPreview()
 
 bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origin)
 {
+    suppressTooltipsUntilMouseMove();
+
+    if (packNameOverlay.isVisible())
+        return false;
+
     // Don't intercept navigation keys when a text editor has keyboard focus
     if (dynamic_cast<juce::TextEditor*>(origin) != nullptr)
         return false;
 
     if (key == juce::KeyPress(juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier, 0))
     {
-        setViewMode(viewMode == ViewMode::Pack ? ViewMode::Bank : ViewMode::Pack);
+        if (!isTransitioning)
+            setViewMode(viewMode == ViewMode::Pack ? ViewMode::Bank : ViewMode::Pack);
         return true;
     }
 
     if (key == juce::KeyPress::escapeKey)
     {
+        stopPreview();
         if (viewMode == ViewMode::Bank)
             bankFocusPanel->clearSelection();
         else
-            getActiveEditor()->clearSelection();
+            getActiveEditor()->setFocusCellAndSelect(getActiveEditor()->getFocusCell());
         return true;
     }
 
@@ -784,6 +960,21 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     // ── Bank view keyboard navigation ────────────────────────────────────────
     if (viewMode == ViewMode::Bank)
     {
+        if (key.getModifiers().isCommandDown())
+        {
+            if (key.getKeyCode() == juce::KeyPress::upKey)
+            {
+                int next = juce::jmax(0, bankFocusPanel->getActiveBank() - 1);
+                bankFocusPanel->setActiveFocus(next, bankFocusPanel->getFocusedRow());
+                return true;
+            }
+            if (key.getKeyCode() == juce::KeyPress::downKey)
+            {
+                int next = juce::jmin(LunchBoxNamer::NUM_BANKS - 1, bankFocusPanel->getActiveBank() + 1);
+                bankFocusPanel->setActiveFocus(next, bankFocusPanel->getFocusedRow());
+                return true;
+            }
+        }
         if (key.getModifiers().isShiftDown())
         {
             if (key.getKeyCode() == juce::KeyPress::upKey)   { bankFocusPanel->expandRowSelection(-1); return true; }
@@ -795,7 +986,8 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
          || key == juce::KeyPress::backspaceKey) { captureUndoState(); bankFocusPanel->clearFocusedRows(); return true; }
         if (key == juce::KeyPress::tabKey)
         {
-            animateBankCategorySwitch(!showCubbiEditor);
+            if (!isTransitioning)
+                animateBankCategorySwitch(!showCubbiEditor);
             return true;
         }
         if (key == juce::KeyPress::returnKey)
@@ -825,9 +1017,12 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
 
     if (key == juce::KeyPress::tabKey)
     {
-        setCategoryTab(!showCubbiEditor, true);  // Pack mode Tab: animate
-        bankFocusPanel->switchToCategory(showCubbiEditor ? ChompiNamer::Category::Cubbi
-                                                         : ChompiNamer::Category::Jammi);
+        if (!isTransitioning)
+        {
+            setCategoryTab(!showCubbiEditor, true);
+            bankFocusPanel->switchToCategory(showCubbiEditor ? LunchBoxNamer::Category::Cubbi
+                                                             : LunchBoxNamer::Category::Jammi);
+        }
         return true;
     }
 
@@ -932,17 +1127,17 @@ MainComponent::UndoState MainComponent::readCurrentState()
     UndoState state;
     if (viewMode == ViewMode::Bank)
     {
-        for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-            for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+            for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             {
-                state.cubbiSlots[b][s] = bankFocusPanel->getSlotFile(ChompiNamer::Category::Cubbi, b, s);
-                state.jammiSlots[b][s] = bankFocusPanel->getSlotFile(ChompiNamer::Category::Jammi, b, s);
+                state.cubbiSlots[b][s] = bankFocusPanel->getSlotFile(LunchBoxNamer::Category::Cubbi, b, s);
+                state.jammiSlots[b][s] = bankFocusPanel->getSlotFile(LunchBoxNamer::Category::Jammi, b, s);
             }
     }
     else
     {
-        for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-            for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+            for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             {
                 state.cubbiSlots[b][s] = cubbiEditor->getSlotFile(b, s);
                 state.jammiSlots[b][s] = jammiEditor->getSlotFile(b, s);
@@ -960,6 +1155,9 @@ void MainComponent::captureUndoState()
         undoStack.remove(0);
 
     redoStack.clear();
+
+    // Save after the current event loop so the slot change has been applied.
+    juce::MessageManager::callAsync([this] { saveSessionState(); });
 }
 
 void MainComponent::applyUndoState(const UndoState& state)
@@ -969,8 +1167,8 @@ void MainComponent::applyUndoState(const UndoState& state)
     cubbiEditor->clearAllBanks();
     jammiEditor->clearAllBanks();
 
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
         {
             cubbiEditor->setSlotFile(b, s, state.cubbiSlots[b][s]);
             jammiEditor->setSlotFile(b, s, state.jammiSlots[b][s]);
@@ -981,6 +1179,7 @@ void MainComponent::applyUndoState(const UndoState& state)
 
     isApplyingUndoState = false;
     updateProcessButtonState();
+    saveSessionState();
 }
 
 void MainComponent::performUndo()
@@ -1019,7 +1218,7 @@ juce::ApplicationCommandTarget* MainComponent::getNextCommandTarget()
 void MainComponent::getAllCommands(juce::Array<juce::CommandID>& commands)
 {
     commands.addArray({ cmdUndo, cmdRedo, cmdCopy, cmdCut, cmdPaste, cmdSelectAll,
-                        cmdOpenOutput, cmdProcess, cmdToggleConsole });
+                        cmdOpenOutput, cmdProcess, cmdToggleConsole, cmdFill, cmdClear });
 }
 
 void MainComponent::getCommandInfo(juce::CommandID id, juce::ApplicationCommandInfo& result)
@@ -1057,6 +1256,15 @@ void MainComponent::getCommandInfo(juce::CommandID id, juce::ApplicationCommandI
         case cmdProcess:
             result.setInfo("Process Samples", "Convert and export all samples", "File", 0);
             result.addDefaultKeypress(juce::KeyPress::returnKey, juce::ModifierKeys::commandModifier);
+            result.addDefaultKeypress('p', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdFill:
+            result.setInfo("Fill Slots", "Auto-fill empty slots from a folder", "Edit", 0);
+            result.addDefaultKeypress('f', juce::ModifierKeys::commandModifier);
+            break;
+        case cmdClear:
+            result.setInfo("Clear Slots", "Clear selected slots", "Edit", 0);
+            result.addDefaultKeypress('c', juce::ModifierKeys::commandModifier | juce::ModifierKeys::altModifier);
             break;
         case cmdToggleConsole:
             result.setInfo(consoleVisible ? "Hide Console" : "Show Console",
@@ -1087,8 +1295,10 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
             return true;
         }
         case cmdOpenOutput:  getResolvedOutputFolder().startAsProcess(); return true;
-        case cmdProcess:     processFiles();    return true;
+        case cmdProcess:     if (processButton.isEnabled()) processFiles(); return true;
         case cmdToggleConsole: toggleConsole(); return true;
+        case cmdFill:        if (fillButton.isEnabled())  fillButton.triggerClick();  return true;
+        case cmdClear:       if (clearButton.isEnabled()) clearButton.triggerClick(); return true;
         default:               return false;
     }
 }

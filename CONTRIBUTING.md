@@ -1,4 +1,4 @@
-# Contributing to Chompi Pack
+# Contributing to Lunch Box
 
 Thank you for your interest in contributing!
 
@@ -6,7 +6,7 @@ Thank you for your interest in contributing!
 
 ### Reporting Bugs
 
-1. Check [existing issues](https://github.com/mattfromatlanta/chompi_pack/issues)
+1. Check [existing issues](https://github.com/mattfromatlanta/lunch_box/issues)
 2. Create a new issue with:
    - Clear description and steps to reproduce
    - Expected vs. actual behavior
@@ -14,7 +14,7 @@ Thank you for your interest in contributing!
 
 ### Suggesting Features
 
-Open a [discussion](https://github.com/mattfromatlanta/chompi_pack/discussions) in the Ideas category with a description of the use case.
+Open a [discussion](https://github.com/mattfromatlanta/lunch_box/discussions) in the Ideas category with a description of the use case.
 
 ### Pull Requests
 
@@ -40,7 +40,7 @@ make
 
 **Running tests:**
 ```bash
-./build/chompi_pack_tests_artefacts/chompi_pack_tests
+./build/lunch_box_tests_artefacts/lunch_box_tests
 ```
 
 ## Code Style
@@ -54,7 +54,7 @@ make
 ## Architecture
 
 Processing logic lives in `Source/Processing/` and is shared between CLI and GUI. Neither
-interface should reach into the other, and neither should bypass `ChompiProcessor`. See
+interface should reach into the other, and neither should bypass `LunchBoxProcessor`. See
 `CLAUDE.md` for the full architecture overview.
 
 ## Important Constraints
@@ -65,4 +65,4 @@ interface should reach into the other, and neither should bypass `ChompiProcesso
 
 ## Questions?
 
-Open a [discussion](https://github.com/mattfromatlanta/chompi_pack/discussions).
+Open a [discussion](https://github.com/mattfromatlanta/lunch_box/discussions).

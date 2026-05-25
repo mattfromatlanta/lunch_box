@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "FocusedSlotRow.h"
-#include "ChompiFonts.h"
+#include "LunchBoxFonts.h"
+#include "UIConstants.h"
 #include "../FileSystemHelper.h"
 
 namespace
 {
-    const juce::Colour rowHoverBdr     { 0xff5577aa };
+    const juce::Colour rowHoverBdr     = LunchBoxColours::WHITE_CREAM;
     const juce::Colour rowDropBdr      { 0xff4caf50 };
-    const juce::Colour rowSelectedBdr  { 0xff4455aa };
+    const juce::Colour rowSelectedBdr  = LunchBoxColours::WHITE_CREAM;
     const juce::Colour insertionCol    { 0xffddaa33 };
 }
 
@@ -60,6 +61,11 @@ void FocusedSlotRow::setSelected(bool s)
     if (selected != s) { selected = s; repaint(); }
 }
 
+void FocusedSlotRow::setFocused(bool f)
+{
+    if (focused != f) { focused = f; repaint(); }
+}
+
 void FocusedSlotRow::setDragSource(bool s)
 {
     if (isDragSrc != s) { isDragSrc = s; repaint(); }
@@ -98,15 +104,23 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     // Background
     juce::Colour bg;
     if (displayFilled)
-        bg = selected ? ChompiColours::getTabBg(bankColour).brighter(0.15f)
-                      : ChompiColours::getTabBg(bankColour);
+        bg = selected ? LunchBoxColours::getTabBg(bankColour).brighter(0.15f)
+                      : LunchBoxColours::getTabBg(bankColour);
     else
-        bg = selected ? ChompiColours::BUTTON_BG.brighter(0.15f)
-                      : ChompiColours::BUTTON_BG;
-    constexpr float rowRadius = 3.0f;
+        bg = selected ? LunchBoxColours::BUTTON_BG.brighter(0.15f)
+                      : LunchBoxColours::BUTTON_BG;
+    constexpr float rowRadius = LunchBoxConstants::CORNER_RADIUS;
     auto fbounds = bounds.toFloat();
     g.setColour(bg);
     g.fillRoundedRectangle(fbounds, rowRadius);
+
+    if (selected && !focused && !isDragSrc && !isDraggingOver)
+    {
+        auto* top = getTopLevelComponent();
+        auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
+                          : juce::Point<int>(0, 0);
+        LunchBoxColours::drawSelectionStripes(g, fbounds, origin, rowRadius);
+    }
 
     // Border
     auto borderBounds = fbounds.reduced(1.0f);
@@ -120,30 +134,35 @@ void FocusedSlotRow::paint(juce::Graphics& g)
         g.setColour(rowDropBdr);
         g.drawRoundedRectangle(borderBounds, rowRadius, 4.0f);
     }
+    else if (focused)
+    {
+        g.setColour(LunchBoxColours::FOCUS_BORDER);
+        g.drawRoundedRectangle(borderBounds, rowRadius, LunchBoxConstants::BORDER_WIDTH_ACTIVE);
+    }
     else if (selected)
     {
-        g.setColour(displayFilled ? ChompiColours::getFocused(bankColour).brighter(0.3f)
+        g.setColour(displayFilled ? LunchBoxColours::getFocused(bankColour).brighter(0.3f)
                                   : rowSelectedBdr);
         g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f);
     }
     else if (isHovered)
     {
-        g.setColour(displayFilled ? ChompiColours::getFocused(bankColour)
+        g.setColour(displayFilled ? LunchBoxColours::getFocused(bankColour)
                                   : rowHoverBdr.withAlpha(0.5f));
         g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f);
     }
     else if (displayFilled)
     {
-        g.setColour(ChompiColours::getFocused(bankColour));
+        g.setColour(LunchBoxColours::getFocused(bankColour));
         g.drawRoundedRectangle(borderBounds, rowRadius, 2.0f);
     }
 
     // Slot number (left column, 28px)
     const int numW = 28;
     auto numArea = bounds.removeFromLeft(numW);
-    g.setFont(ChompiFonts::body());
-    g.setColour(displayFilled ? ChompiColours::WHITE_CREAM
-                              : ChompiColours::WHITE_CREAM.withAlpha(0.4f));
+    g.setFont(LunchBoxFonts::body());
+    g.setColour(displayFilled ? LunchBoxColours::WHITE_CREAM
+                              : LunchBoxColours::WHITE_CREAM.withAlpha(0.4f));
     g.drawText(juce::String(slotNumber).paddedLeft('0', 2),
                numArea, juce::Justification::centred);
 

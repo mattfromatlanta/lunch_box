@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#include "ChompiProcessor.h"
+#include "LunchBoxProcessor.h"
 #include "../FileSystemHelper.h"
 
-ChompiProcessor::ChompiProcessor(Logger& logger)
+LunchBoxProcessor::LunchBoxProcessor(Logger& logger)
     : logger(logger)
 {
 }
 
-bool ChompiProcessor::processSamples(const AudioConfiguration& config,
+bool LunchBoxProcessor::processSamples(const AudioConfiguration& config,
                                      juce::AudioFormatManager& formatManager)
 {
     AudioConverter converter(logger);
@@ -25,7 +25,7 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
     {
         auto result = processCategory(config.cubbiFolder,
                                       config.outputFolder,
-                                      ChompiNamer::Category::Cubbi,
+                                      LunchBoxNamer::Category::Cubbi,
                                       formatManager,
                                       converter);
         if (!result.success) overallSuccess = false;
@@ -35,7 +35,7 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
     {
         auto result = processCategory(config.jammiFolder,
                                       config.outputFolder,
-                                      ChompiNamer::Category::Jammi,
+                                      LunchBoxNamer::Category::Jammi,
                                       formatManager,
                                       converter);
         if (!result.success) overallSuccess = false;
@@ -46,14 +46,14 @@ bool ChompiProcessor::processSamples(const AudioConfiguration& config,
     return overallSuccess;
 }
 
-ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
+LunchBoxProcessor::ProcessingResult LunchBoxProcessor::processCategory(
     const juce::File& sourceFolder,
     const juce::File& outputFolder,
-    ChompiNamer::Category category,
+    LunchBoxNamer::Category category,
     juce::AudioFormatManager& formatManager,
     AudioConverter& converter)
 {
-    juce::String categoryName = ChompiNamer::categoryToString(category);
+    juce::String categoryName = LunchBoxNamer::categoryToString(category);
     logger.logLine("Processing " + categoryName + " samples...");
     logger.logLine("");
 
@@ -64,29 +64,29 @@ ChompiProcessor::ProcessingResult ChompiProcessor::processCategory(
     return runConversions(assignments, outputFolder, category, formatManager, converter);
 }
 
-ChompiProcessor::ProcessingResult ChompiProcessor::processCategoryFromAssignments(
+LunchBoxProcessor::ProcessingResult LunchBoxProcessor::processCategoryFromAssignments(
     const juce::Array<BankFolderParser::BankAssignment>& assignments,
     const juce::File& outputFolder,
-    ChompiNamer::Category category,
+    LunchBoxNamer::Category category,
     juce::AudioFormatManager& formatManager,
     AudioConverter& converter)
 {
-    juce::String categoryName = ChompiNamer::categoryToString(category);
+    juce::String categoryName = LunchBoxNamer::categoryToString(category);
     logger.logLine("Processing " + categoryName + " samples (advanced mode)...");
     logger.logLine("");
 
     return runConversions(assignments, outputFolder, category, formatManager, converter);
 }
 
-ChompiProcessor::ProcessingResult ChompiProcessor::runConversions(
+LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
     const juce::Array<BankFolderParser::BankAssignment>& assignments,
     const juce::File& outputFolder,
-    ChompiNamer::Category category,
+    LunchBoxNamer::Category category,
     juce::AudioFormatManager& formatManager,
     AudioConverter& converter)
 {
     ProcessingResult result;
-    juce::String categoryName   = ChompiNamer::categoryToString(category);
+    juce::String categoryName   = LunchBoxNamer::categoryToString(category);
     juce::String categoryPrefix = categoryName.toLowerCase();
 
     result.filesProcessed = assignments.size();

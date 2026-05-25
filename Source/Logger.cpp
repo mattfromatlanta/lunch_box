@@ -10,7 +10,7 @@ Logger::Logger(bool createLogFile)
     // Generate timestamp for log filename
     juce::Time now = juce::Time::getCurrentTime();
     juce::String timestamp = now.formatted("%Y%m%d_%H%M%S");
-    juce::String logFileName = "chompi_pack_log_" + timestamp + ".txt";
+    juce::String logFileName = "lunch_box_log_" + timestamp + ".txt";
 
     // Create logs directory if it doesn't exist
     juce::File logsDir = juce::File::getCurrentWorkingDirectory().getChildFile("logs");

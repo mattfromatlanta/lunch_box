@@ -2,7 +2,7 @@
 #include "CliProcessor.h"
 #include "../Processing/AudioConverter.h"
 #include "../FileSystemHelper.h"
-#include "../Processing/ChompiProcessor.h"
+#include "../Processing/LunchBoxProcessor.h"
 
 CliProcessor::CliProcessor()
 {
@@ -36,7 +36,7 @@ int CliProcessor::run(const juce::StringArray& args)
     else if (config.mode == OperationMode::Chompi)
     {
         // CHOMPI mode - process cubbi and jammi samples
-        ChompiProcessor processor(logger);
+        LunchBoxProcessor processor(logger);
 
         if (!processor.processSamples(config, formatManager))
         {
@@ -52,7 +52,7 @@ int CliProcessor::run(const juce::StringArray& args)
 
 void CliProcessor::displayUsage()
 {
-    logger.logLine("Usage: chompi_pack [OPTIONS]");
+    logger.logLine("Usage: lunch_box [OPTIONS]");
     logger.logLine("");
     logger.logLine("CHOMPI Mode (process samples for CHOMPI sampler):");
     logger.logLine("  --cubbi, --c <path>    Process cubbi samples (percussive/loop/SFX)");
@@ -60,19 +60,19 @@ void CliProcessor::displayUsage()
     logger.logLine("  --output, --o <path>   Output directory (default: converted/)");
     logger.logLine("");
     logger.logLine("Examples:");
-    logger.logLine("  chompi_pack --cubbi /samples/cubbi --jammi /samples/jammi");
-    logger.logLine("  chompi_pack --c /samples/cubbi --o /my/output");
-    logger.logLine("  chompi_pack --j /samples/jammi");
+    logger.logLine("  lunch_box --cubbi /samples/cubbi --jammi /samples/jammi");
+    logger.logLine("  lunch_box --c /samples/cubbi --o /my/output");
+    logger.logLine("  lunch_box --j /samples/jammi");
     logger.logLine("");
     logger.logLine("Legacy Modes:");
-    logger.logLine("  chompi_pack <folder>              Scan only");
-    logger.logLine("  chompi_pack --convert <folder>    Convert without CHOMPI naming");
+    logger.logLine("  lunch_box <folder>              Scan only");
+    logger.logLine("  lunch_box --convert <folder>    Convert without CHOMPI naming");
 }
 
 bool CliProcessor::initializeApplication(const juce::StringArray& args)
 {
     logger.logLine("==================================");
-    logger.logLine("Chompi Pack - Audio File Scanner");
+    logger.logLine("Lunch Box - Audio File Scanner");
     logger.logLine("==================================");
     logger.logLine("");
 

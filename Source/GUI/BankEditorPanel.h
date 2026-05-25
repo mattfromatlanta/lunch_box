@@ -3,7 +3,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "BankRowComponent.h"
-#include "../Processing/ChompiNamer.h"
+#include "../Processing/LunchBoxNamer.h"
 #include "../Processing/BankFolderParser.h"
 
 //==============================================================================
@@ -26,7 +26,7 @@ public:
         bool operator!=(const Cell& o)    const { return !(*this == o); }
     };
 
-    explicit BankEditorPanel(ChompiNamer::Category category);
+    explicit BankEditorPanel(LunchBoxNamer::Category category);
 
     // Get all filled-slot assignments (used for processing)
     juce::Array<BankFolderParser::BankAssignment> getAssignments() const;
@@ -70,6 +70,9 @@ public:
     // Returns the current keyboard-focus cell
     Cell getFocusCell() const { return focusCell; }
 
+    // Move focus and select only that cell (used when syncing focus from Bank mode)
+    void setFocusCellAndSelect(Cell cell);
+
     // Folder memory: return start dir for file browser; receive parent of selected file
     std::function<juce::File()>                  getStartDirectory;
     std::function<void(juce::File)>              onFolderBrowsed;
@@ -94,7 +97,7 @@ public:
     void filesDropped (const juce::StringArray& files, int x, int y) override;
 
 private:
-    ChompiNamer::Category category;
+    LunchBoxNamer::Category category;
     juce::OwnedArray<BankRowComponent> banks;  // A–E
 
     std::unique_ptr<juce::FileChooser> fileChooser;

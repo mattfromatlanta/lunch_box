@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "WaveformDisplay.h"
-#include "ChompiFonts.h"
+#include "LunchBoxFonts.h"
 
 namespace
 {
@@ -55,7 +55,7 @@ void WaveformDisplay::paint(juce::Graphics& g)
     if (!fileLoaded || thumbnail.getTotalLength() <= 0.0)
     {
         g.setColour(emptyText);
-        g.setFont(ChompiFonts::footer());
+        g.setFont(LunchBoxFonts::footer());
         g.drawText("select a folder to preview", bounds, juce::Justification::centred);
         return;
     }

@@ -64,22 +64,22 @@ Jammi banks:
 ### Command-Line Interface
 ```bash
 # New usage with cubbi and jammi folders
-chompi_pack --cubbi /path/to/cubbi/samples --jammi /path/to/jammi/samples
+lunch_box --cubbi /path/to/cubbi/samples --jammi /path/to/jammi/samples
 
 # With output directory specification (optional)
-chompi_pack --cubbi /path/to/cubbi --jammi /path/to/jammi --output /custom/output
+lunch_box --cubbi /path/to/cubbi --jammi /path/to/jammi --output /custom/output
 
 # Only cubbi samples (jammi optional)
-chompi_pack --cubbi /path/to/cubbi/samples
+lunch_box --cubbi /path/to/cubbi/samples
 
 # Only jammi samples (cubbi optional)
-chompi_pack --jammi /path/to/jammi/samples
+lunch_box --jammi /path/to/jammi/samples
 
 # Backward compatibility (scan only, no conversion)
-chompi_pack /path/to/audio/folder
+lunch_box /path/to/audio/folder
 
 # Legacy conversion mode
-chompi_pack --convert /path/to/audio/folder
+lunch_box --convert /path/to/audio/folder
 ```
 
 ### Processing Rules
@@ -131,10 +131,10 @@ Total output: 112 files
 
 ## Technical Architecture
 
-### New Module: ChompiNamer
+### New Module: LunchBoxNamer
 
 ```cpp
-class ChompiNamer
+class LunchBoxNamer
 {
 public:
     enum class Category
@@ -149,7 +149,7 @@ public:
         int slot;       // 1-14
     };
 
-    ChompiNamer(Logger& logger);
+    LunchBoxNamer(Logger& logger);
 
     // Generate CHOMPI filename for a given index and category
     juce::String generateFileName(Category category, int fileIndex);
@@ -226,14 +226,14 @@ ConversionResult convertFileWithName(const juce::File& sourceFile,
 
 ## Implementation Steps
 
-### Phase 1: ChompiNamer Module
-1. Create ChompiNamer.h header
+### Phase 1: LunchBoxNamer Module
+1. Create LunchBoxNamer.h header
    - Define Category enum
    - Define BankSlot struct
    - Define FileMapping struct
    - Declare public methods
 
-2. Create ChompiNamer.cpp implementation
+2. Create LunchBoxNamer.cpp implementation
    - Implement indexToBankSlot() logic
    - Implement bankSlotToString() formatting
    - Implement generateFileName() method
@@ -261,7 +261,7 @@ ConversionResult convertFileWithName(const juce::File& sourceFile,
 
 3. Update usage message
    ```
-   Usage: chompi_pack [OPTIONS]
+   Usage: lunch_box [OPTIONS]
 
    Options:
      --cubbi <path>    Process cubbi samples from folder
@@ -269,11 +269,11 @@ ConversionResult convertFileWithName(const juce::File& sourceFile,
      --output <path>   Output directory (default: converted/)
 
    CHOMPI Mode (requires --cubbi and/or --jammi):
-     chompi_pack --cubbi /samples/cubbi --jammi /samples/jammi
+     lunch_box --cubbi /samples/cubbi --jammi /samples/jammi
 
    Legacy Modes:
-     chompi_pack <folder>              Scan only
-     chompi_pack --convert <folder>    Convert without renaming
+     lunch_box <folder>              Scan only
+     lunch_box --convert <folder>    Convert without renaming
    ```
 
 ### Phase 3: Integration
@@ -289,7 +289,7 @@ ConversionResult convertFileWithName(const juce::File& sourceFile,
    - Preserve existing conversion functionality
 
 3. Create processing pipeline
-   - ChompiNamer generates mappings
+   - LunchBoxNamer generates mappings
    - AudioConverter processes with custom names
    - Logger reports progress
 
@@ -361,7 +361,7 @@ converted/
 
 ## Success Criteria
 
-- [ ] ChompiNamer module correctly generates all 70 filenames per category
+- [ ] LunchBoxNamer module correctly generates all 70 filenames per category
 - [ ] Files sorted alphabetically (case-insensitive)
 - [ ] First 70 files selected per category
 - [ ] Files beyond 70 logged and skipped

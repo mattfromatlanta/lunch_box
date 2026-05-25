@@ -1,7 +1,7 @@
 # Milestone 13: Open Source Publication Preparation
 
 ## Objective
-Prepare Chompi Pack for public release as an open-source project, including licensing, documentation, community guidelines, and distribution infrastructure.
+Prepare Lunch Box for public release as an open-source project, including licensing, documentation, community guidelines, and distribution infrastructure.
 
 ## Requirements
 
@@ -100,15 +100,15 @@ SOFTWARE.
 ### 1. README.md (Enhanced)
 
 ```markdown
-# Chompi Pack
+# Lunch Box
 
 ![Logo](docs/assets/logo.png)
 
 **Professional audio sample processor for the CHOMPI sampler**
 
-[![Build Status](https://github.com/user/chompi_pack/workflows/Tests/badge.svg)](https://github.com/user/chompi_pack/actions)
+[![Build Status](https://github.com/user/lunch_box/workflows/Tests/badge.svg)](https://github.com/user/lunch_box/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/user/chompi_pack)](https://github.com/user/chompi_pack/releases)
+[![Release](https://img.shields.io/github/v/release/user/lunch_box)](https://github.com/user/lunch_box/releases)
 
 ## Features
 
@@ -142,8 +142,8 @@ chompi-pack
 
 ### Build from Source
 ```bash
-git clone https://github.com/user/chompi_pack.git
-cd chompi_pack
+git clone https://github.com/user/lunch_box.git
+cd lunch_box
 mkdir build && cd build
 cmake ..
 make
@@ -172,15 +172,15 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/user/chompi_pack/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/user/chompi_pack/discussions)
+- **Issues:** [GitHub Issues](https://github.com/user/lunch_box/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/user/lunch_box/discussions)
 - **Email:** support@chompipack.com (optional)
 ```
 
 ### 2. CONTRIBUTING.md
 
 ```markdown
-# Contributing to Chompi Pack
+# Contributing to Lunch Box
 
 Thank you for your interest in contributing!
 
@@ -192,7 +192,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Reporting Bugs
 
-1. Check [existing issues](https://github.com/user/chompi_pack/issues)
+1. Check [existing issues](https://github.com/user/lunch_box/issues)
 2. Create a new issue with:
    - Clear title
    - Steps to reproduce
@@ -202,7 +202,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Suggesting Features
 
-1. Check [discussions](https://github.com/user/chompi_pack/discussions)
+1. Check [discussions](https://github.com/user/lunch_box/discussions)
 2. Open a new discussion in "Ideas" category
 3. Describe use case and proposed solution
 
@@ -246,7 +246,7 @@ make test
 ## Project Structure
 
 ```
-chompi_pack/
+lunch_box/
 ├── Source/          # C++ source code
 │   ├── CLI/         # Command-line interface
 │   ├── GUI/         # Graphical interface
@@ -258,7 +258,7 @@ chompi_pack/
 
 ## Questions?
 
-Open a [discussion](https://github.com/user/chompi_pack/discussions) or reach out!
+Open a [discussion](https://github.com/user/lunch_box/discussions) or reach out!
 ```
 
 ### 3. CODE_OF_CONDUCT.md
@@ -319,7 +319,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```markdown
 ---
 name: Bug Report
-about: Report a problem with Chompi Pack
+about: Report a problem with Lunch Box
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -343,7 +343,7 @@ If applicable, add screenshots.
 
 **System Information:**
 - OS: [e.g. macOS 14.2]
-- Chompi Pack Version: [e.g. 1.1.0]
+- Lunch Box Version: [e.g. 1.1.0]
 - JUCE Version: [e.g. 8.0.12]
 
 **Log File**
@@ -400,10 +400,10 @@ jobs:
 
 **Homebrew Formula:**
 ```ruby
-class ChompiPack < Formula
+class LunchBox < Formula
   desc "Audio sample processor for CHOMPI sampler"
-  homepage "https://github.com/user/chompi_pack"
-  url "https://github.com/user/chompi_pack/archive/v1.1.0.tar.gz"
+  homepage "https://github.com/user/lunch_box"
+  url "https://github.com/user/lunch_box/archive/v1.1.0.tar.gz"
   sha256 "..."
   license "MIT"
 
@@ -419,7 +419,7 @@ class ChompiPack < Formula
   end
 
   test do
-    system "#{bin}/chompi_pack", "--help"
+    system "#{bin}/lunch_box", "--help"
   end
 end
 ```
@@ -446,7 +446,7 @@ confinement: strict
 
 apps:
   chompi-pack:
-    command: bin/chompi_pack
+    command: bin/lunch_box
     plugs:
       - home
       - audio-playback

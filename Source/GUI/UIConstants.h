@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #pragma once
 
-namespace ChompiConstants
+namespace LunchBoxConstants
 {
     constexpr float CORNER_RADIUS       = 6.0f;
     constexpr float BORDER_WIDTH        = 2.0f;
@@ -15,4 +15,7 @@ namespace ChompiConstants
     // (525 - 2×12 margin = 501w; 900 - 2×12 - 44 header - 32 nav - 8 gap - 66 footer = 726h)
     constexpr float BASE_CONTENT_W = 501.0f;
     constexpr float BASE_CONTENT_H = 726.0f;
+
+    constexpr int ANIM_DURATION_MS      = 350;
+    constexpr int ANIM_CLEANUP_DELAY_MS = ANIM_DURATION_MS + 10;
 }

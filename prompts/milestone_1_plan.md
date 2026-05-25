@@ -70,7 +70,7 @@ Found 3 WAV files:
 ### Program Structure
 
 ```
-chompi_pack/
+lunch_box/
 ├── CMakeLists.txt           # JUCE CMake project configuration
 ├── Source/
 │   ├── Main.cpp             # Entry point, argument parsing
@@ -198,7 +198,7 @@ struct AudioFileInfo
 
 ### CMake Build Process
 ```bash
-cd chompi_pack
+cd lunch_box
 mkdir build
 cd build
 cmake ..
@@ -207,7 +207,7 @@ cmake --build .
 
 ### Running the Application
 ```bash
-./chompi_pack /path/to/audio/folder
+./lunch_box /path/to/audio/folder
 ```
 
 ## Success Criteria

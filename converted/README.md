@@ -1,6 +1,6 @@
 # Converted Audio Files
 
-This directory contains audio files that have been converted by Chompi Pack.
+This directory contains audio files that have been converted by Lunch Box.
 
 ## Conversion Specifications
 

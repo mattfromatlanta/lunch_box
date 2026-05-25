@@ -1,12 +1,12 @@
-# CLAUDE.MD - AI Assistant Guide for Chompi Pack
+# CLAUDE.MD - AI Assistant Guide for Lunch Box
 
-**Purpose:** This document provides context and guidelines for AI assistants (Claude, etc.) working on the Chompi Pack project.
+**Purpose:** This document provides context and guidelines for AI assistants (Claude, etc.) working on the Lunch Box project.
 
 ---
 
 ## Project Overview
 
-**Chompi Pack** is a dual-mode (GUI + CLI) audio sample processor for the CHOMPI sampler hardware. It converts audio files to CHOMPI-compatible format (16-bit 48kHz WAV) and organizes them using the CHOMPI naming convention.
+**Lunch Box** is a dual-mode (GUI + CLI) audio sample processor for the CHOMPI sampler hardware. It converts audio files to CHOMPI-compatible format (16-bit 48kHz WAV) and organizes them using the CHOMPI naming convention.
 
 **Key Documentation:**
 - [README.md](README.md) - User-facing project overview
@@ -60,23 +60,23 @@ Main.cpp (Router)
     │       ↓
     └─→ GuiProcessor (GUI interface)
             ↓
-    ChompiProcessor (Shared orchestrator)
+    LunchBoxProcessor (Shared orchestrator)
             ↓
     ┌───────┼───────┐
     ↓       ↓       ↓
-AudioConverter  ChompiNamer  Logger
+AudioConverter  LunchBoxNamer  Logger
     (Shared processing components)
 ```
 
-**Key Insight:** Changes to AudioConverter, ChompiNamer, or ChompiProcessor automatically benefit both CLI and GUI. No code duplication.
+**Key Insight:** Changes to AudioConverter, LunchBoxNamer, or LunchBoxProcessor automatically benefit both CLI and GUI. No code duplication.
 
 ### Module Responsibilities
 
 | Module | Purpose | Key Files |
 |--------|---------|-----------|
-| **ChompiProcessor** | Orchestrates CHOMPI workflow | Processing/ChompiProcessor.h/cpp |
+| **LunchBoxProcessor** | Orchestrates CHOMPI workflow | Processing/LunchBoxProcessor.h/cpp |
 | **AudioConverter** | Format conversion (16-bit 48kHz) | Processing/AudioConverter.h/cpp |
-| **ChompiNamer** | CHOMPI naming (cubbi_a1.wav, etc.) | Processing/ChompiNamer.h/cpp |
+| **LunchBoxNamer** | CHOMPI naming (cubbi_a1.wav, etc.) | Processing/LunchBoxNamer.h/cpp |
 | **BankFolderParser** | Bank subfolder detection + assignment | Processing/BankFolderParser.h/cpp |
 | **Logger** | Timestamped log files | Logger.h/cpp |
 | **FileSystemHelper** | File utilities, format extension list | FileSystemHelper.h/cpp |
@@ -93,15 +93,15 @@ AudioConverter  ChompiNamer  Logger
 
 **CLI Mode:**
 ```
-Command line args → CliProcessor → AudioConfiguration → ChompiProcessor → Output files
+Command line args → CliProcessor → AudioConfiguration → LunchBoxProcessor → Output files
 ```
 
 **GUI Mode:**
 ```
-Folder selections → GuiProcessor → AudioConfiguration → ChompiProcessor → Output files
+Folder selections → GuiProcessor → AudioConfiguration → LunchBoxProcessor → Output files
 ```
 
-**Shared:** Both modes use `AudioConfiguration` struct and call the same `ChompiProcessor::processSamples()`.
+**Shared:** Both modes use `AudioConfiguration` struct and call the same `LunchBoxProcessor::processSamples()`.
 
 ---
 
@@ -139,7 +139,7 @@ Examples:
 - Saved with `_double` suffix
 - Generated to enable pitch-shifting on the hardware
 
-**Chompi Pack Behavior:** As of Milestone 5, Chompi Pack proactively generates both base and optimized versions for every input sample, creating complete CHOMPI libraries without requiring the hardware to generate files.
+**Lunch Box Behavior:** As of Milestone 5, Lunch Box proactively generates both base and optimized versions for every input sample, creating complete CHOMPI libraries without requiring the hardware to generate files.
 
 **Duration Limits:**
 - Base samples: Maximum 2 minutes (120 seconds)
@@ -160,7 +160,7 @@ Examples:
 ### Code Style
 
 **Naming Conventions:**
-- Classes: `PascalCase` (e.g., `ChompiProcessor`)
+- Classes: `PascalCase` (e.g., `LunchBoxProcessor`)
 - Functions: `camelCase` (e.g., `processFiles()`)
 - Variables: `camelCase` (e.g., `selectedFolder`)
 - Constants: `UPPER_SNAKE_CASE` or `kPascalCase`
@@ -184,7 +184,7 @@ Examples:
 ### Testing
 
 **Current Status:**
-- ✅ `test_chompi_namer` exists (unit tests for ChompiNamer)
+- ✅ `test_lunch_box_namer` exists (unit tests for LunchBoxNamer)
 - ⚠️  Limited coverage on other modules
 
 **When adding features:**
@@ -199,8 +199,8 @@ Examples:
 **CMake Configuration:**
 - Console app changed to GUI app in Milestone 4
 - JUCE modules: `juce_core`, `juce_audio_formats`, `juce_audio_basics`, `juce_gui_basics`, `juce_gui_extra`
-- Target name: `chompi_pack`
-- Test target: `test_chompi_namer`
+- Target name: `lunch_box`
+- Test target: `test_lunch_box_namer`
 
 **Build Process:**
 ```bash
@@ -210,8 +210,8 @@ make
 ```
 
 **Output:**
-- macOS: `chompi_pack_artefacts/Chompi Pack.app`
-- Tests: `test_chompi_namer_artefacts/test_chompi_namer`
+- macOS: `lunch_box_artefacts/Lunch Box.app`
+- Tests: `test_lunch_box_namer_artefacts/test_lunch_box_namer`
 
 ---
 
@@ -220,9 +220,9 @@ make
 ### Common Tasks
 
 **Adding a new processing feature:**
-1. Implement in appropriate module (AudioConverter, ChompiNamer, etc.)
-2. Update ChompiProcessor if orchestration changes
-3. No changes needed to CliProcessor or GuiProcessor (they delegate to ChompiProcessor)
+1. Implement in appropriate module (AudioConverter, LunchBoxNamer, etc.)
+2. Update LunchBoxProcessor if orchestration changes
+3. No changes needed to CliProcessor or GuiProcessor (they delegate to LunchBoxProcessor)
 4. Add tests
 5. Update documentation
 
@@ -299,7 +299,7 @@ make
 | [README.md](README.md) | Project overview, quick start | Understanding project scope |
 | [HOW_TO.md](HOW_TO.md) | User guide, examples | Understanding user workflows |
 | [Source/Main.cpp](Source/Main.cpp) | Entry point, mode detection | Understanding app initialization |
-| [Source/Processing/ChompiProcessor.cpp](Source/Processing/ChompiProcessor.cpp) | Core processing logic | Understanding CHOMPI processing |
+| [Source/Processing/LunchBoxProcessor.cpp](Source/Processing/LunchBoxProcessor.cpp) | Core processing logic | Understanding CHOMPI processing |
 | [Source/AudioConfiguration.h](Source/AudioConfiguration.h) | Shared data structures | Understanding data flow |
 | [Source/GUI/MainComponent.cpp](Source/GUI/MainComponent.cpp) | GUI layout, tabs, mode switching | Understanding GUI architecture |
 | [Source/GUI/BankFocusPanel.cpp](Source/GUI/BankFocusPanel.cpp) | Bank focus view | Understanding Bank tab |
@@ -307,7 +307,7 @@ make
 ### Documentation Map
 
 ```
-chompi_pack/
+lunch_box/
 ├── README.md                          # User-facing project overview
 ├── HOW_TO.md                          # Comprehensive user guide
 ├── CLAUDE.md                          # This file (AI assistant guide)
@@ -347,9 +347,9 @@ chompi_pack/
 │   │   ├── PreviewPanel.h/cpp         # Waveform + audio playback
 │   │   └── FolderDropZone.h/cpp       # Simple: folder drop zone
 │   └── Processing/                    # Core processing modules
-│       ├── ChompiProcessor.h/cpp      # Processing orchestrator
+│       ├── LunchBoxProcessor.h/cpp      # Processing orchestrator
 │       ├── AudioConverter.h/cpp       # Format conversion
-│       ├── ChompiNamer.h/cpp          # CHOMPI naming + constants
+│       ├── LunchBoxNamer.h/cpp          # CHOMPI naming + constants
 │       └── BankFolderParser.h/cpp     # Bank subfolder detection
 │
 ├── dev_assets/                        # Test samples
@@ -362,11 +362,11 @@ chompi_pack/
 
 ### 1. Breaking Abstraction Boundaries
 ❌ **Wrong:** GUI calling AudioConverter directly
-✅ **Right:** GUI calls GuiProcessor, which calls ChompiProcessor, which calls AudioConverter
+✅ **Right:** GUI calls GuiProcessor, which calls LunchBoxProcessor, which calls AudioConverter
 
 ### 2. Duplicating Processing Logic
 ❌ **Wrong:** Implementing processing differently in CLI vs GUI
-✅ **Right:** Both interfaces call the same ChompiProcessor code
+✅ **Right:** Both interfaces call the same LunchBoxProcessor code
 
 ### 3. Ignoring CHOMPI Constraints
 ❌ **Wrong:** Supporting 16 slots per bank or custom naming
@@ -392,17 +392,17 @@ cd build
 make
 
 # Test GUI
-open "chompi_pack_artefacts/Chompi Pack.app"
+open "lunch_box_artefacts/Lunch Box.app"
 # Verify: folder selection, processing, output
 
 # Test CLI
-"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" \
+"lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" \
   --cubbi ../dev_assets/cubbi \
   --jammi ../dev_assets/jammi
 # Verify: same output as GUI
 
 # Run unit tests
-./test_chompi_namer_artefacts/test_chompi_namer
+./test_lunch_box_namer_artefacts/test_lunch_box_namer
 ```
 
 ### Regression Checks
@@ -483,13 +483,13 @@ cd build && cmake .. && make
 cd build && make
 
 # Run GUI
-open "chompi_pack_artefacts/Chompi Pack.app"
+open "lunch_box_artefacts/Lunch Box.app"
 
 # Run CLI
-"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" --help
+"lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" --help
 
 # Run tests
-./test_chompi_namer_artefacts/test_chompi_namer
+./test_lunch_box_namer_artefacts/test_lunch_box_namer
 ```
 
 ### Common File Paths
@@ -498,9 +498,9 @@ Source/GUI/MainComponent.cpp           # Main GUI logic (tabs, mode switching)
 Source/GUI/BankFocusPanel.cpp          # Bank tab panel
 Source/GUI/BankEditorPanel.cpp         # Advanced tab grid
 Source/CLI/CliProcessor.cpp            # CLI logic
-Source/Processing/ChompiProcessor.cpp  # Shared processing orchestrator
+Source/Processing/LunchBoxProcessor.cpp  # Shared processing orchestrator
 Source/Processing/AudioConverter.cpp   # Audio conversion
-Source/Processing/ChompiNamer.cpp      # CHOMPI naming + constants
+Source/Processing/LunchBoxNamer.cpp      # CHOMPI naming + constants
 prompts/MILESTONES_OVERVIEW.md         # Always-current roadmap
 prompts/milestone_X_plan.md            # Individual feature plans
 ```
@@ -543,7 +543,7 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 This project has clean separation between interface (CLI/GUI) and processing logic. When adding features:
 
-1. **Check if it's processing logic** → Add to core modules (AudioConverter, ChompiNamer, ChompiProcessor)
+1. **Check if it's processing logic** → Add to core modules (AudioConverter, LunchBoxNamer, LunchBoxProcessor)
 2. **Check if it's interface** → Add to CliProcessor or GuiProcessor
 
 The milestone plans are comprehensive. Read them before implementing anything. They contain:

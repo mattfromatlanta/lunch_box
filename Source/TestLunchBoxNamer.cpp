@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#include "Processing/ChompiNamer.h"
+#include "Processing/LunchBoxNamer.h"
 #include "Logger.h"
 #include <iostream>
 
-// Simple test program for ChompiNamer logic
+// Simple test program for LunchBoxNamer logic
 int main()
 {
     Logger logger;
-    ChompiNamer namer(logger);
+    LunchBoxNamer namer(logger);
 
-    logger.logLine("=== ChompiNamer Unit Tests ===");
+    logger.logLine("=== LunchBoxNamer Unit Tests ===");
     logger.logLine("");
 
     // Test 1: indexToBankSlot conversions
@@ -39,8 +39,8 @@ int main()
 
     for (const auto& test : testCases)
     {
-        ChompiNamer::BankSlot result = ChompiNamer::indexToBankSlot(test.index);
-        juce::String generatedName = namer.generateFileName(ChompiNamer::Category::Cubbi, test.index);
+        LunchBoxNamer::BankSlot result = LunchBoxNamer::indexToBankSlot(test.index);
+        juce::String generatedName = namer.generateFileName(LunchBoxNamer::Category::Cubbi, test.index);
 
         bool bankMatch = (result.bank == test.expectedBank);
         bool slotMatch = (result.slot == test.expectedSlot);
@@ -67,8 +67,8 @@ int main()
     logger.logLine("Test 2: Category Names");
     logger.logLine("----------------------");
 
-    juce::String cubbiName = ChompiNamer::categoryToString(ChompiNamer::Category::Cubbi);
-    juce::String jammiName = ChompiNamer::categoryToString(ChompiNamer::Category::Jammi);
+    juce::String cubbiName = LunchBoxNamer::categoryToString(LunchBoxNamer::Category::Cubbi);
+    juce::String jammiName = LunchBoxNamer::categoryToString(LunchBoxNamer::Category::Jammi);
 
     logger.logLine("Cubbi: " + cubbiName + " (expected: Cubbi) - " +
                    juce::String(cubbiName == "Cubbi" ? "PASS" : "FAIL"));
@@ -83,8 +83,8 @@ int main()
     logger.logLine("Test 3: Jammi Filename Generation");
     logger.logLine("----------------------------------");
 
-    juce::String jammiFile1 = namer.generateFileName(ChompiNamer::Category::Jammi, 0);
-    juce::String jammiFile70 = namer.generateFileName(ChompiNamer::Category::Jammi, 69);
+    juce::String jammiFile1 = namer.generateFileName(LunchBoxNamer::Category::Jammi, 0);
+    juce::String jammiFile70 = namer.generateFileName(LunchBoxNamer::Category::Jammi, 69);
 
     logger.logLine("Index 0:  " + jammiFile1 + " (expected: jammi_a1.wav) - " +
                    juce::String(jammiFile1 == "jammi_a1.wav" ? "PASS" : "FAIL"));

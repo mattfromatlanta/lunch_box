@@ -99,7 +99,7 @@ This registers WAV and AIFF by default. Need to ensure FLAC and MP3 are enabled.
 
 Add compiler definitions:
 ```cmake
-target_compile_definitions(chompi_pack
+target_compile_definitions(lunch_box
     PRIVATE
         JUCE_USE_CURL=0
         JUCE_WEB_BROWSER=0
@@ -271,7 +271,7 @@ bool validateSampleDuration(juce::AudioFormatReader* reader)
 
 1. **Add Duration Validation**
    ```cpp
-   // In AudioConverter or ChompiProcessor
+   // In AudioConverter or LunchBoxProcessor
    bool validateSampleDuration(juce::AudioFormatReader* reader,
                               const juce::File& file,
                               juce::String& errorMessage)
@@ -326,7 +326,7 @@ bool validateSampleDuration(juce::AudioFormatReader* reader)
    }
    ```
 
-3. **Update ChompiProcessor Conversion Loop**
+3. **Update LunchBoxProcessor Conversion Loop**
    ```cpp
    // For each input file, generate both base and optimized
    for (const auto& assignment : assignments)
@@ -599,7 +599,7 @@ bool validateSampleDuration(juce::AudioFormatReader* reader)
 - CMakeLists.txt: 2 lines (format support)
 - FileSystemHelper: ~20 lines (multi-format search)
 - AudioConverter: ~100 lines (optimized sample generation + duration validation)
-- ChompiProcessor: ~30 lines (dual-output logic)
+- LunchBoxProcessor: ~30 lines (dual-output logic)
 - Logger: ~20 lines (enhanced logging)
 - Documentation: ~150 lines (formats + optimized samples + limits)
 - Tests: ~200 lines (formats + duration + optimized outputs)

@@ -90,7 +90,7 @@ public:
     // Parse a folder and return bank-specific assignments
     juce::Array<BankAssignment> parseFolderStructure(
         const juce::File& sourceFolder,
-        ChompiNamer::Category category
+        LunchBoxNamer::Category category
     );
 
 private:
@@ -116,9 +116,9 @@ private:
 };
 ```
 
-### Integration with ChompiProcessor
+### Integration with LunchBoxProcessor
 
-Update `ChompiProcessor::processCategory()`:
+Update `LunchBoxProcessor::processCategory()`:
 
 **Current Flow:**
 1. Scan folder for all WAV files
@@ -355,7 +355,7 @@ struct BankSlotStatus
    }
    ```
 
-2. **Update ChompiProcessor**
+2. **Update LunchBoxProcessor**
    - Replace current sorting logic
    - Use BankFolderParser for file assignments
    - Update logging to show bank folder vs unsorted
@@ -490,7 +490,7 @@ cubbi/
 
 - ✅ Milestone 4 complete (GUI and CLI)
 - ➕ New BankFolderParser module
-- ➕ Updated ChompiProcessor logic
+- ➕ Updated LunchBoxProcessor logic
 
 ## Future Considerations (Not in Milestone 6)
 
@@ -512,7 +512,7 @@ cubbi/
 
 **Code Changes:** Moderate
 - New BankFolderParser: ~200 lines
-- ChompiProcessor updates: ~50 lines
+- LunchBoxProcessor updates: ~50 lines
 - Logging updates: ~30 lines
 - Tests: ~150 lines
 

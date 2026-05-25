@@ -35,7 +35,7 @@ Comprehensive code review to improve code quality, maintainability, performance,
 ### 1. Naming Conventions
 
 **Classes:** PascalCase
-- `ChompiNamer`, `AudioConverter`, `BankFolderParser` ✅
+- `LunchBoxNamer`, `AudioConverter`, `BankFolderParser` ✅
 
 **Functions:** camelCase
 - `processFiles()`, `generateFileName()` ✅
@@ -141,7 +141,7 @@ void setName(juce::String name);  // Also good (for small types)
 
 // Forward declarations (prefer over includes)
 class AudioConverter;
-class ChompiNamer;
+class LunchBoxNamer;
 
 class MyClass
 {
@@ -174,7 +174,7 @@ private:
 **Example Refactoring:**
 ```cpp
 // Before: 200-line function
-void ChompiProcessor::processCategory(...)
+void LunchBoxProcessor::processCategory(...)
 {
     // 50 lines of file discovery
     // 50 lines of sorting
@@ -183,7 +183,7 @@ void ChompiProcessor::processCategory(...)
 }
 
 // After: Multiple focused functions
-void ChompiProcessor::processCategory(...)
+void LunchBoxProcessor::processCategory(...)
 {
     auto files = discoverFiles(sourceFolder);
     auto sorted = sortFiles(files);
@@ -329,12 +329,12 @@ ConversionResult convertFile(const juce::File& sourceFile,
 ### Phase 2: Code Review
 
 1. **Review Each Module**
-   - ChompiNamer
+   - LunchBoxNamer
    - AudioConverter
    - BankFolderParser
    - FileSystemHelper
    - Logger
-   - ChompiProcessor
+   - LunchBoxProcessor
    - GUI components
    - CLI components
 

@@ -5,7 +5,7 @@
 #include "MainComponent.h"
 
 //==============================================================================
-// MainWindow - Main application window for Chompi Pack GUI
+// MainWindow - Main application window for Lunch Box GUI
 //==============================================================================
 
 class MainWindow : public juce::DocumentWindow

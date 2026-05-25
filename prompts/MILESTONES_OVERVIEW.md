@@ -1,4 +1,4 @@
-# Chompi Pack - Milestones Overview
+# Lunch Box - Milestones Overview
 
 **Project Roadmap: Milestones 1-13**
 
@@ -51,7 +51,7 @@
 - **Open Output button:** Activates after successful export; opens output folder in Finder (inside the folder).
 - **Persistent folder memory:** Last cubbi, jammi, and output folders remembered across sessions via `ApplicationProperties`. Advanced-mode file pickers recall last cubbi/jammi location and start inside the folder.
 - **Auto-Fill from Folder uses BankFolderParser:** Same bank-subfolder detection and overflow logging logic as the exporter. Overflow files reported to the status log.
-- **Future note (not yet implemented):** Chompi Pack should eventually let the user select a default application for opening the output folder (e.g. Finder, a DAW, a file manager). This should be added as a dedicated future milestone or sub-task under M9 polish.
+- **Future note (not yet implemented):** Lunch Box should eventually let the user select a default application for opening the output folder (e.g. Finder, a DAW, a file manager). This should be added as a dedicated future milestone or sub-task under M9 polish.
 
 ### Bank Focus View (unplanned addition, completed 2026-03-08)
 **Status:** Complete
@@ -123,13 +123,13 @@
 **Description:** Proactive code review and refactor pass on the full codebase.
 
 **Completed:**
-- `Source/Processing/` subfolder created; AudioConverter, BankFolderParser, ChompiNamer, ChompiProcessor moved there
-- `SLOTS_PER_BANK`, `NUM_BANKS`, `MAX_FILES_PER_CATEGORY` promoted to `public static constexpr` on ChompiNamer — single source of truth (removed 3 duplicate definitions)
-- `ChompiProcessor::runConversions()` private method extracts ~60-line duplicate conversion loop shared between `processCategory` and `processCategoryFromAssignments`
+- `Source/Processing/` subfolder created; AudioConverter, BankFolderParser, LunchBoxNamer, LunchBoxProcessor moved there
+- `SLOTS_PER_BANK`, `NUM_BANKS`, `MAX_FILES_PER_CATEGORY` promoted to `public static constexpr` on LunchBoxNamer — single source of truth (removed 3 duplicate definitions)
+- `LunchBoxProcessor::runConversions()` private method extracts ~60-line duplicate conversion loop shared between `processCategory` and `processCategoryFromAssignments`
 - `sortCellsRowMajor()` file-scope helper in BankEditorPanel replaces two identical lambdas
 - `MainComponent::appendProcessingResult()` consolidates duplicate success-status block
 - `BankSlotComponent::isSupportedAudioFile()` now delegates to `FileSystemHelper::getSupportedAudioExtensions()` (no more hardcoded extension list)
-- `GuiProcessor::processFiles()` result counting bug fixed (was scanning output folder; now uses `ProcessingResult` from ChompiProcessor directly)
+- `GuiProcessor::processFiles()` result counting bug fixed (was scanning output folder; now uses `ProcessingResult` from LunchBoxProcessor directly)
 - All include paths updated for new folder layout; CMakeLists.txt updated
 
 **Remaining (if desired):**
@@ -216,12 +216,12 @@
 **Description:** Comprehensive unit test coverage for all core modules.
 
 **Test Scope:**
-- ChompiNamer — bank calculations, slot numbering, naming
+- LunchBoxNamer — bank calculations, slot numbering, naming
 - AudioConverter — format conversion, `_double` generation, duration validation
 - BankFolderParser — folder detection, bank assignment, unsorted distribution, overflow
 - FileSystemHelper — file discovery, extension filtering
 - Logger — file creation, formatting, callback
-- ChompiProcessor — end-to-end integration
+- LunchBoxProcessor — end-to-end integration
 
 **Goals:**
 - 80%+ code coverage on core modules

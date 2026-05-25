@@ -6,7 +6,7 @@
 class MainComponent;
 
 //==============================================================================
-// AppMenuBar - macOS system menu bar for Chompi Pack
+// AppMenuBar - macOS system menu bar for Lunch Box
 //==============================================================================
 
 class AppMenuBar : public juce::MenuBarModel

@@ -11,7 +11,7 @@
 //==============================================================================
 // Handles all CLI-specific functionality:
 // - Command-line argument parsing
-// - Mode detection (Scan/Convert/Chompi)
+// - Mode detection (Scan/Convert/CHOMPI)
 // - Legacy mode processing
 // - Delegates to appropriate processing modules
 //==============================================================================

@@ -4,7 +4,7 @@
 #include <juce_core/juce_core.h>
 #include <map>
 #include "../Logger.h"
-#include "ChompiNamer.h"
+#include "LunchBoxNamer.h"
 
 //==============================================================================
 // BankFolderParser - Detects bank subfolders and assigns samples to CHOMPI banks
@@ -30,7 +30,7 @@ public:
     // Parse folder structure and return bank-assigned list ready for conversion.
     // If no bank subfolders exist, assigns sequentially (backward compatible).
     juce::Array<BankAssignment> parseFolderStructure(const juce::File& sourceFolder,
-                                                      ChompiNamer::Category category);
+                                                      LunchBoxNamer::Category category);
 
     // Returns true if folderName maps to a CHOMPI bank (A-E).
     // Sets bankLetter ('a'-'e') on success.

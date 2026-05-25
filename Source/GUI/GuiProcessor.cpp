@@ -33,7 +33,7 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
         return result;
     }
 
-    ChompiProcessor processor(logger);
+    LunchBoxProcessor processor(logger);
     AudioConverter converter(logger);
     bool overallSuccess = true;
 
@@ -41,7 +41,7 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
     {
         auto r = processor.processCategoryFromAssignments(
             cubbiAssignments, outputFolder,
-            ChompiNamer::Category::Cubbi, formatManager, converter);
+            LunchBoxNamer::Category::Cubbi, formatManager, converter);
 
         result.cubbiFilesProcessed = r.filesConverted;
         result.cubbiOptimized      = r.optimizedGenerated;
@@ -52,7 +52,7 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
     {
         auto r = processor.processCategoryFromAssignments(
             jammiAssignments, outputFolder,
-            ChompiNamer::Category::Jammi, formatManager, converter);
+            LunchBoxNamer::Category::Jammi, formatManager, converter);
 
         result.jammiFilesProcessed = r.filesConverted;
         result.jammiOptimized      = r.optimizedGenerated;
@@ -84,14 +84,14 @@ GuiProcessor::ProcessingResult GuiProcessor::processFiles(
         return result;
     }
 
-    ChompiProcessor processor(logger);
+    LunchBoxProcessor processor(logger);
     AudioConverter converter(logger);
     bool overallSuccess = true;
 
     if (cubbiFolder != juce::File{})
     {
         auto r = processor.processCategory(cubbiFolder, outputFolder,
-                                           ChompiNamer::Category::Cubbi,
+                                           LunchBoxNamer::Category::Cubbi,
                                            formatManager, converter);
         result.cubbiFilesProcessed = r.filesConverted;
         result.cubbiOptimized      = r.optimizedGenerated;
@@ -101,7 +101,7 @@ GuiProcessor::ProcessingResult GuiProcessor::processFiles(
     if (jammiFolder != juce::File{})
     {
         auto r = processor.processCategory(jammiFolder, outputFolder,
-                                           ChompiNamer::Category::Jammi,
+                                           LunchBoxNamer::Category::Jammi,
                                            formatManager, converter);
         result.jammiFilesProcessed = r.filesConverted;
         result.jammiOptimized      = r.optimizedGenerated;

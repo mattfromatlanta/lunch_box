@@ -40,6 +40,9 @@ juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
             menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdPaste);
             menu.addSeparator();
             menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdSelectAll);
+            menu.addSeparator();
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdFill);
+            menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdClear);
         }
     }
     else if (menuIndex == 2) // Settings

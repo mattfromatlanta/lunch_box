@@ -1,6 +1,6 @@
-c# Chompi Pack - How to Use
+c# Lunch Box - How to Use
 
-**Chompi Pack** is a command-line tool for processing audio samples for the CHOMPI sampler. It converts audio files to the CHOMPI standard format (16-bit 48kHz WAV) and organizes them into the CHOMPI naming convention.
+**Lunch Box** is a command-line tool for processing audio samples for the CHOMPI sampler. It converts audio files to the CHOMPI standard format (16-bit 48kHz WAV) and organizes them into the CHOMPI naming convention.
 
 ---
 
@@ -21,20 +21,20 @@ c# Chompi Pack - How to Use
 ### Building the Project
 
 ```bash
-cd chompi_pack
+cd lunch_box
 mkdir -p build
 cd build
 cmake ..
 make
 ```
 
-The executable will be located at: `build/chompi_pack_artefacts/chompi_pack`
+The executable will be located at: `build/lunch_box_artefacts/lunch_box`
 
 ### Basic CHOMPI Workflow
 
 ```bash
 # Process cubbi (percussive/loop/SFX) and jammi (tuned/chromatic) samples
-./chompi_pack --cubbi /path/to/cubbi/samples --jammi /path/to/jammi/samples
+./lunch_box --cubbi /path/to/cubbi/samples --jammi /path/to/jammi/samples
 
 # Files will be converted to converted/ directory by default
 # Output: cubbi_a1.wav, cubbi_a2.wav, ..., jammi_a1.wav, jammi_a2.wav, ...
@@ -55,16 +55,16 @@ CHOMPI mode is the primary way to process samples for the CHOMPI sampler. It con
 
 ```bash
 # Process both cubbi and jammi samples
-chompi_pack --cubbi /path/to/cubbi --jammi /path/to/jammi
+lunch_box --cubbi /path/to/cubbi --jammi /path/to/jammi
 
 # Using shorthand flags (--c, --j, --o)
-chompi_pack --c /path/to/cubbi --j /path/to/jammi
+lunch_box --c /path/to/cubbi --j /path/to/jammi
 
 # Process only cubbi samples
-chompi_pack --cubbi /path/to/cubbi
+lunch_box --cubbi /path/to/cubbi
 
 # Process only jammi samples
-chompi_pack --jammi /path/to/jammi
+lunch_box --jammi /path/to/jammi
 ```
 
 ### Custom Output Directory
@@ -72,10 +72,10 @@ chompi_pack --jammi /path/to/jammi
 By default, files are saved to `converted/`. You can specify a custom output directory:
 
 ```bash
-chompi_pack --cubbi /path/to/cubbi --output /custom/output/directory
+lunch_box --cubbi /path/to/cubbi --output /custom/output/directory
 
 # Or using shorthand
-chompi_pack --c /path/to/cubbi --o /custom/output/directory
+lunch_box --c /path/to/cubbi --o /custom/output/directory
 ```
 
 ### Example: Complete Workflow
@@ -92,15 +92,15 @@ cp ~/drums/*.wav ~/samples/chompi_project/cubbi/
 # Copy tuned samples to jammi folder
 cp ~/synths/*.wav ~/samples/chompi_project/jammi/
 
-# Process with chompi_pack (long form)
-cd chompi_pack/build
-./chompi_pack_artefacts/chompi_pack \
+# Process with lunch_box (long form)
+cd lunch_box/build
+./lunch_box_artefacts/lunch_box \
   --cubbi ~/samples/chompi_project/cubbi \
   --jammi ~/samples/chompi_project/jammi \
   --output ~/samples/chompi_project/output
 
 # Or using shorthand flags (faster to type!)
-./chompi_pack_artefacts/chompi_pack \
+./lunch_box_artefacts/lunch_box \
   --c ~/samples/chompi_project/cubbi \
   --j ~/samples/chompi_project/jammi \
   --o ~/samples/chompi_project/output
@@ -133,14 +133,14 @@ The optimized samples enable pitch-shifting features on the CHOMPI hardware.
 
 ## Legacy Modes
 
-Chompi Pack also supports legacy modes for general audio file scanning and conversion.
+Lunch Box also supports legacy modes for general audio file scanning and conversion.
 
 ### Scan Mode (No Conversion)
 
 Scan a folder to see audio file properties without converting:
 
 ```bash
-chompi_pack /path/to/audio/folder
+lunch_box /path/to/audio/folder
 ```
 
 **Output:**
@@ -163,7 +163,7 @@ chompi_pack /path/to/audio/folder
 Convert audio files to 16-bit 48kHz without CHOMPI naming:
 
 ```bash
-chompi_pack --convert /path/to/audio/folder
+lunch_box --convert /path/to/audio/folder
 ```
 
 Files will be converted to `converted/` directory with their **original filenames** preserved.
@@ -186,13 +186,13 @@ Files will be converted to `converted/` directory with their **original filename
 
 | Command | Description |
 |---------|-------------|
-| `chompi_pack <folder>` | Scan audio files (no conversion) |
-| `chompi_pack --convert <folder>` | Convert to 16-bit 48kHz (preserve original filenames) |
+| `lunch_box <folder>` | Scan audio files (no conversion) |
+| `lunch_box --convert <folder>` | Convert to 16-bit 48kHz (preserve original filenames) |
 
 ### Help
 
 ```bash
-chompi_pack
+lunch_box
 # Running with no arguments displays usage information
 ```
 
@@ -227,11 +227,11 @@ Format: `{category}_{bank}{slot}_double.wav` (pitched up one octave)
 - `jammi_e14_double.wav` - Jammi, Bank E, Slot 14 (optimized)
 
 **What are optimized samples?**
-The CHOMPI hardware can pitch samples up or down. Optimized samples (`_double`) are pre-generated versions pitched up one octave (double playback speed, half duration). The hardware automatically creates these if not present, but Chompi Pack generates them proactively for complete libraries.
+The CHOMPI hardware can pitch samples up or down. Optimized samples (`_double`) are pre-generated versions pitched up one octave (double playback speed, half duration). The hardware automatically creates these if not present, but Lunch Box generates them proactively for complete libraries.
 
 ### File Assignment
 
-Chompi Pack automatically assigns files to banks based on **alphabetical order**:
+Lunch Box automatically assigns files to banks based on **alphabetical order**:
 
 ```
 Files 1-14  → Bank A (cubbi_a1.wav  - cubbi_a14.wav)
@@ -291,7 +291,7 @@ Each category (cubbi/jammi) has **70 slots** (CHOMPI hardware limit). However, e
 - Total output: 280 files maximum (140 cubbi + 140 jammi)
 
 **If you have more than 70 files:**
-- Chompi Pack will process only the first 70 files (alphabetically)
+- Lunch Box will process only the first 70 files (alphabetically)
 - A warning will display: "Found 83 files. Only first 70 will be processed."
 - Files 71+ will be skipped
 - Output: 140 files (70 slots × 2 versions each)
@@ -299,10 +299,10 @@ Each category (cubbi/jammi) has **70 slots** (CHOMPI hardware limit). However, e
 **Strategy:** Organize samples into multiple batches:
 ```bash
 # Batch 1: Drums (70 files → 140 output files)
-chompi_pack --cubbi ~/drums_batch1 --output ~/output/batch1
+lunch_box --cubbi ~/drums_batch1 --output ~/output/batch1
 
 # Batch 2: Synths (70 files → 140 output files)
-chompi_pack --cubbi ~/synths_batch1 --output ~/output/batch2
+lunch_box --cubbi ~/synths_batch1 --output ~/output/batch2
 ```
 
 ### 3. Audio Format Recommendations
@@ -331,7 +331,7 @@ Use scan mode to preview your samples before converting:
 
 ```bash
 # Preview cubbi samples
-chompi_pack ~/samples/cubbi
+lunch_box ~/samples/cubbi
 
 # Check file count
 ls ~/samples/cubbi/*.wav | wc -l
@@ -339,7 +339,7 @@ ls ~/samples/cubbi/*.wav | wc -l
 
 ### 5. Preserving Originals
 
-Chompi Pack **never modifies your original files**. All converted files are written to a separate output directory.
+Lunch Box **never modifies your original files**. All converted files are written to a separate output directory.
 
 ### 6. Batch Processing Workflow
 
@@ -352,11 +352,11 @@ cp ~/kicks/*.wav project/cubbi/
 cp ~/bass/*.wav project/jammi/
 
 # 3. Preview (optional)
-chompi_pack project/cubbi
-chompi_pack project/jammi
+lunch_box project/cubbi
+lunch_box project/jammi
 
 # 4. Process
-chompi_pack --cubbi project/cubbi --jammi project/jammi --output project/output
+lunch_box --cubbi project/cubbi --jammi project/jammi --output project/output
 
 # 5. Load output folder into CHOMPI sampler
 ```
@@ -367,12 +367,12 @@ chompi_pack --cubbi project/cubbi --jammi project/jammi --output project/output
 
 ### "No WAV files found"
 
-**Problem:** Chompi Pack can't find any .wav files in the specified folder.
+**Problem:** Lunch Box can't find any .wav files in the specified folder.
 
 **Solutions:**
 - Check that the folder path is correct
 - Ensure files have `.wav` extension (not `.WAV`, `.wave`, etc.)
-- Chompi Pack searches recursively - files in subfolders will be found
+- Lunch Box searches recursively - files in subfolders will be found
 
 ### "Error: Folder does not exist"
 
@@ -396,7 +396,7 @@ chompi_pack --cubbi project/cubbi --jammi project/jammi --output project/output
 **Problem:** Files are assigned to banks in unexpected order.
 
 **Solutions:**
-- Chompi Pack sorts files **alphabetically**
+- Lunch Box sorts files **alphabetically**
 - Use numeric prefixes to control order: `001_`, `002_`, `003_`, etc.
 - Check sorting: `ls /path/to/folder/*.wav`
 
@@ -405,8 +405,8 @@ chompi_pack --cubbi project/cubbi --jammi project/jammi --output project/output
 **Problem:** This shouldn't happen, but if it does...
 
 **Solutions:**
-- Check the conversion log in `logs/chompi_pack_log_*.txt`
-- Verify output file: `chompi_pack converted/` (scan mode)
+- Check the conversion log in `logs/lunch_box_log_*.txt`
+- Verify output file: `lunch_box converted/` (scan mode)
 - Report issue with log file attached
 
 ### Conversion Errors
@@ -450,7 +450,7 @@ OUTPUT_DIR="$HOME/samples/output"
 mkdir -p "$OUTPUT_DIR"
 
 # Process samples
-./chompi_pack_artefacts/chompi_pack \
+./lunch_box_artefacts/lunch_box \
   --cubbi "$CUBBI_DIR" \
   --jammi "$JAMMI_DIR" \
   --output "$OUTPUT_DIR"
@@ -460,7 +460,7 @@ echo "Processing complete! Files saved to: $OUTPUT_DIR"
 
 ### Logging
 
-All operations are logged to `logs/chompi_pack_log_YYYYMMDD_HHMMSS.txt`
+All operations are logged to `logs/lunch_box_log_YYYYMMDD_HHMMSS.txt`
 
 To view the most recent log:
 ```bash
@@ -485,7 +485,7 @@ cp hihats/open_hat.wav drumkit/cubbi/04_hihat_open.wav
 # ... add more samples ...
 
 # Process
-chompi_pack --cubbi drumkit/cubbi --output drumkit/output
+lunch_box --cubbi drumkit/cubbi --output drumkit/output
 
 # Result:
 # drumkit/output/cubbi_a1.wav (kick)
@@ -506,7 +506,7 @@ cp samples/bass_D.wav bass_instrument/jammi/03_D.wav
 # ... one sample per semitone ...
 
 # Process
-chompi_pack --jammi bass_instrument/jammi --output bass_instrument/output
+lunch_box --jammi bass_instrument/jammi --output bass_instrument/output
 
 # Load into CHOMPI and play chromatically
 ```
@@ -524,7 +524,7 @@ cp drums/*.wav project/cubbi/
 cp synths/*.wav project/jammi/
 
 # Process both categories
-chompi_pack \
+lunch_box \
   --cubbi project/cubbi \
   --jammi project/jammi \
   --output project/output
@@ -541,12 +541,12 @@ chompi_pack \
 ║                    CHOMPI PACK QUICK REFERENCE                 ║
 ╠════════════════════════════════════════════════════════════════╣
 ║ CHOMPI MODE (Primary Usage)                                    ║
-║   chompi_pack --cubbi <path> --jammi <path> --output <path>    ║
-║   chompi_pack --c <path> --j <path> --o <path>  # Shorthand   ║
+║   lunch_box --cubbi <path> --jammi <path> --output <path>    ║
+║   lunch_box --c <path> --j <path> --o <path>  # Shorthand   ║
 ║                                                                 ║
 ║ LEGACY MODES                                                    ║
-║   chompi_pack <folder>              # Scan only               ║
-║   chompi_pack --convert <folder>    # Convert (no renaming)   ║
+║   lunch_box <folder>              # Scan only               ║
+║   lunch_box --convert <folder>    # Convert (no renaming)   ║
 ║                                                                 ║
 ║ BANK STRUCTURE                                                  ║
 ║   • 5 banks per category (A-E)                                 ║
@@ -574,8 +574,8 @@ chompi_pack \
 
 ## Support & Resources
 
-- **Project Files:** `/path/to/chompi_pack/`
-- **Logs:** `logs/chompi_pack_log_*.txt`
+- **Project Files:** `/path/to/lunch_box/`
+- **Logs:** `logs/lunch_box_log_*.txt`
 - **Test Results:** `dev_assets/TESTING_SUMMARY.md`
 - **Planning Docs:** `prompts/milestone_*.md`
 

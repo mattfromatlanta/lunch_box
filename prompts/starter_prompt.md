@@ -12,4 +12,4 @@ Verify the essential dependencies for C++ are installed and check the JUCE versi
 
 Step 2:
 
-Create a hello_world inside this folder (chompi_pack) that can successfully compile
+Create a hello_world inside this folder (lunch_box) that can successfully compile

@@ -14,7 +14,7 @@
 
 - [ ] Builds successfully (`cd build && make`)
 - [ ] GUI launches and basic workflow works
-- [ ] CLI mode works (`chompi_pack --cubbi ... --jammi ...`)
+- [ ] CLI mode works (`lunch_box --cubbi ... --jammi ...`)
 - [ ] Unit tests pass
 - [ ] No regressions in existing behavior
 

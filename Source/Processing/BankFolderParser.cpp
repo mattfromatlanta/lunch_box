@@ -35,10 +35,10 @@ bool BankFolderParser::isBankFolder(const juce::String& folderName, char& bankLe
 
 juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStructure(
     const juce::File& sourceFolder,
-    ChompiNamer::Category category)
+    LunchBoxNamer::Category category)
 {
     juce::Array<BankAssignment> assignments;
-    juce::String categoryName = ChompiNamer::categoryToString(category);
+    juce::String categoryName = LunchBoxNamer::categoryToString(category);
 
     // Step 1: Find top-level bank subfolders (A-E) and collect their files
     std::map<char, juce::Array<juce::File>> bankFiles;
@@ -107,20 +107,20 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
         const auto& files = bankFiles.at(bank);
         int count = 0;
 
-        int overflow = files.size() - ChompiNamer::SLOTS_PER_BANK;
+        int overflow = files.size() - LunchBoxNamer::SLOTS_PER_BANK;
         if (overflow > 0)
         {
             logger.logLine("Warning: Bank " + juce::String::charToString(bank).toUpperCase() +
                           " has " + juce::String(files.size()) + " files, only " +
-                          juce::String(ChompiNamer::SLOTS_PER_BANK) + " slots available. " +
+                          juce::String(LunchBoxNamer::SLOTS_PER_BANK) + " slots available. " +
                           juce::String(overflow) + " ignored:");
-            for (int i = ChompiNamer::SLOTS_PER_BANK; i < files.size(); ++i)
+            for (int i = LunchBoxNamer::SLOTS_PER_BANK; i < files.size(); ++i)
                 logger.logLine("  Ignored: " + files[i].getFileName());
         }
 
         for (const auto& file : files)
         {
-            if (count >= ChompiNamer::SLOTS_PER_BANK)
+            if (count >= LunchBoxNamer::SLOTS_PER_BANK)
                 break;
 
             BankAssignment a;
@@ -141,7 +141,7 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
     {
         if (bankFiles.count(bank) > 0) continue; // skip banks that had folders
 
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK && unsortedIndex < unsortedFiles.size(); ++s)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK && unsortedIndex < unsortedFiles.size(); ++s)
         {
             BankAssignment a;
             a.sourceFile = unsortedFiles[unsortedIndex];
@@ -160,7 +160,7 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
         if (bankFiles.count(bank) == 0) continue; // skip empty banks (already handled)
 
         int used = slotsUsed[bank];
-        int available = ChompiNamer::SLOTS_PER_BANK - used;
+        int available = LunchBoxNamer::SLOTS_PER_BANK - used;
 
         for (int s = 0; s < available && unsortedIndex < unsortedFiles.size(); ++s)
         {
@@ -221,7 +221,7 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
         }
 
         logger.logLine("Bank " + bankStr + " (" + juce::String(total) + "/" +
-                      juce::String(ChompiNamer::SLOTS_PER_BANK) + " slots filled)" + detail);
+                      juce::String(LunchBoxNamer::SLOTS_PER_BANK) + " slots filled)" + detail);
         anyBank = true;
     }
 

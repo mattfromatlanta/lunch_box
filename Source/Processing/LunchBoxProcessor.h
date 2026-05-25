@@ -4,13 +4,13 @@
 #include <juce_core/juce_core.h>
 #include <juce_audio_formats/juce_audio_formats.h>
 #include "../Logger.h"
-#include "ChompiNamer.h"
+#include "LunchBoxNamer.h"
 #include "AudioConverter.h"
 #include "../AudioConfiguration.h"
 #include "BankFolderParser.h"
 
 //==============================================================================
-// ChompiProcessor - High-level CHOMPI sample processing
+// LunchBoxProcessor - High-level CHOMPI sample processing
 //==============================================================================
 // Orchestrates the complete CHOMPI processing workflow:
 // 1. Scan folder for samples
@@ -19,7 +19,7 @@
 // 4. Report statistics
 //==============================================================================
 
-class ChompiProcessor
+class LunchBoxProcessor
 {
 public:
     // Result of processing a category
@@ -33,7 +33,7 @@ public:
         bool success = true;
     };
 
-    ChompiProcessor(Logger& logger);
+    LunchBoxProcessor(Logger& logger);
 
     // Process complete CHOMPI workflow (cubbi and/or jammi)
     // Returns false if critical error occurred
@@ -43,7 +43,7 @@ public:
     // Process a single category (cubbi or jammi) from a source folder
     ProcessingResult processCategory(const juce::File& sourceFolder,
                                      const juce::File& outputFolder,
-                                     ChompiNamer::Category category,
+                                     LunchBoxNamer::Category category,
                                      juce::AudioFormatManager& formatManager,
                                      AudioConverter& converter);
 
@@ -51,7 +51,7 @@ public:
     ProcessingResult processCategoryFromAssignments(
         const juce::Array<BankFolderParser::BankAssignment>& assignments,
         const juce::File& outputFolder,
-        ChompiNamer::Category category,
+        LunchBoxNamer::Category category,
         juce::AudioFormatManager& formatManager,
         AudioConverter& converter);
 
@@ -62,7 +62,7 @@ private:
     ProcessingResult runConversions(
         const juce::Array<BankFolderParser::BankAssignment>& assignments,
         const juce::File& outputFolder,
-        ChompiNamer::Category category,
+        LunchBoxNamer::Category category,
         juce::AudioFormatManager& formatManager,
         AudioConverter& converter);
 };

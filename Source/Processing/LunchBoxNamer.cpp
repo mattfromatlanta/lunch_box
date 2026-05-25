@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#include "ChompiNamer.h"
+#include "LunchBoxNamer.h"
 
-ChompiNamer::ChompiNamer(Logger& logger)
+LunchBoxNamer::LunchBoxNamer(Logger& logger)
     : logger(logger)
 {
 }
 
-juce::String ChompiNamer::generateFileName(Category category, int fileIndex) const
+juce::String LunchBoxNamer::generateFileName(Category category, int fileIndex) const
 {
     // Validate index range
     if (fileIndex < 0 || fileIndex >= MAX_FILES_PER_CATEGORY)
@@ -25,7 +25,7 @@ juce::String ChompiNamer::generateFileName(Category category, int fileIndex) con
     return filename;
 }
 
-ChompiNamer::BankSlot ChompiNamer::indexToBankSlot(int index)
+LunchBoxNamer::BankSlot LunchBoxNamer::indexToBankSlot(int index)
 {
     BankSlot bankSlot;
 
@@ -39,12 +39,12 @@ ChompiNamer::BankSlot ChompiNamer::indexToBankSlot(int index)
     return bankSlot;
 }
 
-juce::String ChompiNamer::bankSlotToString(const BankSlot& bankSlot)
+juce::String LunchBoxNamer::bankSlotToString(const BankSlot& bankSlot)
 {
     return juce::String::charToString(bankSlot.bank) + juce::String(bankSlot.slot);
 }
 
-juce::String ChompiNamer::categoryToString(Category category)
+juce::String LunchBoxNamer::categoryToString(Category category)
 {
     switch (category)
     {

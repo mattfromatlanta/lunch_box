@@ -2,7 +2,7 @@
 #pragma once
 #include <juce_graphics/juce_graphics.h>
 
-namespace ChompiColours
+namespace LunchBoxColours
 {
     struct ColourFactor { float V; float S; };
 
@@ -45,4 +45,47 @@ namespace ChompiColours
     inline const juce::Colour TEAL        = juce::Colour::fromHSV(0.49f, 0.57f, 0.68f, 1.0f);
     inline const juce::Colour WHITE_CREAM = juce::Colour::fromHSV(0.10f, 0.05f, 0.96f, 1.0f);
     inline const juce::Colour GRID        = juce::Colour::fromHSV(0.67f, 0.16f, 0.27f, 1.0f);
+    inline const juce::Colour FOCUS_BORDER = WHITE_CREAM;   // focused cell/row indicator
+
+    // Draw 45° diagonal (top-left → bottom-right) selection stripes for selected-but-not-focused
+    // elements. originInRoot is the component's (0,0) in root-window coordinates, ensuring stripe
+    // continuity across cells — they appear as a shared virtual layer being unmasked per cell.
+    // phase is reserved for future animation (scroll the stripes by incrementing and repainting).
+    inline void drawSelectionStripes(juce::Graphics& g,
+                                     juce::Rectangle<float> bounds,
+                                     juce::Point<int> originInRoot,
+                                     float cornerRadius,
+                                     float phase = 0.0f)
+    {
+        constexpr float period = 24.0f;
+        constexpr float sw     = 12.0f;
+
+        juce::Path clip;
+        clip.addRoundedRectangle(bounds, cornerRadius);
+        g.saveState();
+        g.reduceClipRegion(clip);
+        g.setColour(WHITE_CREAM.withAlpha(0.5f));
+
+        const float C  = (float)originInRoot.x - (float)originInRoot.y + phase;
+        const float bx = bounds.getX();
+        const float by = bounds.getY();
+        const float bw = bounds.getWidth();
+        const float bh = bounds.getHeight();
+
+        const int kMin = (int)std::floor((bx - by - bh - sw + C) / period) - 1;
+        const int kMax = (int)std::ceil ((bx - by + bw      + C) / period) + 1;
+
+        juce::Path stripes;
+        for (int k = kMin; k <= kMax; ++k)
+        {
+            const float d = (float)k * period - C;
+            stripes.startNewSubPath (d + by,           by);
+            stripes.lineTo          (d + sw + by,      by);
+            stripes.lineTo          (d + sw + by + bh, by + bh);
+            stripes.lineTo          (d + by + bh,      by + bh);
+            stripes.closeSubPath();
+        }
+        g.fillPath(stripes);
+        g.restoreState();
+    }
 }

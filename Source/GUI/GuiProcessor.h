@@ -6,15 +6,15 @@
 #include <functional>
 #include "../AudioConfiguration.h"
 #include "../Logger.h"
-#include "../Processing/ChompiProcessor.h"
+#include "../Processing/LunchBoxProcessor.h"
 #include "../Processing/BankFolderParser.h"
 
 //==============================================================================
 // GuiProcessor - Bridge between GUI and processing logic
 //==============================================================================
-// This is a thin wrapper around ChompiProcessor for GUI context.
+// This is a thin wrapper around LunchBoxProcessor for GUI context.
 // It builds an AudioConfiguration from GUI selections and delegates
-// to the same ChompiProcessor used by CLI mode.
+// to the same LunchBoxProcessor used by CLI mode.
 //==============================================================================
 
 class GuiProcessor

@@ -7,15 +7,19 @@
 // Intentional movement = >= 3 logical pixels since the last recorded position.
 // This filters out trackpad micro-jitter that would otherwise keep the timer
 // from ever completing.
-struct ChompiTooltipWindow : public juce::TooltipWindow
+static bool g_tooltipsSuppressed = false;
+
+void suppressTooltipsUntilMouseMove() { g_tooltipsSuppressed = true; }
+
+struct LunchBoxTooltipWindow : public juce::TooltipWindow
 {
-    ChompiTooltipWindow (juce::Component* parent, int delayMs)
+    LunchBoxTooltipWindow (juce::Component* parent, int delayMs)
         : juce::TooltipWindow (parent, delayMs)
     {
         juce::Desktop::getInstance().addGlobalMouseListener (this);
     }
 
-    ~ChompiTooltipWindow() override
+    ~LunchBoxTooltipWindow() override
     {
         juce::Desktop::getInstance().removeGlobalMouseListener (this);
     }
@@ -25,6 +29,7 @@ struct ChompiTooltipWindow : public juce::TooltipWindow
         const auto pos = e.getScreenPosition().toFloat();
         if (pos.getDistanceFrom (lastPos) >= 3.0f)
         {
+            g_tooltipsSuppressed = false;
             hideTip();
             lastMoveMs = juce::Time::getApproximateMillisecondCounter();
             lastPos = pos;
@@ -38,6 +43,8 @@ struct ChompiTooltipWindow : public juce::TooltipWindow
     // 1200ms delay begins only after the cursor actually settles.
     juce::String getTipFor (juce::Component& c) override
     {
+        if (g_tooltipsSuppressed)
+            return {};
         const auto elapsed = (juce::int64) juce::Time::getApproximateMillisecondCounter()
                            - (juce::int64) lastMoveMs;
         if (elapsed < 200)
@@ -61,13 +68,13 @@ MainWindow::MainWindow(juce::String name)
     mainComponent = std::make_unique<MainComponent>();
     setContentOwned(mainComponent.get(), true);
 
-    tooltipWindow = std::make_unique<ChompiTooltipWindow>(this, 1200);
+    tooltipWindow = std::make_unique<LunchBoxTooltipWindow>(this, 1200);
 
     #if JUCE_IOS || JUCE_ANDROID
         setFullScreen(true);
     #else
         setResizable(true, false);
-        setResizeLimits(350, 500, 800, 10000);
+        setResizeLimits(420, 500, 800, 10000);
         centreWithSize(getWidth(), getHeight());
     #endif
 
@@ -82,5 +89,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeButtonPressed()
 {
+    if (mainComponent)
+        mainComponent->saveSessionState();
+
     juce::JUCEApplication::getInstance()->systemRequestedQuit();
 }

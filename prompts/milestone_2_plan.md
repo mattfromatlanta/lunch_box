@@ -100,7 +100,7 @@ Converting: recording.wav
 ### Program Structure (Additions)
 
 ```
-chompi_pack/
+lunch_box/
 ├── Source/
 │   ├── Main.cpp                    # (Existing)
 │   ├── Logger.h/cpp                # (Existing)
@@ -248,7 +248,7 @@ Key findings:
 
 ### CMake Build Process
 ```bash
-cd chompi_pack
+cd lunch_box
 mkdir -p build converted  # Create output directory
 cd build
 cmake ..
@@ -258,11 +258,11 @@ cmake --build .
 ### Running the Application
 ```bash
 # Scan only (existing functionality)
-./chompi_pack /path/to/audio/folder
+./lunch_box /path/to/audio/folder
 
 # Future: Scan and convert
-./chompi_pack --convert /path/to/audio/folder
-./chompi_pack --convert --output /custom/output /path/to/audio/folder
+./lunch_box --convert /path/to/audio/folder
+./lunch_box --convert --output /custom/output /path/to/audio/folder
 ```
 
 ## Success Criteria

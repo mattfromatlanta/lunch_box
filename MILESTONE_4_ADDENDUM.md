@@ -64,10 +64,10 @@ Added output folder selection to the GUI, matching the functionality and style o
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ Chompi Pack                                    [X]  │
+│ Lunch Box                                    [X]  │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│          chompi pack by matt from atlanta          │
+│          lunch box by matt from atlanta          │
 │                                                     │
 ├─────────────────────────────────────────────────────┤
 │                                                     │

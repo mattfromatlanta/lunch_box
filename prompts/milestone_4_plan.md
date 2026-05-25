@@ -7,7 +7,7 @@ Transform the command-line application into a GUI application with a simple floa
 
 ### GUI Window Specifications
 - **Window Type:** Floating/standalone application window
-- **Window Title:** "Chompi Pack"
+- **Window Title:** "Lunch Box"
 - **Window Size:** Resizable with reasonable default (e.g., 600x400 pixels)
 - **Window Style:** Modern, clean interface appropriate for audio tools
 
@@ -131,12 +131,12 @@ Transform the command-line application into a GUI application with a simple floa
 ### Program Structure (Updated)
 
 ```
-chompi_pack/
+lunch_box/
 ├── Source/
 │   ├── Main.cpp                    # Entry point - detect CLI vs GUI mode
 │   ├── AudioScanner.h/cpp          # (Existing)
 │   ├── AudioConverter.h/cpp        # (Existing)
-│   ├── ChompiNamer.h/cpp           # (Existing)
+│   ├── LunchBoxNamer.h/cpp           # (Existing)
 │   ├── Logger.h/cpp                # (Existing)
 │   ├── FileSystemHelper.h/cpp      # (Existing)
 │   │
@@ -221,7 +221,7 @@ private:
 #### 3. GuiProcessor Class
 ```cpp
 // Bridge between GUI and existing processing logic
-// This is a thin wrapper around ChompiProcessor for GUI context
+// This is a thin wrapper around LunchBoxProcessor for GUI context
 class GuiProcessor
 {
 public:
@@ -244,14 +244,14 @@ private:
 
     // Use existing processing infrastructure
     std::unique_ptr<Logger> logger;
-    std::unique_ptr<ChompiProcessor> processor;  // Reuse shared processing logic
+    std::unique_ptr<LunchBoxProcessor> processor;  // Reuse shared processing logic
     juce::AudioFormatManager formatManager;
 };
 ```
 
 **Note:** GuiProcessor is a minimal bridge that:
 - Builds an `AudioConfiguration` from GUI selections
-- Instantiates `ChompiProcessor` (same as CLI mode uses)
+- Instantiates `LunchBoxProcessor` (same as CLI mode uses)
 - Provides GUI-specific status callbacks
 - Wraps the shared processing logic for GUI context
 
@@ -302,25 +302,25 @@ Main.cpp entry point
 
 > **✅ Pre-Milestone 4 Refactoring Complete**
 >
-> The code has been refactored to separate CLI-specific logic from processing logic. This ensures that changes to audio processing tools (AudioConverter, ChompiNamer, ChompiProcessor) are immediately available to both CLI and GUI implementations.
+> The code has been refactored to separate CLI-specific logic from processing logic. This ensures that changes to audio processing tools (AudioConverter, LunchBoxNamer, LunchBoxProcessor) are immediately available to both CLI and GUI implementations.
 >
 > **Completed refactoring:**
 > - ✅ Created `Source/CLI/CliProcessor` module for all CLI-specific code
 > - ✅ Created `Source/AudioConfiguration.h` for shared data structures
 > - ✅ Moved argument parsing, mode detection, and CLI orchestration to CliProcessor
 > - ✅ Updated `Main.cpp` to minimal entry point (ready for dual-mode detection)
-> - ✅ Processing logic (AudioConverter, ChompiNamer, ChompiProcessor) remains independent
+> - ✅ Processing logic (AudioConverter, LunchBoxNamer, LunchBoxProcessor) remains independent
 > - ✅ Verified CLI functionality still works correctly after refactoring
 >
 > **Current architecture:**
 > ```
-> Main.cpp → CliProcessor → ChompiProcessor → AudioConverter, ChompiNamer
+> Main.cpp → CliProcessor → LunchBoxProcessor → AudioConverter, LunchBoxNamer
 >                              (shared processing logic)
 > ```
 >
 > **Ready for GUI implementation:**
 > ```
-> Main.cpp → GuiProcessor → ChompiProcessor → AudioConverter, ChompiNamer
+> Main.cpp → GuiProcessor → LunchBoxProcessor → AudioConverter, LunchBoxNamer
 >                              (same shared processing logic)
 > ```
 
@@ -333,13 +333,13 @@ Main.cpp entry point
    - Set bundle identifier for macOS
 
    ```cmake
-   juce_add_gui_app(chompi_pack
-       PRODUCT_NAME "Chompi Pack"
+   juce_add_gui_app(lunch_box
+       PRODUCT_NAME "Lunch Box"
        COMPANY_NAME "Matt from Atlanta"
        BUNDLE_ID "com.mattfromatlanta.chompipack"
    )
 
-   target_link_libraries(chompi_pack
+   target_link_libraries(lunch_box
        PRIVATE
            juce::juce_core
            juce::juce_audio_formats
@@ -374,12 +374,12 @@ Main.cpp entry point
    - Created `Source/AudioConfiguration.h`
    - Moved `AudioConfiguration` struct (used by both CLI and processing)
    - Moved `OperationMode` enum (used by both CLI and processing)
-   - Both CliProcessor and ChompiProcessor include this shared header
+   - Both CliProcessor and LunchBoxProcessor include this shared header
 
 3. **✅ Processing logic already reusable**
-   - `ChompiProcessor` can be instantiated and called from any context
+   - `LunchBoxProcessor` can be instantiated and called from any context
    - `AudioConverter` is a standalone class with no CLI dependencies
-   - `ChompiNamer` is a standalone class with no CLI dependencies
+   - `LunchBoxNamer` is a standalone class with no CLI dependencies
    - Logger can be instantiated anywhere
    - All processing modules ready for GUI integration
 
@@ -463,12 +463,12 @@ Main.cpp entry point
 
 ### Phase 5: Implement Processing Logic
 
-1. **Create GuiProcessor class** (thin wrapper around existing ChompiProcessor)
+1. **Create GuiProcessor class** (thin wrapper around existing LunchBoxProcessor)
    - Build `AudioConfiguration` from GUI folder selections
    - Initialize Logger (with GUI-appropriate output)
    - Initialize `juce::AudioFormatManager`
-   - Instantiate `ChompiProcessor` (reuse shared logic from CLI)
-   - Call `ChompiProcessor::processSamples()` with configuration
+   - Instantiate `LunchBoxProcessor` (reuse shared logic from CLI)
+   - Call `LunchBoxProcessor::processSamples()` with configuration
    - Provide status callbacks for GUI updates (optional enhancement)
 
    ```cpp
@@ -483,8 +483,8 @@ Main.cpp entry point
        config.hasCubbi = cubbiFolder.exists();
        config.hasJammi = jammiFolder.exists();
 
-       // Use existing ChompiProcessor (same as CLI)
-       ChompiProcessor processor(logger);
+       // Use existing LunchBoxProcessor (same as CLI)
+       LunchBoxProcessor processor(logger);
        bool success = processor.processSamples(config, formatManager);
 
        // Return result for GUI display
@@ -571,7 +571,7 @@ Main.cpp entry point
 
 ### CMake Build Process
 ```bash
-cd chompi_pack
+cd lunch_box
 mkdir -p build
 cd build
 cmake ..
@@ -583,21 +583,21 @@ cmake --build .
 #### GUI Mode
 ```bash
 # Just double-click the app on macOS, or:
-open build/chompi_pack_artefacts/chompi_pack.app
+open build/lunch_box_artefacts/lunch_box.app
 
 # Or run directly:
-./build/chompi_pack_artefacts/chompi_pack.app/Contents/MacOS/chompi_pack
+./build/lunch_box_artefacts/lunch_box.app/Contents/MacOS/lunch_box
 ```
 
 #### CLI Mode (Backward Compatible)
 ```bash
 # CLI mode automatically activated when arguments present
-./build/chompi_pack_artefacts/chompi_pack.app/Contents/MacOS/chompi_pack \
+./build/lunch_box_artefacts/lunch_box.app/Contents/MacOS/lunch_box \
   --cubbi ~/samples/cubbi \
   --jammi ~/samples/jammi
 
 # Or use shorthand
-./build/chompi_pack_artefacts/chompi_pack.app/Contents/MacOS/chompi_pack \
+./build/lunch_box_artefacts/lunch_box.app/Contents/MacOS/lunch_box \
   --c ~/samples/cubbi --j ~/samples/jammi
 ```
 
@@ -742,7 +742,7 @@ Recommendation: Start with setBounds() for simplicity, refactor to FlexBox if ne
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ Chompi Pack                                    [X]  │
+│ Lunch Box                                    [X]  │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │          chompi pack by matt from atlanta          │
@@ -827,7 +827,7 @@ The codebase has been refactored to ensure clean separation between user interfa
                       │
                       ▼
          ┌────────────────────────┐
-         │   ChompiProcessor      │
+         │   LunchBoxProcessor      │
          │  (Shared Orchestrator) │
          └────────┬───────────────┘
                   │
@@ -845,9 +845,9 @@ The codebase has been refactored to ensure clean separation between user interfa
 1. **Single Responsibility**
    - `CliProcessor`: CLI argument parsing, mode detection, CLI-specific I/O
    - `GuiProcessor`: GUI event handling, user interaction, GUI-specific feedback
-   - `ChompiProcessor`: Orchestrates audio processing workflow
+   - `LunchBoxProcessor`: Orchestrates audio processing workflow
    - `AudioConverter`: Audio format conversion
-   - `ChompiNamer`: CHOMPI naming and bank assignment
+   - `LunchBoxNamer`: CHOMPI naming and bank assignment
 
 2. **Dependency Inversion**
    - Processing components don't depend on CLI or GUI
@@ -855,7 +855,7 @@ The codebase has been refactored to ensure clean separation between user interfa
    - Changes flow downward, never upward
 
 3. **No Code Duplication**
-   - Processing logic written once in `ChompiProcessor`
+   - Processing logic written once in `LunchBoxProcessor`
    - Both CLI and GUI call the same processing code
    - Bug fixes and features automatically benefit both interfaces
 
@@ -878,7 +878,7 @@ The refactoring has been verified by:
 If you need to add a new feature (e.g., sample normalization):
 
 1. Add to `AudioConverter` or create new `AudioNormalizer` class
-2. Call from `ChompiProcessor` orchestration
+2. Call from `LunchBoxProcessor` orchestration
 3. Feature automatically available to:
    - CLI mode (via CliProcessor)
    - GUI mode (via GuiProcessor)

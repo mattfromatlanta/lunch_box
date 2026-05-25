@@ -12,7 +12,7 @@ AUTHOR: Matt from Atlanta
 SECTION 1: PROJECT OVERVIEW
 ────────────────────────────────────────────────────────────────────────────────
 
-Chompi Pack is a desktop audio sample processor for the CHOMPI sampler hardware.
+Lunch Box is a desktop audio sample processor for the CHOMPI sampler hardware.
 It converts audio files to CHOMPI-compatible format (16-bit, 48kHz WAV) and
 organizes them using the CHOMPI bank/slot naming convention. The app runs on
 macOS as a native desktop application built with the JUCE C++ framework.

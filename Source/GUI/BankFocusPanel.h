@@ -4,7 +4,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "FocusedSlotRow.h"
-#include "../Processing/ChompiNamer.h"
+#include "../Processing/LunchBoxNamer.h"
 #include "../Processing/BankFolderParser.h"
 
 //==============================================================================
@@ -28,14 +28,14 @@ public:
 
     // Get all assignments for one category (all 5 banks)
     // Note: flushes active row state to storage before reading
-    juce::Array<BankFolderParser::BankAssignment> getAssignments(ChompiNamer::Category cat);
+    juce::Array<BankFolderParser::BankAssignment> getAssignments(LunchBoxNamer::Category cat);
 
     // Set a specific slot (used by MainComponent for cross-tab sync)
-    void setSlot(ChompiNamer::Category cat, int bankIdx, int slotIdx, const juce::File& file);
-    juce::File getSlotFile(ChompiNamer::Category cat, int bankIdx, int slotIdx);
+    void setSlot(LunchBoxNamer::Category cat, int bankIdx, int slotIdx, const juce::File& file);
+    juce::File getSlotFile(LunchBoxNamer::Category cat, int bankIdx, int slotIdx);
     void clearAll();
 
-    int getFilledCount(ChompiNamer::Category cat);
+    int getFilledCount(LunchBoxNamer::Category cat);
 
     // --- Bulk operations on the active bank ---
     void autoFillActiveFromFiles(const juce::Array<juce::File>& files);
@@ -58,7 +58,12 @@ public:
     void pasteFiles(const juce::Array<juce::File>& files);
 
     // --- Category / bank switching (driven by MainComponent) ---
-    void switchToCategory(ChompiNamer::Category cat);
+    void switchToCategory(LunchBoxNamer::Category cat);
+
+    // Set focused bank + row directly (used when syncing focus from Pack mode)
+    void setActiveFocus(int bankIdx, int rowIdx);
+    int  getActiveBank()  const { return activeBank; }
+    int  getFocusedRow()  const { return focusedRowIdx; }
 
     // --- Callbacks ---
     // Fired just before any slot content is about to change (for undo capture)
@@ -89,14 +94,24 @@ private:
     juce::AudioThumbnailCache& thumbnailCache;
 
     // All slot data: [category][bank][slot]
-    juce::File slots[2][ChompiNamer::NUM_BANKS][ChompiNamer::SLOTS_PER_BANK];
+    juce::File slots[2][LunchBoxNamer::NUM_BANKS][LunchBoxNamer::SLOTS_PER_BANK];
+
+    // Per-category persisted focus state (saved/restored on category toggle)
+    struct CategoryFocusState
+    {
+        int activeBank    = 0;
+        int focusedRowIdx = 0;
+        juce::Array<int> selection;
+        CategoryFocusState() { selection.add(0); }
+    };
+    CategoryFocusState perCategoryState[2];  // index 0=Cubbi, 1=Jammi
 
     // Active view state
-    ChompiNamer::Category activeCategory = ChompiNamer::Category::Cubbi;
+    LunchBoxNamer::Category activeCategory = LunchBoxNamer::Category::Cubbi;
     int activeBank = 0;  // 0=A … 4=E
 
     // Child components
-    juce::TextButton bankButtons[ChompiNamer::NUM_BANKS];  // A-E
+    juce::TextButton bankButtons[LunchBoxNamer::NUM_BANKS];  // A-E
 
     juce::OwnedArray<FocusedSlotRow> rows;  // 14 rows for active bank
 

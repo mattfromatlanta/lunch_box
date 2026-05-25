@@ -134,7 +134,7 @@ private:
 class BankEditorPanel : public juce::Component
 {
 public:
-    BankEditorPanel(ChompiNamer::Category category);
+    BankEditorPanel(LunchBoxNamer::Category category);
 
     // Bank access
     BankRowComponent* getBank(char letter); // 'a'-'e'
@@ -151,7 +151,7 @@ public:
     void resized() override;
 
 private:
-    ChompiNamer::Category category;
+    LunchBoxNamer::Category category;
     juce::OwnedArray<BankRowComponent> banks; // 5 banks (A-E)
 
     juce::TextButton clearAllButton;

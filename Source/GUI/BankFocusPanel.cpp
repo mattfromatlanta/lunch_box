@@ -2,12 +2,12 @@
 #include "BankFocusPanel.h"
 #include "UIColours.h"
 #include "UIConstants.h"
-#include "ChompiFonts.h"
+#include "LunchBoxFonts.h"
 #include "../FileSystemHelper.h"
 
 namespace
 {
-    const juce::Colour panelBg       = ChompiColours::DARK_GREY;
+    const juce::Colour panelBg       = LunchBoxColours::DARK_GREY;
     const juce::Colour bankColBg     { 0xff0f1420 };
 
     // Slot-cell palette (matches BankSlotComponent)
@@ -15,18 +15,18 @@ namespace
     const juce::Colour slotFilledBg  { 0xff3a5060 };
     const juce::Colour slotBorder    { 0xff3a4a5a };
     const juce::Colour slotFocusBdr  { 0xff99aaff };
-    const juce::Colour slotNumCol    = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
+    const juce::Colour slotNumCol    = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
 
     static juce::Colour bankColourForIndex(int idx)
     {
         switch (idx)
         {
-            case 0: return ChompiColours::RED;
-            case 1: return ChompiColours::PINK_SALMON;
-            case 2: return ChompiColours::YELLOW;
-            case 3: return ChompiColours::TEAL;
-            case 4: return ChompiColours::PURPLE;
-            default: return ChompiColours::WHITE_CREAM;
+            case 0: return LunchBoxColours::RED;
+            case 1: return LunchBoxColours::PINK_SALMON;
+            case 2: return LunchBoxColours::YELLOW;
+            case 3: return LunchBoxColours::TEAL;
+            case 4: return LunchBoxColours::PURPLE;
+            default: return LunchBoxColours::WHITE_CREAM;
         }
     }
 
@@ -39,31 +39,38 @@ namespace
         {
             auto bounds = btn.getLocalBounds().reduced(2).toFloat();
             const juce::Colour fill = btn.getToggleState()
-                ? ChompiColours::getFocused(backgroundColour)
+                ? LunchBoxColours::getFocused(backgroundColour)
                 : backgroundColour;
             g.setColour(isHighlighted ? fill.brighter(0.1f) : fill);
-            g.fillRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS);
-            g.setColour(ChompiColours::WHITE_CREAM.withAlpha(0.3f));
-            g.drawRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS, ChompiConstants::BORDER_WIDTH_ACTIVE);
+            g.fillRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS);
+            g.setColour(LunchBoxColours::WHITE_CREAM.withAlpha(0.3f));
+            g.drawRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS, LunchBoxConstants::BORDER_WIDTH_ACTIVE);
         }
 
         void drawButtonText(juce::Graphics& g, juce::TextButton& btn, bool, bool) override
         {
             const bool active = btn.getToggleState();
+            const auto font = LunchBoxFonts::h3();
 
             if (active)
             {
                 const float circleR = 14.0f;
-                auto centre = btn.getLocalBounds().getCentre().toFloat();
-                g.setColour(ChompiColours::getLabelBg(btn.findColour(juce::TextButton::buttonOnColourId)));
-                g.fillEllipse(centre.x - circleR, centre.y - circleR, circleR * 2.0f, circleR * 2.0f);
-                g.setColour(ChompiColours::WHITE_CREAM.withAlpha(0.5f));
-                g.drawEllipse(centre.x - circleR, centre.y - circleR, circleR * 2.0f, circleR * 2.0f, 1.5f);
+                juce::GlyphArrangement glyphs;
+                glyphs.addFittedText(font, btn.getButtonText(),
+                    0.0f, 0.0f, (float) btn.getWidth(), (float) btn.getHeight(),
+                    juce::Justification::centred, 1);
+                auto charBounds = glyphs.getBoundingBox(0, -1, true);
+                float charCentreX = charBounds.getCentreX() - 0.5f;
+                float charCentreY = charBounds.getCentreY();
+                g.setColour(LunchBoxColours::getLabelBg(btn.findColour(juce::TextButton::buttonOnColourId)));
+                g.fillEllipse(charCentreX - circleR, charCentreY - circleR, circleR * 2.0f, circleR * 2.0f);
+                g.setColour(LunchBoxColours::WHITE_CREAM.withAlpha(0.5f));
+                g.drawEllipse(charCentreX - circleR, charCentreY - circleR, circleR * 2.0f, circleR * 2.0f, 1.5f);
             }
 
             g.setColour(btn.findColour(active ? juce::TextButton::textColourOnId
                                               : juce::TextButton::textColourOffId));
-            g.setFont(ChompiFonts::h3());
+            g.setFont(font);
             g.drawText(btn.getButtonText(), btn.getLocalBounds(), juce::Justification::centred);
         }
     };
@@ -133,7 +140,7 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
 {
     // Bank selector buttons A-E
     const char bankLetters[] = { 'A', 'B', 'C', 'D', 'E' };
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
     {
         bankButtons[i].setButtonText(juce::String::charToString(bankLetters[i]));
         bankButtons[i].setTooltip("Bank " + juce::String::charToString(bankLetters[i]) + " (slots 1-14)");
@@ -142,7 +149,7 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
     }
 
     // Create 14 slot rows
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         auto* row = rows.add(new FocusedSlotRow(i + 1, formatManager, thumbnailCache));
         wireRowCallbacks(row, i);
@@ -158,7 +165,7 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
         row->setBankColour(bankColourForIndex(activeBank));
 
     bankButtonLAF.reset(new SlotStyleLAF());
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
         bankButtons[i].setLookAndFeel(bankButtonLAF.get());
 
     setWantsKeyboardFocus(true);
@@ -167,24 +174,24 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
 
 BankFocusPanel::~BankFocusPanel()
 {
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
         bankButtons[i].setLookAndFeel(nullptr);
 }
 
 // ─── Data access ──────────────────────────────────────────────────────────────
 
 juce::Array<BankFolderParser::BankAssignment>
-BankFocusPanel::getAssignments(ChompiNamer::Category cat)
+BankFocusPanel::getAssignments(LunchBoxNamer::Category cat)
 {
     if (!isPopulating) flushRowsToStorage();
 
-    const int catIdx = (cat == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     const char bankLetters[] = { 'a', 'b', 'c', 'd', 'e' };
     juce::Array<BankFolderParser::BankAssignment> result;
 
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
     {
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
         {
             const auto& f = slots[catIdx][b][s];
             if (f != juce::File{})
@@ -201,12 +208,12 @@ BankFocusPanel::getAssignments(ChompiNamer::Category cat)
     return result;
 }
 
-void BankFocusPanel::setSlot(ChompiNamer::Category cat, int bankIdx, int slotIdx,
+void BankFocusPanel::setSlot(LunchBoxNamer::Category cat, int bankIdx, int slotIdx,
                               const juce::File& file)
 {
-    const int catIdx = (cat == ChompiNamer::Category::Cubbi) ? 0 : 1;
-    if (bankIdx < 0 || bankIdx >= ChompiNamer::NUM_BANKS)    return;
-    if (slotIdx < 0 || slotIdx >= ChompiNamer::SLOTS_PER_BANK) return;
+    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    if (bankIdx < 0 || bankIdx >= LunchBoxNamer::NUM_BANKS)    return;
+    if (slotIdx < 0 || slotIdx >= LunchBoxNamer::SLOTS_PER_BANK) return;
     slots[catIdx][bankIdx][slotIdx] = file;
 
     // Refresh visible rows if this is the active bank/category
@@ -214,32 +221,32 @@ void BankFocusPanel::setSlot(ChompiNamer::Category cat, int bankIdx, int slotIdx
         populateRowsFromStorage();
 }
 
-juce::File BankFocusPanel::getSlotFile(ChompiNamer::Category cat, int bankIdx, int slotIdx)
+juce::File BankFocusPanel::getSlotFile(LunchBoxNamer::Category cat, int bankIdx, int slotIdx)
 {
     if (!isPopulating) flushRowsToStorage();
-    const int catIdx = (cat == ChompiNamer::Category::Cubbi) ? 0 : 1;
-    if (bankIdx < 0 || bankIdx >= ChompiNamer::NUM_BANKS)    return juce::File{};
-    if (slotIdx < 0 || slotIdx >= ChompiNamer::SLOTS_PER_BANK) return juce::File{};
+    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    if (bankIdx < 0 || bankIdx >= LunchBoxNamer::NUM_BANKS)    return juce::File{};
+    if (slotIdx < 0 || slotIdx >= LunchBoxNamer::SLOTS_PER_BANK) return juce::File{};
     return slots[catIdx][bankIdx][slotIdx];
 }
 
 void BankFocusPanel::clearAll()
 {
     for (int c = 0; c < 2; ++c)
-        for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-            for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+        for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+            for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
                 slots[c][b][s] = juce::File{};
     populateRowsFromStorage();
 }
 
-int BankFocusPanel::getFilledCount(ChompiNamer::Category cat)
+int BankFocusPanel::getFilledCount(LunchBoxNamer::Category cat)
 {
     if (!isPopulating) flushRowsToStorage();
 
-    const int catIdx = (cat == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     int count = 0;
-    for (int b = 0; b < ChompiNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
             if (slots[catIdx][b][s] != juce::File{}) ++count;
     return count;
 }
@@ -248,11 +255,11 @@ int BankFocusPanel::getFilledCount(ChompiNamer::Category cat)
 
 void BankFocusPanel::autoFillActiveFromFiles(const juce::Array<juce::File>& files)
 {
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     auto& bank = slots[catIdx][activeBank];
 
     int fileIdx = 0;
-    for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK && fileIdx < files.size(); ++s)
+    for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK && fileIdx < files.size(); ++s)
     {
         if (bank[s] == juce::File{})
         {
@@ -267,8 +274,8 @@ void BankFocusPanel::autoFillActiveFromFiles(const juce::Array<juce::File>& file
 
 void BankFocusPanel::clearActiveBank()
 {
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
-    for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
         slots[catIdx][activeBank][s] = juce::File{};
 }
 
@@ -324,14 +331,47 @@ void BankFocusPanel::switchToBank(int bankIdx)
     updateRowVisuals();
 }
 
-void BankFocusPanel::switchToCategory(ChompiNamer::Category cat)
+void BankFocusPanel::switchToCategory(LunchBoxNamer::Category cat)
 {
     if (cat == activeCategory) return;
     flushRowsToStorage();
-    activeCategory = cat;
-    focusedRowIdx = 0;  selectionAnchor = 0;
-    selection.clear();  selection.add(0);
+
+    // Persist current focus state before leaving
+    const int outIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    perCategoryState[outIdx].activeBank    = activeBank;
+    perCategoryState[outIdx].focusedRowIdx = focusedRowIdx;
+    perCategoryState[outIdx].selection     = selection;
+
+    // Restore saved focus state for the incoming category
+    activeCategory  = cat;
+    const int inIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    activeBank      = perCategoryState[inIdx].activeBank;
+    focusedRowIdx   = perCategoryState[inIdx].focusedRowIdx;
+    selectionAnchor = focusedRowIdx;
+    selection       = perCategoryState[inIdx].selection;
+
+    updateBankButtonStyles();
     populateRowsFromStorage();
+    updateRowVisuals();
+}
+
+void BankFocusPanel::setActiveFocus(int bankIdx, int rowIdx)
+{
+    bankIdx = juce::jlimit(0, LunchBoxNamer::NUM_BANKS - 1, bankIdx);
+    rowIdx  = juce::jlimit(0, LunchBoxNamer::SLOTS_PER_BANK - 1, rowIdx);
+
+    if (bankIdx != activeBank)
+    {
+        flushRowsToStorage();
+        activeBank = bankIdx;
+        updateBankButtonStyles();
+        populateRowsFromStorage();
+    }
+
+    focusedRowIdx   = rowIdx;
+    selectionAnchor = rowIdx;
+    selection.clear();
+    selection.add(rowIdx);
     updateRowVisuals();
 }
 
@@ -339,17 +379,17 @@ void BankFocusPanel::switchToCategory(ChompiNamer::Category cat)
 
 void BankFocusPanel::flushRowsToStorage()
 {
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
-    for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
         slots[catIdx][activeBank][s] = rows[s]->getSample();
 }
 
 void BankFocusPanel::populateRowsFromStorage()
 {
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     const juce::Colour bankCol = bankColourForIndex(activeBank);
     isPopulating = true;
-    for (int s = 0; s < ChompiNamer::SLOTS_PER_BANK; ++s)
+    for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
     {
         rows[s]->setBankColour(bankCol);
         rows[s]->setSample(slots[catIdx][activeBank][s]);
@@ -492,8 +532,8 @@ void BankFocusPanel::handleRowMouseUp(FocusedSlotRow* row, const juce::MouseEven
     {
         if (onBeforeChange) onBeforeChange();
         flushRowsToStorage();
-        const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
-        const int N      = ChompiNamer::SLOTS_PER_BANK;
+        const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+        const int N      = LunchBoxNamer::SLOTS_PER_BANK;
 
         const bool isMultiDrag = (selection.size() > 1 && selection.contains(dragSourceIdx));
 
@@ -551,7 +591,7 @@ void BankFocusPanel::handleRowMouseUp(FocusedSlotRow* row, const juce::MouseEven
 
 void BankFocusPanel::commitReorder(int fromIdx, int toIdx)
 {
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     auto& bank = slots[catIdx][activeBank];
 
     juce::File dragged = bank[fromIdx];
@@ -601,7 +641,7 @@ void BankFocusPanel::updateDragPreviews()
 
     const int from = dragSourceIdx;
     const int to   = dragInsertIdx;
-    const int N    = ChompiNamer::SLOTS_PER_BANK;
+    const int N    = LunchBoxNamer::SLOTS_PER_BANK;
 
     // getSample() always returns actual data (not preview), safe to read mid-drag
     juce::Array<juce::File> current;
@@ -733,7 +773,11 @@ void BankFocusPanel::notifyPreviewForFocused()
 void BankFocusPanel::updateRowVisuals()
 {
     for (int i = 0; i < rows.size(); ++i)
-        rows[i]->setSelected(selection.contains(i));
+    {
+        const bool sel = selection.contains(i);
+        rows[i]->setSelected(sel);
+        rows[i]->setFocused(sel && i == focusedRowIdx);
+    }
 }
 
 void BankFocusPanel::toggleRowInSelection(int idx)
@@ -756,7 +800,7 @@ void BankFocusPanel::selectRowRange(int from, int to)
 juce::Array<juce::File> BankFocusPanel::getSelectedFiles()
 {
     flushRowsToStorage();
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
 
     juce::Array<int> sorted = selection;
     for (int i = 0; i < sorted.size() - 1; ++i)
@@ -772,11 +816,11 @@ juce::Array<juce::File> BankFocusPanel::getSelectedFiles()
 void BankFocusPanel::pasteFiles(const juce::Array<juce::File>& files)
 {
     if (files.isEmpty()) return;
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     for (int i = 0; i < files.size(); ++i)
     {
         int slot = focusedRowIdx + i;
-        if (slot >= ChompiNamer::SLOTS_PER_BANK) break;
+        if (slot >= LunchBoxNamer::SLOTS_PER_BANK) break;
         slots[catIdx][activeBank][slot] = files[i];
     }
     populateRowsFromStorage();
@@ -788,7 +832,7 @@ void BankFocusPanel::pasteFiles(const juce::Array<juce::File>& files)
 void BankFocusPanel::selectAll()
 {
     selection.clear();
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
         selection.add(i);
     focusedRowIdx   = 0;
     selectionAnchor = 0;
@@ -806,7 +850,7 @@ void BankFocusPanel::clearSelection()
 
 void BankFocusPanel::moveFocusedRow(int delta)
 {
-    int next = juce::jlimit(0, ChompiNamer::SLOTS_PER_BANK - 1, focusedRowIdx + delta);
+    int next = juce::jlimit(0, LunchBoxNamer::SLOTS_PER_BANK - 1, focusedRowIdx + delta);
     setFocusedRow(next, true);
 }
 
@@ -818,7 +862,7 @@ void BankFocusPanel::expandRowSelection(int delta)
     for (int i : selection) { minS = juce::jmin(minS, i);  maxS = juce::jmax(maxS, i); }
 
     if (delta < 0) minS = juce::jmax(0, minS - 1);
-    else           maxS = juce::jmin(ChompiNamer::SLOTS_PER_BANK - 1, maxS + 1);
+    else           maxS = juce::jmin(LunchBoxNamer::SLOTS_PER_BANK - 1, maxS + 1);
 
     selection.clear();
     for (int i = minS; i <= maxS; ++i) selection.add(i);
@@ -869,15 +913,15 @@ void BankFocusPanel::styleTabButton(juce::TextButton& btn, bool active, int bank
 {
     const juce::Colour bankCol = bankColourForIndex(bankIdx);
     btn.setToggleState(active, juce::dontSendNotification);
-    btn.setColour(juce::TextButton::buttonColourId,   ChompiColours::BUTTON_BG);
+    btn.setColour(juce::TextButton::buttonColourId,   LunchBoxColours::BUTTON_BG);
     btn.setColour(juce::TextButton::buttonOnColourId, bankCol);
-    btn.setColour(juce::TextButton::textColourOffId,  ChompiColours::WHITE_CREAM.withAlpha(0.7f));
-    btn.setColour(juce::TextButton::textColourOnId,   ChompiColours::WHITE_CREAM);
+    btn.setColour(juce::TextButton::textColourOffId,  LunchBoxColours::WHITE_CREAM.withAlpha(0.7f));
+    btn.setColour(juce::TextButton::textColourOnId,   LunchBoxColours::WHITE_CREAM);
 }
 
 void BankFocusPanel::updateBankButtonStyles()
 {
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
         styleTabButton(bankButtons[i], i == activeBank, i);
 }
 
@@ -894,35 +938,35 @@ void BankFocusPanel::resized()
 
     // Bank column: width = one cell width (W/7), height matches Pack bank rows exactly
     const float bankColWf  = (float)area.getWidth() / 7.0f;
-    const float bankBtnHf  = ((float)area.getHeight() - (ChompiNamer::NUM_BANKS - 1) * ChompiConstants::BANK_GAP)
-                             / (float)ChompiNamer::NUM_BANKS;
-    const float totalBankHf = bankBtnHf * ChompiNamer::NUM_BANKS
-                              + ChompiConstants::BANK_GAP * (ChompiNamer::NUM_BANKS - 1);
+    const float bankBtnHf  = ((float)area.getHeight() - (LunchBoxNamer::NUM_BANKS - 1) * LunchBoxConstants::BANK_GAP)
+                             / (float)LunchBoxNamer::NUM_BANKS;
+    const float totalBankHf = bankBtnHf * LunchBoxNamer::NUM_BANKS
+                              + LunchBoxConstants::BANK_GAP * (LunchBoxNamer::NUM_BANKS - 1);
 
     const int bankColW = juce::roundToInt(bankColWf);
     auto bankCol = area.removeFromLeft(bankColW);
-    area.removeFromLeft(juce::roundToInt(ChompiConstants::BANK_GAP));
+    area.removeFromLeft(juce::roundToInt(LunchBoxConstants::BANK_GAP));
 
     float y = (float)bankCol.getY();
-    for (int i = 0; i < ChompiNamer::NUM_BANKS; ++i)
+    for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
     {
         const int top = juce::roundToInt(y);
         const int bot = juce::roundToInt(y + bankBtnHf);
         bankButtons[i].setBounds(bankCol.getX(), top, bankCol.getWidth(), bot - top);
-        y += bankBtnHf + ChompiConstants::BANK_GAP;
+        y += bankBtnHf + LunchBoxConstants::BANK_GAP;
     }
 
     // Slot rows: derived from totalBankHf so they scale in exact sync with bank buttons
-    const float rowHf = (totalBankHf - (ChompiNamer::SLOTS_PER_BANK - 1) * ChompiConstants::SLOT_ROW_GAP)
-                        / (float)ChompiNamer::SLOTS_PER_BANK;
+    const float rowHf = (totalBankHf - (LunchBoxNamer::SLOTS_PER_BANK - 1) * LunchBoxConstants::SLOT_ROW_GAP)
+                        / (float)LunchBoxNamer::SLOTS_PER_BANK;
 
     y = (float)area.getY();
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         const int top = juce::roundToInt(y);
         const int bot = juce::roundToInt(y + rowHf);
         rows[i]->setBounds(area.getX(), top, area.getWidth(), bot - top);
-        y += rowHf + ChompiConstants::SLOT_ROW_GAP;
+        y += rowHf + LunchBoxConstants::SLOT_ROW_GAP;
     }
 }
 
@@ -930,7 +974,7 @@ void BankFocusPanel::resized()
 
 bool BankFocusPanel::isInterestedInFileDrag(const juce::StringArray& files)
 {
-    if (files.isEmpty() || files.size() > ChompiNamer::SLOTS_PER_BANK) return false;
+    if (files.isEmpty() || files.size() > LunchBoxNamer::SLOTS_PER_BANK) return false;
     for (const auto& f : files)
     {
         auto ext = "*" + juce::File(f).getFileExtension().toLowerCase();
@@ -966,8 +1010,8 @@ void BankFocusPanel::filesDropped(const juce::StringArray& files, int x, int y)
 
     if (onBeforeChange) onBeforeChange();
 
-    const int catIdx = (activeCategory == ChompiNamer::Category::Cubbi) ? 0 : 1;
-    for (int i = 0; i < files.size() && startRow + i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
+    for (int i = 0; i < files.size() && startRow + i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         juce::File f(files[i]);
         if (f.existsAsFile())

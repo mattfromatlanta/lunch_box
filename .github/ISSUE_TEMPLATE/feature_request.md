@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for Chompi Pack
+about: Suggest an idea for Lunch Box
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

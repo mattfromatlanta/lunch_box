@@ -5,7 +5,7 @@
 #include "../Logger.h"
 
 //==============================================================================
-// ChompiNamer - Handles CHOMPI sampler naming convention
+// LunchBoxNamer - Handles CHOMPI sampler naming convention
 //==============================================================================
 // CHOMPI uses two categories of sample banks:
 // - cubbi banks: percussive, loop, or SFX samples
@@ -15,7 +15,7 @@
 // Naming format: {category}_{bank}{slot}.wav (e.g., cubbi_a1.wav, jammi_e14.wav)
 //==============================================================================
 
-class ChompiNamer
+class LunchBoxNamer
 {
 public:
     // CHOMPI hardware structure constants (shared across all modules)
@@ -46,7 +46,7 @@ public:
         int sourceIndex;  // Position in sorted list (0-based)
     };
 
-    ChompiNamer(Logger& logger);
+    LunchBoxNamer(Logger& logger);
 
     // Generate CHOMPI filename for a given index and category
     // index: 0-69 (0 = a1, 13 = a14, 14 = b1, 69 = e14)

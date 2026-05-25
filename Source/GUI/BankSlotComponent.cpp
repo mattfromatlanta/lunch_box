@@ -2,7 +2,7 @@
 #include "BankSlotComponent.h"
 #include "UIColours.h"
 #include "UIConstants.h"
-#include "ChompiFonts.h"
+#include "LunchBoxFonts.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -10,26 +10,26 @@ namespace
     const juce::Colour slotEmptyBg       { 0xff1d2228 };
     const juce::Colour slotFilledBg      { 0xff3a5060 };
     const juce::Colour slotBorder        { 0xff3a4a5a };
-    const juce::Colour slotHoverBdr      { 0xff5577aa };
+    const juce::Colour slotHoverBdr      = LunchBoxColours::WHITE_CREAM;
     const juce::Colour slotDropBdr       { 0xff4caf50 };
-    const juce::Colour slotNumCol        = ChompiColours::WHITE_CREAM.withAlpha(0.3f);
-    const juce::Colour slotTxtCol        = ChompiColours::WHITE_CREAM;
+    const juce::Colour slotNumCol        = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
+    const juce::Colour slotTxtCol        = LunchBoxColours::WHITE_CREAM;
 
     static juce::Colour bankBorderColour(char bankLetter)
     {
         switch (bankLetter)
         {
-            case 'A': return ChompiColours::RED;
-            case 'B': return ChompiColours::PINK_SALMON;
-            case 'C': return ChompiColours::YELLOW;
-            case 'D': return ChompiColours::TEAL;
-            case 'E': return ChompiColours::PURPLE;
+            case 'A': return LunchBoxColours::RED;
+            case 'B': return LunchBoxColours::PINK_SALMON;
+            case 'C': return LunchBoxColours::YELLOW;
+            case 'D': return LunchBoxColours::TEAL;
+            case 'E': return LunchBoxColours::PURPLE;
             default:  return slotBorder;
         }
     }
     const juce::Colour slotSelectedBg    { 0xff1e2a4a };
-    const juce::Colour slotFocusBdr      { 0xff99aaff };
-    const juce::Colour slotSelectedBdr   { 0xff4455aa };
+    const juce::Colour slotFocusBdr      = LunchBoxColours::FOCUS_BORDER;
+    const juce::Colour slotSelectedBdr   = LunchBoxColours::WHITE_CREAM;
     const juce::Colour slotDragTargetBg  { 0xff2d2518 };
     const juce::Colour slotDragTargetBdr { 0xffddaa33 };
     const juce::Colour slotSwapSourceBg  { 0xff2a1e08 };   // warm-gold tint for swap-mode sources
@@ -67,7 +67,7 @@ void BankSlotComponent::paint(juce::Graphics& g)
     const juce::File& displayFile   = showingPreview ? previewFile : sample;
     const bool        displayFilled = (displayFile != juce::File{});
 
-    const juce::Colour filledBg = ChompiColours::getFocused(bankBorderColour(bankLetter));
+    const juce::Colour filledBg = LunchBoxColours::getFocused(bankBorderColour(bankLetter));
 
     juce::Colour bg;
     if      (dragTarget)                 bg = displayFilled ? filledBg.brighter(0.25f)      : slotDragTargetBg;
@@ -75,24 +75,32 @@ void BankSlotComponent::paint(juce::Graphics& g)
     else if (selected)                   bg = displayFilled ? filledBg.brighter(0.15f)      : slotSelectedBg;
     else                                 bg = displayFilled ? filledBg                       : slotEmptyBg;
     g.setColour(bg);
-    g.fillRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS);
+    g.fillRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS);
+
+    if (selected && !focused && !dragTarget && !swapHighlight)
+    {
+        auto* top = getTopLevelComponent();
+        auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
+                          : juce::Point<int>(0, 0);
+        LunchBoxColours::drawSelectionStripes(g, bounds, origin, LunchBoxConstants::CORNER_RADIUS);
+    }
 
     juce::Colour border;
-    float bw = ChompiConstants::BORDER_WIDTH;
-    if      (isDraggingOver)            { border = slotDropBdr;              bw = ChompiConstants::BORDER_WIDTH_ACTIVE; }
-    else if (dragTarget)                { border = slotDragTargetBdr;        bw = ChompiConstants::BORDER_WIDTH_ACTIVE; }
-    else if (focused)                   { border = slotFocusBdr;             bw = ChompiConstants::BORDER_WIDTH_ACTIVE; }
+    float bw = LunchBoxConstants::BORDER_WIDTH;
+    if      (isDraggingOver)            { border = slotDropBdr;              bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
+    else if (dragTarget)                { border = slotDragTargetBdr;        bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
+    else if (focused)                   { border = slotFocusBdr;             bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
     else if (swapHighlight && selected) { border = slotSwapSourceBdr; }
     else if (selected)                  { border = slotSelectedBdr; }
     else if (isHovered)                 { border = slotHoverBdr; }
-    else                                { border = ChompiColours::getBorder(bankBorderColour(bankLetter)); }
+    else                                { border = LunchBoxColours::getBorder(bankBorderColour(bankLetter)); }
     g.setColour(border);
-    g.drawRoundedRectangle(bounds, ChompiConstants::CORNER_RADIUS, bw);
+    g.drawRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS, bw);
 
     // Always show cell label (e.g. "A1", "E14") at 16pt
     const juce::String cellLabel = juce::String::charToString((juce::juce_wchar)bankLetter)
                                    + juce::String(slotNumber);
-    g.setFont(ChompiFonts::body());
+    g.setFont(LunchBoxFonts::body());
 
     if (displayFilled)
     {
@@ -100,9 +108,9 @@ void BankSlotComponent::paint(juce::Graphics& g)
         const int pillH = static_cast<int>(g.getCurrentFont().getHeight()) + 8;
         const float pillR = pillH / 2.0f;
         auto pill = juce::Rectangle<int>(pillW, pillH).withCentre(getLocalBounds().getCentre()).toFloat();
-        g.setColour(ChompiColours::getLabelBg(bankBorderColour(bankLetter)));
+        g.setColour(LunchBoxColours::getLabelBg(bankBorderColour(bankLetter)));
         g.fillRoundedRectangle(pill, pillR);
-        g.setColour(ChompiColours::WHITE_CREAM);
+        g.setColour(LunchBoxColours::WHITE_CREAM);
         g.drawRoundedRectangle(pill, pillR, 2.0f);
     }
 

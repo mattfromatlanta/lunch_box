@@ -7,7 +7,7 @@
 
 ## Summary
 
-Chompi Pack now features a dual-mode architecture with both GUI and CLI interfaces. The application automatically detects whether to launch in GUI or CLI mode based on command-line arguments.
+Lunch Box now features a dual-mode architecture with both GUI and CLI interfaces. The application automatically detects whether to launch in GUI or CLI mode based on command-line arguments.
 
 ---
 
@@ -22,7 +22,7 @@ Chompi Pack now features a dual-mode architecture with both GUI and CLI interfac
 
 **MainComponent.h/cpp**
 - Main UI component with all interface elements
-- Header: "chompi pack by matt from atlanta"
+- Header: "lunch box by matt from atlanta"
 - Cubbi folder selection button and path display
 - Jammi folder selection button and path display
 - Process button (enabled when folder(s) selected)
@@ -32,7 +32,7 @@ Chompi Pack now features a dual-mode architecture with both GUI and CLI interfac
 
 **GuiProcessor.h/cpp**
 - Bridge between GUI and processing logic
-- Wraps existing ChompiProcessor (same code as CLI mode)
+- Wraps existing LunchBoxProcessor (same code as CLI mode)
 - Builds AudioConfiguration from GUI selections
 - Returns ProcessingResult with file counts and status
 - No code duplication - uses shared processing components
@@ -85,27 +85,27 @@ Main.cpp (Application Entry)
     │       ↓
     │   MainWindow → MainComponent → GuiProcessor
     │                                      ↓
-    │                               ChompiProcessor
+    │                               LunchBoxProcessor
     │                                      ↓
     └─→ CLI Mode (with args)               ↓
             ↓                               ↓
-        CliProcessor ──────────────→ ChompiProcessor
+        CliProcessor ──────────────→ LunchBoxProcessor
                                             ↓
                     ┌───────────────────────┼───────────────────────┐
                     ↓                       ↓                       ↓
-              AudioConverter          ChompiNamer               Logger
+              AudioConverter          LunchBoxNamer               Logger
                  (Shared Processing Components)
 ```
 
 ### Key Design Principles
 
 1. **Single Source of Truth**
-   - Processing logic implemented once in ChompiProcessor
+   - Processing logic implemented once in LunchBoxProcessor
    - Both GUI and CLI call the same code
    - Bug fixes and features benefit both interfaces
 
 2. **No Code Duplication**
-   - AudioConverter, ChompiNamer, ChompiProcessor shared
+   - AudioConverter, LunchBoxNamer, LunchBoxProcessor shared
    - GuiProcessor and CliProcessor are thin wrappers
    - Different interfaces, same engine
 
@@ -122,11 +122,11 @@ Main.cpp (Application Entry)
 ### macOS Application Bundle
 
 ```
-chompi_pack_artefacts/
-└── Chompi Pack.app/
+lunch_box_artefacts/
+└── Lunch Box.app/
     └── Contents/
         ├── MacOS/
-        │   └── Chompi Pack       # Executable
+        │   └── Lunch Box       # Executable
         ├── Resources/
         └── Info.plist
 ```
@@ -135,12 +135,12 @@ chompi_pack_artefacts/
 
 **GUI Mode:**
 ```bash
-open "chompi_pack_artefacts/Chompi Pack.app"
+open "lunch_box_artefacts/Lunch Box.app"
 ```
 
 **CLI Mode:**
 ```bash
-"chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" \
+"lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" \
   --cubbi /path/to/cubbi --jammi /path/to/jammi
 ```
 
@@ -190,7 +190,7 @@ open "chompi_pack_artefacts/Chompi Pack.app"
 - Created `Source/CLI/CliProcessor.h/cpp`
 - Created `Source/AudioConfiguration.h`
 - Deleted `Source/AudioScanner.h/cpp` (moved to CliProcessor)
-- Updated `Source/ChompiProcessor.h` to use AudioConfiguration
+- Updated `Source/LunchBoxProcessor.h` to use AudioConfiguration
 
 ---
 
@@ -262,7 +262,7 @@ Potential improvements for future versions:
 All success criteria met:
 
 - ✅ GUI window opens on application launch (no CLI arguments)
-- ✅ Header displays "chompi pack by matt from atlanta"
+- ✅ Header displays "lunch box by matt from atlanta"
 - ✅ "Select Cubbi Folder" button opens native file browser
 - ✅ Selected cubbi path displays in GUI
 - ✅ "Select Jammi Folder" button opens native file browser
@@ -288,7 +288,7 @@ None identified. Application is stable and fully functional.
 
 ## Conclusion
 
-Milestone 4 has been successfully completed. Chompi Pack now provides both a user-friendly GUI for non-technical users and a powerful CLI for automation and scripting. The architecture ensures that both interfaces share identical processing logic, making the application maintainable and consistent.
+Milestone 4 has been successfully completed. Lunch Box now provides both a user-friendly GUI for non-technical users and a powerful CLI for automation and scripting. The architecture ensures that both interfaces share identical processing logic, making the application maintainable and consistent.
 
 The GUI provides an intuitive experience with native macOS integration, while the CLI remains available for advanced users and batch processing workflows. All original functionality has been preserved, and the codebase is well-organized for future enhancements.
 

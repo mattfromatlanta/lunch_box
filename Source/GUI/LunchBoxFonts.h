@@ -3,9 +3,16 @@
 #include <juce_graphics/juce_graphics.h>
 #include <BinaryData.h>
 
-namespace ChompiFonts
+namespace LunchBoxFonts
 {
     // ── Typeface accessors (lazy, cached) ─────────────────────────────────────
+
+    inline juce::Typeface::Ptr fredoka()
+    {
+        static auto tf = juce::Typeface::createSystemTypefaceFor(
+            BinaryData::Fredoka_ttf, BinaryData::Fredoka_ttfSize);
+        return tf;
+    }
 
     inline juce::Typeface::Ptr regular()
     {
@@ -38,6 +45,12 @@ namespace ChompiFonts
     // ── Font style factory functions ──────────────────────────────────────────
     // Letter-spacing maps CSS em values directly to JUCE's kerning factor.
     // Line-height is noted in comments; apply at the layout/TextLayout level.
+
+    // Logo title — Fredoka wght=700 wdth=87.5, sized to fill the 44px header
+    inline juce::Font logoTitle(float height = 32.0f)
+    {
+        return juce::Font(juce::FontOptions{}.withTypeface(fredoka()).withHeight(height));
+    }
 
     // H1 — Bold 64px, tracking -0.02em, line-height 1.1
     inline juce::Font h1()

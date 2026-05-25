@@ -1,8 +1,8 @@
-# Chompi Pack
+# Lunch Box
 
 **Audio sample processor for the CHOMPI sampler**
 
-Chompi Pack is a dual-mode (GUI + CLI) application that converts audio files to
+Lunch Box is a dual-mode (GUI + CLI) application that converts audio files to
 CHOMPI-compatible format (16-bit 48kHz WAV) and organizes them using the CHOMPI
 naming convention.
 
@@ -36,8 +36,8 @@ naming convention.
 ### Build
 
 ```bash
-git clone https://github.com/mattfromatlanta/chompi_pack.git
-cd chompi_pack
+git clone https://github.com/mattfromatlanta/lunch_box.git
+cd lunch_box
 
 # Update the JUCE path in CMakeLists.txt to point at your local JUCE install, then:
 mkdir -p build && cd build
@@ -48,22 +48,22 @@ make
 ### Run (macOS)
 
 ```bash
-open "build/chompi_pack_artefacts/Chompi Pack.app"
+open "build/lunch_box_artefacts/Lunch Box.app"
 ```
 
 ### CLI Mode
 
 ```bash
-"build/chompi_pack_artefacts/Chompi Pack.app/Contents/MacOS/Chompi Pack" \
+"build/lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" \
   --cubbi /path/to/cubbi/samples \
   --jammi /path/to/jammi/samples \
   --output /path/to/output
 
 # Shorthand flags
-chompi_pack --c /path/to/cubbi --j /path/to/jammi --o /path/to/output
+lunch_box --c /path/to/cubbi --j /path/to/jammi --o /path/to/output
 
 # Help
-chompi_pack --help
+lunch_box --help
 ```
 
 ---
@@ -87,7 +87,7 @@ jammi_e14.wav         # Jammi, Bank E, Slot 14 (base)
 jammi_e14_double.wav  # Jammi, Bank E, Slot 14 (optimized)
 ```
 
-Chompi Pack generates both base and `_double` versions for every input sample so your
+Lunch Box generates both base and `_double` versions for every input sample so your
 CHOMPI library is complete without requiring the hardware to generate them.
 
 ---
@@ -127,7 +127,7 @@ Each input generates two output files. Maximum 140 files per category (70 base +
 ## Project Structure
 
 ```
-chompi_pack/
+lunch_box/
 +-- Source/
 |   +-- Main.cpp                       # Entry point, GUI/CLI routing
 |   +-- AudioConfiguration.h           # Shared config struct
@@ -147,9 +147,9 @@ chompi_pack/
 |   |   +-- PreviewPanel.h/cpp         # Waveform + playback
 |   |   +-- FolderDropZone.h/cpp       # Simple mode drop zones
 |   +-- Processing/
-|       +-- ChompiProcessor.h/cpp      # Processing orchestrator
+|       +-- LunchBoxProcessor.h/cpp      # Processing orchestrator
 |       +-- AudioConverter.h/cpp       # Format conversion
-|       +-- ChompiNamer.h/cpp          # CHOMPI naming + constants
+|       +-- LunchBoxNamer.h/cpp          # CHOMPI naming + constants
 |       +-- BankFolderParser.h/cpp     # Bank subfolder detection
 +-- tests/                             # Unit tests (JUCE UnitTest framework)
 +-- CMakeLists.txt
@@ -167,7 +167,7 @@ chompi_pack/
 All operations are logged to timestamped files in the `logs/` directory:
 
 ```
-logs/chompi_pack_log_YYYYMMDD_HHMMSS.txt
+logs/lunch_box_log_YYYYMMDD_HHMMSS.txt
 ```
 
 ---

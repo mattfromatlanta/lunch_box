@@ -13,7 +13,7 @@ Establish comprehensive unit testing coverage for all core modules, ensuring cod
 ### Test Scope
 
 **Core Modules to Test:**
-1. **ChompiNamer** ✅ (partially tested)
+1. **LunchBoxNamer** ✅ (partially tested)
    - Bank/slot calculation
    - Filename generation
    - Edge cases (overflow, empty)
@@ -39,7 +39,7 @@ Establish comprehensive unit testing coverage for all core modules, ensuring cod
    - Message formatting
    - Timestamp accuracy
 
-6. **ChompiProcessor**
+6. **LunchBoxProcessor**
    - End-to-end processing
    - Error handling
    - Bank assignment accuracy
@@ -75,20 +75,20 @@ Establish comprehensive unit testing coverage for all core modules, ensuring cod
    # CMakeLists.txt
    enable_testing()
 
-   juce_add_console_app(chompi_pack_tests
-       PRODUCT_NAME "Chompi Pack Tests")
+   juce_add_console_app(lunch_box_tests
+       PRODUCT_NAME "Lunch Box Tests")
 
-   target_sources(chompi_pack_tests
+   target_sources(lunch_box_tests
        PRIVATE
            tests/TestMain.cpp
-           tests/ChompiNamerTests.cpp
+           tests/LunchBoxNamerTests.cpp
            tests/AudioConverterTests.cpp
            tests/BankFolderParserTests.cpp
            tests/FileSystemHelperTests.cpp
            tests/LoggerTests.cpp
            tests/IntegrationTests.cpp)
 
-   target_link_libraries(chompi_pack_tests
+   target_link_libraries(lunch_box_tests
        PRIVATE
            juce::juce_core
            juce::juce_audio_formats
@@ -101,52 +101,52 @@ Establish comprehensive unit testing coverage for all core modules, ensuring cod
    - Expected output files
    - Mock data
 
-### Phase 2: ChompiNamer Tests (Expand)
+### Phase 2: LunchBoxNamer Tests (Expand)
 
 ```cpp
-TEST_CASE("ChompiNamer bank calculations", "[chompi_namer]")
+TEST_CASE("LunchBoxNamer bank calculations", "[chompi_namer]")
 {
     SECTION("First file goes to bank A slot 1")
     {
-        auto result = ChompiNamer::indexToBankSlot(0);
+        auto result = LunchBoxNamer::indexToBankSlot(0);
         REQUIRE(result.bank == 'a');
         REQUIRE(result.slot == 1);
     }
 
     SECTION("15th file goes to bank B slot 1")
     {
-        auto result = ChompiNamer::indexToBankSlot(14);
+        auto result = LunchBoxNamer::indexToBankSlot(14);
         REQUIRE(result.bank == 'b');
         REQUIRE(result.slot == 1);
     }
 
     SECTION("Last file goes to bank E slot 14")
     {
-        auto result = ChompiNamer::indexToBankSlot(69);
+        auto result = LunchBoxNamer::indexToBankSlot(69);
         REQUIRE(result.bank == 'e');
         REQUIRE(result.slot == 14);
     }
 
     SECTION("Overflow index handled gracefully")
     {
-        auto result = ChompiNamer::indexToBankSlot(70);
+        auto result = LunchBoxNamer::indexToBankSlot(70);
         REQUIRE(result.bank == '\0'); // Invalid
     }
 }
 
-TEST_CASE("ChompiNamer filename generation", "[chompi_namer]")
+TEST_CASE("LunchBoxNamer filename generation", "[chompi_namer]")
 {
     SECTION("Cubbi filenames formatted correctly")
     {
-        auto name = ChompiNamer::generateFileName(
-            ChompiNamer::Category::Cubbi, 0);
+        auto name = LunchBoxNamer::generateFileName(
+            LunchBoxNamer::Category::Cubbi, 0);
         REQUIRE(name == "cubbi_a1.wav");
     }
 
     SECTION("Jammi filenames formatted correctly")
     {
-        auto name = ChompiNamer::generateFileName(
-            ChompiNamer::Category::Jammi, 13);
+        auto name = LunchBoxNamer::generateFileName(
+            LunchBoxNamer::Category::Jammi, 13);
         REQUIRE(name == "jammi_a14.wav");
     }
 }
@@ -251,7 +251,7 @@ TEST_CASE("BankFolderParser file assignment", "[bank_parser]")
     SECTION("Bank folders processed first")
     {
         auto assignments = parser.parseFolderStructure(
-            testFolder, ChompiNamer::Category::Cubbi);
+            testFolder, LunchBoxNamer::Category::Cubbi);
 
         // Files from bank A should have bank 'a'
         auto firstFile = assignments[0];
@@ -262,7 +262,7 @@ TEST_CASE("BankFolderParser file assignment", "[bank_parser]")
     SECTION("Unsorted files fill remaining slots")
     {
         auto assignments = parser.parseFolderStructure(
-            testFolder, ChompiNamer::Category::Cubbi);
+            testFolder, LunchBoxNamer::Category::Cubbi);
 
         // Count unsorted assignments
         int unsortedCount = 0;
@@ -299,7 +299,7 @@ TEST_CASE("End-to-end CHOMPI processing", "[integration]")
         Logger logger;
         juce::AudioFormatManager formatManager;
         formatManager.registerBasicFormats();
-        ChompiProcessor processor(logger);
+        LunchBoxProcessor processor(logger);
 
         bool success = processor.processSamples(config, formatManager);
         REQUIRE(success);
@@ -360,7 +360,7 @@ TEST_CASE("Performance benchmarks", "[performance]")
              cmake ..
              make
          - name: Run Tests
-           run: ./build/chompi_pack_tests_artefacts/chompi_pack_tests
+           run: ./build/lunch_box_tests_artefacts/lunch_box_tests
    ```
 
 2. **Code Coverage**

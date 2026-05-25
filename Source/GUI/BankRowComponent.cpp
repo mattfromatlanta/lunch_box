@@ -4,13 +4,13 @@
 
 namespace
 {
-    const juce::Colour rowBgColour = ChompiColours::DARK_GREY;
+    const juce::Colour rowBgColour = LunchBoxColours::DARK_GREY;
 }
 
 BankRowComponent::BankRowComponent(char letter)
     : bankLetter(letter)
 {
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         auto* slot = slots.add(new BankSlotComponent(letter, i + 1));
 
@@ -40,13 +40,13 @@ BankRowComponent::BankRowComponent(char letter)
 
 void BankRowComponent::setSlot(int index, const juce::File& file)
 {
-    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK)
+    if (index >= 0 && index < LunchBoxNamer::SLOTS_PER_BANK)
         slots[index]->setSample(file);
 }
 
 void BankRowComponent::clearSlot(int index)
 {
-    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK)
+    if (index >= 0 && index < LunchBoxNamer::SLOTS_PER_BANK)
         slots[index]->clearSample();
 }
 
@@ -58,14 +58,14 @@ void BankRowComponent::clearAllSlots()
 
 juce::File BankRowComponent::getSlot(int index) const
 {
-    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK)
+    if (index >= 0 && index < LunchBoxNamer::SLOTS_PER_BANK)
         return slots[index]->getSample();
     return juce::File{};
 }
 
 BankSlotComponent* BankRowComponent::getSlotComponent(int index)
 {
-    if (index >= 0 && index < ChompiNamer::SLOTS_PER_BANK) return slots[index];
+    if (index >= 0 && index < LunchBoxNamer::SLOTS_PER_BANK) return slots[index];
     return nullptr;
 }
 
@@ -97,7 +97,7 @@ void BankRowComponent::sortSlotsAlphabetically()
     filled.sort(comp);
 
     // Put sorted files back in order, clear remaining slots
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         if (i < filled.size())
             slots[i]->setSample(filled[i]);
@@ -109,7 +109,7 @@ void BankRowComponent::sortSlotsAlphabetically()
 void BankRowComponent::autoFillFromFiles(const juce::Array<juce::File>& files, int startIndex)
 {
     int fileIdx = startIndex;
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK && fileIdx < files.size(); ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK && fileIdx < files.size(); ++i)
     {
         if (!slots[i]->hasSample())
         {
@@ -122,7 +122,7 @@ void BankRowComponent::autoFillFromFiles(const juce::Array<juce::File>& files, i
 juce::Array<BankFolderParser::BankAssignment> BankRowComponent::getAssignments() const
 {
     juce::Array<BankFolderParser::BankAssignment> assignments;
-    for (int i = 0; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         if (slots[i]->hasSample())
         {
@@ -145,7 +145,7 @@ void BankRowComponent::paint(juce::Graphics& g)
 void BankRowComponent::resized()
 {
     auto area = getLocalBounds();
-    constexpr int half = ChompiNamer::SLOTS_PER_BANK / 2;  // 7
+    constexpr int half = LunchBoxNamer::SLOTS_PER_BANK / 2;  // 7
     const float cellW = (float)area.getWidth()  / (float)half;
     const float cellH = (float)area.getHeight() / 2.0f;
     const int   midY  = juce::roundToInt((float)area.getY() + cellH);
@@ -158,7 +158,7 @@ void BankRowComponent::resized()
         x += cellW;
     }
     x = (float)area.getX();
-    for (int i = half; i < ChompiNamer::SLOTS_PER_BANK; ++i)
+    for (int i = half; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         const int l = juce::roundToInt(x), r = juce::roundToInt(x + cellW);
         slots[i]->setBounds(l, midY, r - l, area.getBottom() - midY);
