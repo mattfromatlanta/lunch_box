@@ -64,6 +64,12 @@ target_sources(lunch_box
         Source/GUI/Shell/AppMenuBar.cpp
         Source/GUI/Shell/MainComponent.h
         Source/GUI/Shell/MainComponent.cpp
+        Source/GUI/Shell/MainComponent_View.cpp
+        Source/GUI/Shell/MainComponent_Session.cpp
+        Source/GUI/Shell/MainComponent_Process.cpp
+        Source/GUI/Shell/MainComponent_Undo.cpp
+        Source/GUI/Shell/MainComponent_Commands.cpp
+        Source/GUI/Shell/ConsoleWindow.h
         Source/GUI/Shell/GuiProcessor.h
         Source/GUI/Shell/GuiProcessor.cpp
         Source/GUI/Shell/FolderDropZone.h
@@ -80,10 +86,18 @@ target_sources(lunch_box
         Source/GUI/Pack/BankRowComponent.cpp
         Source/GUI/Pack/BankEditorPanel.h
         Source/GUI/Pack/BankEditorPanel.cpp
+        Source/GUI/Pack/BankEditorPanel_Selection.cpp
+        Source/GUI/Pack/BankEditorPanel_Drag.cpp
+        Source/GUI/Pack/BankEditorPanel_ExternalDrag.cpp
+        Source/GUI/Pack/BankEditorPanel_Private.h
         Source/GUI/Bank/FocusedSlotRow.h
         Source/GUI/Bank/FocusedSlotRow.cpp
         Source/GUI/Bank/BankFocusPanel.h
         Source/GUI/Bank/BankFocusPanel.cpp
+        Source/GUI/Bank/BankFocusPanel_Drag.cpp
+        Source/GUI/Bank/BankFocusPanel_Selection.cpp
+        Source/GUI/Bank/BankFocusPanel_ExternalDrag.cpp
+        Source/GUI/Bank/BankFocusPanel_Private.h
         Source/GUI/Preview/AudioPreviewPlayer.h
         Source/GUI/Preview/AudioPreviewPlayer.cpp
         Source/GUI/Preview/WaveformDisplay.h
