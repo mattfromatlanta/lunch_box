@@ -7,9 +7,9 @@
 #include "../Processing/BankFolderParser.h"
 
 //==============================================================================
-// BankEditorPanel - All 5 banks (A–E) for one CHOMPI category (M8)
-//==============================================================================
-// Contains 5 BankRowComponents + action buttons (Auto-Fill, Clear All, Sort A-Z).
+// BankEditorPanel - 5×14 grid for one CHOMPI category (Cubbi or Jammi).
+// Composes 5 BankRowComponents (one per bank A–E); footer-level actions
+// (auto-fill, clear, process) are owned by MainComponent.
 //==============================================================================
 
 class BankEditorPanel : public juce::Component,

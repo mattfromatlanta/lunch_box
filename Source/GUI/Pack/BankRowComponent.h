@@ -6,7 +6,7 @@
 #include "../Processing/BankFolderParser.h"
 
 //==============================================================================
-// BankRowComponent - One CHOMPI bank (A–E) with 14 slots (M8)
+// BankRowComponent - One CHOMPI bank (A–E) — a row of 14 BankSlotComponents.
 //==============================================================================
 
 class BankRowComponent : public juce::Component

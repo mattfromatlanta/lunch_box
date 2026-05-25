@@ -33,12 +33,14 @@ public:
         juce::String message;
     };
 
-    // Simple mode: process files from folder selections
+    // Folder-based path: scan two source folders and process. Currently unused —
+    // retained for CLI parity / future simple-mode reintroduction.
     ProcessingResult processFiles(const juce::File& cubbiFolder,
                                   const juce::File& jammiFolder,
                                   const juce::File& outputFolder);
 
-    // Advanced mode: process from pre-built bank assignments
+    // Pack/Bank mode: process from the pre-built per-slot bank assignments
+    // edited in the GUI grid (this is the path used by the Pack button today).
     ProcessingResult processFilesFromAssignments(
         const juce::Array<BankFolderParser::BankAssignment>& cubbiAssignments,
         const juce::Array<BankFolderParser::BankAssignment>& jammiAssignments,

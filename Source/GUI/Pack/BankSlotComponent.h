@@ -5,7 +5,7 @@
 #include <functional>
 
 //==============================================================================
-// BankSlotComponent - Single bank slot in the advanced bank editor (M8)
+// BankSlotComponent - One cell in the Pack-mode 5×14 grid (one CHOMPI slot).
 //==============================================================================
 // Displays an assigned audio file or an empty slot number.
 // Accepts file drops from Finder; left-click browses; right-click shows menu.

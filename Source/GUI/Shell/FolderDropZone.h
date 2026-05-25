@@ -5,7 +5,7 @@
 #include <functional>
 
 //==============================================================================
-// FolderDropZone - Folder selection panel with drag-and-drop support (M7)
+// FolderDropZone - Folder selection panel with drag-and-drop support.
 //==============================================================================
 // Wraps a select button and path label inside a styled drop zone.
 // Accepts folder drags from Finder; rejects files and multi-item drops.
