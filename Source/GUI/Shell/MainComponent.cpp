@@ -345,7 +345,7 @@ void MainComponent::setViewMode(ViewMode mode)
 
     // Sync data between modes
     if (viewMode == ViewMode::Bank && mode != ViewMode::Bank)
-        syncBankFocusToAdvanced();
+        syncBankFocusToPack();
     if (mode == ViewMode::Bank && viewMode != ViewMode::Bank)
         syncPackToBankFocus();
 
@@ -448,7 +448,7 @@ void MainComponent::syncPackToBankFocus()
     }
 }
 
-void MainComponent::syncBankFocusToAdvanced()
+void MainComponent::syncBankFocusToPack()
 {
     cubbiEditor->clearAllBanks();
     jammiEditor->clearAllBanks();
@@ -768,7 +768,7 @@ void MainComponent::processFiles()
                 {
                     appendStatus("\n=== Starting CHOMPI Processing ===");
                     if (viewMode == ViewMode::Bank)
-                        syncBankFocusToAdvanced();
+                        syncBankFocusToPack();
                     processFilesFromEditors();
                     processButton.setEnabled(true);
                 };

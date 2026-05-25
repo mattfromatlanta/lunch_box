@@ -138,7 +138,7 @@ private:
 
     // Cross-tab data sync
     void syncPackToBankFocus();
-    void syncBankFocusToAdvanced();
+    void syncBankFocusToPack();
 
     // Helpers
     juce::File getResolvedOutputFolder();
