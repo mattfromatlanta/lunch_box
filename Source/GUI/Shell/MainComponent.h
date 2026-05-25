@@ -175,6 +175,7 @@ private:
     void stopPreview();
 
     // juce::KeyListener
+    using juce::Component::keyPressed;
     bool keyPressed(const juce::KeyPress& key, juce::Component* origin) override;
 
     // Processing

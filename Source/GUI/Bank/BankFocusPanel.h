@@ -22,7 +22,7 @@ class BankFocusPanel : public juce::Component,
 {
 public:
     BankFocusPanel(juce::AudioFormatManager& fmt, juce::AudioThumbnailCache& cache);
-    ~BankFocusPanel();
+    ~BankFocusPanel() override;
 
     // --- Data access ---
 

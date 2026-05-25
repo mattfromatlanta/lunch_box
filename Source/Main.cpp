@@ -17,7 +17,7 @@ public:
     const juce::String getApplicationVersion() override { return "0.1.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
 
-    void initialise(const juce::String& commandLine) override
+    void initialise(const juce::String&) override
     {
         // Check if CLI arguments were provided
         auto args = getCommandLineParameterArray();
@@ -54,7 +54,7 @@ public:
         quit();
     }
 
-    void anotherInstanceStarted(const juce::String& commandLine) override
+    void anotherInstanceStarted(const juce::String&) override
     {
     }
 

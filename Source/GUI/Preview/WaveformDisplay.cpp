@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "WaveformDisplay.h"
 #include "LunchBoxFonts.h"
+#include "UIColours.h"
+#include "UIConstants.h"
 
 namespace
 {
-    const juce::Colour waveBg      { 0xff151a26 };
-    const juce::Colour waveColour  { 0xff4caf50 };
-    const juce::Colour cursorColour{ 0xccffffff };
-    const juce::Colour emptyText   { 0xff3a4a5a };
+    const juce::Colour waveBg       = LunchBoxColours::WAVE_BG;
+    const juce::Colour waveColour   = LunchBoxColours::WAVE_FG;
+    const juce::Colour cursorColour = LunchBoxColours::WAVE_CURSOR;
+    const juce::Colour emptyText    = LunchBoxColours::WAVE_EMPTY;
 }
 
 WaveformDisplay::WaveformDisplay(AudioPreviewPlayer& p)
@@ -27,14 +29,14 @@ void WaveformDisplay::loadFile(const juce::File& file)
 {
     thumbnail.setSource(new juce::FileInputSource(file));
     fileLoaded = true;
-    startTimerHz(30);
+    startTimerHz(LunchBoxConstants::WAVEFORM_REPAINT_HZ);
     repaint();
 }
 
 void WaveformDisplay::startPositionTracking()
 {
     if (fileLoaded)
-        startTimerHz(30);
+        startTimerHz(LunchBoxConstants::WAVEFORM_REPAINT_HZ);
 }
 
 void WaveformDisplay::clear()

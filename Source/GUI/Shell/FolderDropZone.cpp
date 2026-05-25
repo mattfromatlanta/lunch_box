@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "FolderDropZone.h"
 #include "LunchBoxFonts.h"
+#include "UIColours.h"
+#include "UIConstants.h"
 
 namespace
 {
-    const juce::Colour zoneBg      { 0xff252b3b };
-    const juce::Colour zoneBorder  { 0xff3a4a5a };
-    const juce::Colour hoverFill   { 0x1a2196f3 };  // translucent blue
-    const juce::Colour hoverBorder { 0xff2196f3 };
-    const juce::Colour pathColour  { 0xffccddee };
-    const juce::Colour placeholderColour { 0xff667788 };
-    const float cornerSize = 6.0f;
+    const juce::Colour zoneBg            = LunchBoxColours::DROPZONE_BG;
+    const juce::Colour zoneBorder        = LunchBoxColours::DROPZONE_BORDER;
+    const juce::Colour hoverFill         = LunchBoxColours::DROPZONE_HOVER_BG;
+    const juce::Colour hoverBorder       = LunchBoxColours::DROPZONE_HOVER_BORDER;
+    const juce::Colour pathColour        = LunchBoxColours::DROPZONE_PATH;
+    const juce::Colour placeholderColour = LunchBoxColours::DROPZONE_PLACEHOLDER;
+    constexpr float cornerSize           = LunchBoxConstants::CORNER_RADIUS;
 }
 
 FolderDropZone::FolderDropZone(const juce::String& buttonText,

@@ -35,6 +35,7 @@ public:
     static constexpr int FOOTER_OFFSET = 76;
 
 private:
+    using juce::Component::keyPressed;
     bool keyPressed(const juce::KeyPress& key, juce::Component* origin) override;
     void confirm();
     void cancel();

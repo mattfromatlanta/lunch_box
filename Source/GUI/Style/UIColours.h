@@ -47,6 +47,37 @@ namespace LunchBoxColours
     inline const juce::Colour GRID        = juce::Colour::fromHSV(0.67f, 0.16f, 0.27f, 1.0f);
     inline const juce::Colour FOCUS_BORDER = WHITE_CREAM;   // focused cell/row indicator
 
+    // ── Console / status colours ───────────────────────────
+    inline const juce::Colour CONSOLE_BG      { 0xff151a26 };
+    inline const juce::Colour CONSOLE_TEXT    { 0xffaabbcc };
+    inline const juce::Colour CONSOLE_OUTLINE { 0xff2a3a4a };
+    inline const juce::Colour ACCENT_GREEN    { 0xff4caf50 };   // success accent
+
+    // ── Bank slot state colours ────────────────────────────
+    inline const juce::Colour SLOT_EMPTY_BG       { 0xff1d2228 };
+    inline const juce::Colour SLOT_FILLED_BG      { 0xff3a5060 };
+    inline const juce::Colour SLOT_BORDER         { 0xff3a4a5a };
+    inline const juce::Colour SLOT_DROP_BDR       { 0xff4caf50 };
+    inline const juce::Colour SLOT_SELECTED_BG    { 0xff1e2a4a };
+    inline const juce::Colour SLOT_DRAG_TARGET_BG { 0xff2d2518 };
+    inline const juce::Colour SLOT_DRAG_TARGET_BDR{ 0xffddaa33 };
+    inline const juce::Colour SLOT_SWAP_SRC_BG    { 0xff2a1e08 };
+    inline const juce::Colour SLOT_SWAP_SRC_BDR   { 0xff997733 };
+
+    // ── WaveformDisplay colours ────────────────────────────
+    inline const juce::Colour WAVE_BG     { 0xff151a26 };
+    inline const juce::Colour WAVE_FG     { 0xff4caf50 };
+    inline const juce::Colour WAVE_CURSOR { 0xccffffff };
+    inline const juce::Colour WAVE_EMPTY  { 0xff3a4a5a };
+
+    // ── FolderDropZone colours ─────────────────────────────
+    inline const juce::Colour DROPZONE_BG       { 0xff252b3b };
+    inline const juce::Colour DROPZONE_BORDER   { 0xff3a4a5a };
+    inline const juce::Colour DROPZONE_HOVER_BG     { 0x1a2196f3 };
+    inline const juce::Colour DROPZONE_HOVER_BORDER { 0xff2196f3 };
+    inline const juce::Colour DROPZONE_PATH         { 0xffccddee };
+    inline const juce::Colour DROPZONE_PLACEHOLDER  { 0xff667788 };
+
     // Draw 45° diagonal (top-left → bottom-right) selection stripes for selected-but-not-focused
     // elements. originInRoot is the component's (0,0) in root-window coordinates, ensuring stripe
     // continuity across cells — they appear as a shared virtual layer being unmasked per cell.

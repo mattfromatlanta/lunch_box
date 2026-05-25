@@ -6,10 +6,8 @@
 
 namespace
 {
-    const juce::Colour bgColour        = LunchBoxColours::DARK_GREY;
-    const juce::Colour statusBgColour  { 0xff151a26 };
-    const juce::Colour accentColour    { 0xff4caf50 };
-    const juce::Colour tabTextCol      = LunchBoxColours::WHITE_CREAM;
+    const juce::Colour bgColour   = LunchBoxColours::DARK_GREY;
+    const juce::Colour tabTextCol = LunchBoxColours::WHITE_CREAM;
 }
 
 //==============================================================================
@@ -19,20 +17,22 @@ class ConsoleWindow : public juce::DocumentWindow
 {
 public:
     explicit ConsoleWindow(const juce::String& initialContent)
-        : juce::DocumentWindow("Console", juce::Colour(0xff151a26), DocumentWindow::closeButton)
+        : juce::DocumentWindow("Console", LunchBoxColours::CONSOLE_BG, DocumentWindow::closeButton)
     {
         setUsingNativeTitleBar(true);
         editor.setMultiLine(true);
         editor.setReadOnly(true);
         editor.setScrollbarsShown(true);
         editor.setCaretVisible(false);
-        editor.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain));
-        editor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xff151a26));
-        editor.setColour(juce::TextEditor::textColourId,       juce::Colour(0xffaabbcc));
-        editor.setColour(juce::TextEditor::outlineColourId,    juce::Colour(0xff2a3a4a));
+        editor.setFont(juce::Font(juce::FontOptions{}
+                                      .withName(juce::Font::getDefaultMonospacedFontName())
+                                      .withHeight(LunchBoxConstants::CONSOLE_FONT_SIZE)));
+        editor.setColour(juce::TextEditor::backgroundColourId, LunchBoxColours::CONSOLE_BG);
+        editor.setColour(juce::TextEditor::textColourId,       LunchBoxColours::CONSOLE_TEXT);
+        editor.setColour(juce::TextEditor::outlineColourId,    LunchBoxColours::CONSOLE_OUTLINE);
         editor.setText(initialContent);
         setContentNonOwned(&editor, true);
-        setSize(520, 280);
+        setSize(LunchBoxConstants::CONSOLE_WIDTH, LunchBoxConstants::CONSOLE_HEIGHT);
         setResizable(true, false);
         setVisible(true);
     }
@@ -246,7 +246,7 @@ void MainComponent::paint(juce::Graphics& g)
     g.fillAll(bgColour);
 
     {
-        auto headerArea = getLocalBounds().removeFromTop(64).toFloat();
+        auto headerArea = getLocalBounds().removeFromTop(LunchBoxConstants::HEADER_HEIGHT).toFloat();
         g.setFont(LunchBoxFonts::logoTitle(60.0f));
         g.setColour(LunchBoxColours::WHITE_CREAM);
         g.drawText("LUNCH BOX", headerArea, juce::Justification::centred, false);
@@ -262,32 +262,34 @@ void MainComponent::resized()
         isTransitioning = false;
     }
 
+    using namespace LunchBoxConstants;
+
     auto bounds = getLocalBounds();
-    bounds.removeFromTop(64);
-    auto area = bounds.reduced(12, 0).withTrimmedBottom(12);
+    bounds.removeFromTop(HEADER_HEIGHT);
+    auto area = bounds.reduced(CONTENT_H_MARGIN, 0).withTrimmedBottom(CONTENT_BOTTOM_PAD);
 
     // ── Nav row: [Cubbi][Jammi]  gap  [Pack][Bank] ────────
     {
-        auto navRow = area.removeFromTop(32);
-        const int halfW = (navRow.getWidth() - 24) / 2;
+        auto navRow = area.removeFromTop(NAV_ROW_HEIGHT);
+        const int halfW = (navRow.getWidth() - NAV_PAIR_GAP) / 2;
 
         auto leftPair  = navRow.removeFromLeft(halfW);
-        navRow.removeFromLeft(24);
+        navRow.removeFromLeft(NAV_PAIR_GAP);
         auto rightPair = navRow;
 
         const int lHalf = leftPair.getWidth() / 2;
-        cubbiTabButton.setBounds(leftPair.removeFromLeft(lHalf).reduced(2, 0));
-        jammiTabButton.setBounds(leftPair.reduced(2, 0));
+        cubbiTabButton.setBounds(leftPair.removeFromLeft(lHalf).reduced(BUTTON_H_INSET, 0));
+        jammiTabButton.setBounds(leftPair.reduced(BUTTON_H_INSET, 0));
 
         const int rHalf = rightPair.getWidth() / 2;
-        packModeButton.setBounds(rightPair.removeFromLeft(rHalf).reduced(2, 0));
-        bankModeButton.setBounds(rightPair.reduced(2, 0));
+        packModeButton.setBounds(rightPair.removeFromLeft(rHalf).reduced(BUTTON_H_INSET, 0));
+        bankModeButton.setBounds(rightPair.reduced(BUTTON_H_INSET, 0));
     }
-    area.removeFromTop(8);
+    area.removeFromTop(NAV_TO_CONTENT_GAP);
 
     // ── Footer: 3 equal buttons [Clear][Fill][Pack] ───────
-    auto footer = area.removeFromBottom(54 + 12);
-    footer.removeFromTop(12);
+    auto footer = area.removeFromBottom(FOOTER_BAND_HEIGHT);
+    footer.removeFromTop(FOOTER_TOP_GAP);
 
     // ── Grid / content area ───────────────────────────────
     if (viewMode == ViewMode::Pack)
@@ -305,9 +307,9 @@ void MainComponent::resized()
     // ── Footer button layout ──────────────────────────────
     {
         const int bW = footer.getWidth() / 3;
-        clearButton.setBounds(footer.removeFromLeft(bW).reduced(2, 0));
-        fillButton.setBounds(footer.removeFromLeft(bW).reduced(2, 0));
-        processButton.setBounds(footer.reduced(2, 0));
+        clearButton.setBounds(footer.removeFromLeft(bW).reduced(BUTTON_H_INSET, 0));
+        fillButton.setBounds(footer.removeFromLeft(bW).reduced(BUTTON_H_INSET, 0));
+        processButton.setBounds(footer.reduced(BUTTON_H_INSET, 0));
     }
 
     packNameOverlay.setBounds(getLocalBounds());
@@ -317,12 +319,13 @@ void MainComponent::resized()
 
 juce::Rectangle<int> MainComponent::computeContentArea() const
 {
+    using namespace LunchBoxConstants;
     auto bounds = getLocalBounds();
-    bounds.removeFromTop(64);
-    auto area = bounds.reduced(12, 0).withTrimmedBottom(12);
-    area.removeFromTop(32);
-    area.removeFromTop(8);
-    area.removeFromBottom(54 + 12);
+    bounds.removeFromTop(HEADER_HEIGHT);
+    auto area = bounds.reduced(CONTENT_H_MARGIN, 0).withTrimmedBottom(CONTENT_BOTTOM_PAD);
+    area.removeFromTop(NAV_ROW_HEIGHT);
+    area.removeFromTop(NAV_TO_CONTENT_GAP);
+    area.removeFromBottom(FOOTER_BAND_HEIGHT);
     return area;
 }
 

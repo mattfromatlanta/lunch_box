@@ -7,11 +7,10 @@
 
 namespace
 {
-    const juce::Colour slotEmptyBg       { 0xff1d2228 };
-    const juce::Colour slotFilledBg      { 0xff3a5060 };
-    const juce::Colour slotBorder        { 0xff3a4a5a };
+    const juce::Colour slotEmptyBg       = LunchBoxColours::SLOT_EMPTY_BG;
+    const juce::Colour slotBorder        = LunchBoxColours::SLOT_BORDER;
     const juce::Colour slotHoverBdr      = LunchBoxColours::WHITE_CREAM;
-    const juce::Colour slotDropBdr       { 0xff4caf50 };
+    const juce::Colour slotDropBdr       = LunchBoxColours::SLOT_DROP_BDR;
     const juce::Colour slotNumCol        = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
     const juce::Colour slotTxtCol        = LunchBoxColours::WHITE_CREAM;
 
@@ -27,13 +26,13 @@ namespace
             default:  return slotBorder;
         }
     }
-    const juce::Colour slotSelectedBg    { 0xff1e2a4a };
+    const juce::Colour slotSelectedBg    = LunchBoxColours::SLOT_SELECTED_BG;
     const juce::Colour slotFocusBdr      = LunchBoxColours::FOCUS_BORDER;
     const juce::Colour slotSelectedBdr   = LunchBoxColours::WHITE_CREAM;
-    const juce::Colour slotDragTargetBg  { 0xff2d2518 };
-    const juce::Colour slotDragTargetBdr { 0xffddaa33 };
-    const juce::Colour slotSwapSourceBg  { 0xff2a1e08 };   // warm-gold tint for swap-mode sources
-    const juce::Colour slotSwapSourceBdr { 0xff997733 };
+    const juce::Colour slotDragTargetBg  = LunchBoxColours::SLOT_DRAG_TARGET_BG;
+    const juce::Colour slotDragTargetBdr = LunchBoxColours::SLOT_DRAG_TARGET_BDR;
+    const juce::Colour slotSwapSourceBg  = LunchBoxColours::SLOT_SWAP_SRC_BG;
+    const juce::Colour slotSwapSourceBdr = LunchBoxColours::SLOT_SWAP_SRC_BDR;
 }
 
 BankSlotComponent::BankSlotComponent(char bank, int slot)
