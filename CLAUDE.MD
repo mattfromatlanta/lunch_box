@@ -11,14 +11,12 @@
 **Key Documentation:**
 - [README.md](README.md) - User-facing project overview
 - [HOW_TO.md](HOW_TO.md) - Comprehensive user guide
-- [prompts/MILESTONES_OVERVIEW.md](prompts/MILESTONES_OVERVIEW.md) - Complete development roadmap
 
 ---
 
 ## Current Status
 
-**Version:** 2.4.0
-**Completed Milestones:** M1–M8, M10, M12 (major+second pass), Bank Focus View, UI Layout Overhaul, Keyboard/UX Refinements
+**Version:** 1.0.0
 
 **What Works:**
 - ✅ CLI interface with full CHOMPI processing (wav/aiff/mp3/flac)
@@ -42,8 +40,6 @@
 - ✅ ApplicationCommandManager hotkeys: Cmd+Z/Shift+Z (undo/redo), Cmd+C/X/V (copy/cut/paste), Cmd+A (select all), Cmd+O (open output), Cmd+Return (process)
 - ✅ 10-step undo/redo (full state snapshots, cross-view-mode)
 - ✅ System clipboard paste from external apps (Finder file URLs, Sononym plain-text paths)
-
-**See:** [prompts/MILESTONES_OVERVIEW.md](prompts/MILESTONES_OVERVIEW.md) for full roadmap.
 
 ---
 
@@ -139,7 +135,7 @@ Examples:
 - Saved with `_double` suffix
 - Generated to enable pitch-shifting on the hardware
 
-**Lunch Box Behavior:** As of Milestone 5, Lunch Box proactively generates both base and optimized versions for every input sample, creating complete CHOMPI libraries without requiring the hardware to generate files.
+**Lunch Box Behavior:** Lunch Box proactively generates both base and optimized versions for every input sample, creating complete CHOMPI libraries without requiring the hardware to generate files.
 
 **Duration Limits:**
 - Base samples: Maximum 2 minutes (120 seconds)
@@ -192,12 +188,9 @@ Examples:
 - Add integration tests for new workflows
 - Update existing tests if behavior changes
 
-**See:** [prompts/milestone_11_plan.md](prompts/milestone_11_plan.md) for comprehensive testing plans.
-
 ### Build System
 
 **CMake Configuration:**
-- Console app changed to GUI app in Milestone 4
 - JUCE modules: `juce_core`, `juce_audio_formats`, `juce_audio_basics`, `juce_gui_basics`, `juce_gui_extra`
 - Target name: `lunch_box`
 - Test target: `test_lunch_box_namer`
@@ -262,34 +255,6 @@ make
 
 ---
 
-## Milestone Plans
-
-**All future development is documented in detailed milestone plans:**
-
-| Milestone | Plan Document | Status |
-|-----------|---------------|--------|
-| M1-M4 | [milestone_1-4_plan.md](prompts/) | ✅ Complete |
-| M5 | [milestone_5_plan.md](prompts/milestone_5_plan.md) | ✅ Complete |
-| M6 | [milestone_6_plan.md](prompts/milestone_6_plan.md) | ✅ Complete |
-| M7 | [milestone_7_plan.md](prompts/milestone_7_plan.md) | ✅ Complete |
-| M8 | [milestone_8_plan.md](prompts/milestone_8_plan.md) | ✅ Complete |
-| M9 | [milestone_9_plan.md](prompts/milestone_9_plan.md) | 🔄 Base theme done; tooltips/animations remaining |
-| M10 | [milestone_10_plan.md](prompts/milestone_10_plan.md) | ✅ Complete |
-| M11 | [milestone_11_plan.md](prompts/milestone_11_plan.md) | 📋 Planned |
-| M12 | [milestone_12_plan.md](prompts/milestone_12_plan.md) | 🔄 Major refactor done; clang-tidy remaining |
-| M13 | [milestone_13_plan.md](prompts/milestone_13_plan.md) | 📋 Planned |
-
-**Before implementing any feature:** Read the relevant milestone plan. Each plan includes:
-- Detailed technical architecture
-- Implementation steps (phases)
-- Success criteria
-- Code examples
-- Testing requirements
-
-**See:** [prompts/MILESTONES_OVERVIEW.md](prompts/MILESTONES_OVERVIEW.md) for roadmap and dependencies.
-
----
-
 ## Key Files Reference
 
 ### Essential Reading
@@ -312,22 +277,6 @@ lunch_box/
 ├── HOW_TO.md                          # Comprehensive user guide
 ├── CLAUDE.md                          # This file (AI assistant guide)
 │
-├── prompts/                           # Development planning
-│   ├── MILESTONES_OVERVIEW.md         # Complete roadmap (always up to date)
-│   ├── milestone_1_plan.md            # Audio scanner (complete)
-│   ├── milestone_2_plan.md            # Format conversion (complete)
-│   ├── milestone_3_plan.md            # CHOMPI naming (complete)
-│   ├── milestone_4_plan.md            # GUI application (complete)
-│   ├── milestone_5_plan.md            # Format support AIFF/MP3/FLAC (complete)
-│   ├── milestone_6_plan.md            # Bank folder organization (complete)
-│   ├── milestone_7_plan.md            # Drag and drop (complete)
-│   ├── milestone_8_plan.md            # Individual sample management (complete)
-│   ├── milestone_9_plan.md            # GUI polish (base done, tooltips remaining)
-│   ├── milestone_10_plan.md           # Waveform/preview (complete)
-│   ├── milestone_11_plan.md           # Testing (planned)
-│   ├── milestone_12_plan.md           # Code review (major pass done)
-│   └── milestone_13_plan.md           # Open source prep (planned)
-│
 ├── Source/                            # C++ source code
 │   ├── Main.cpp                       # Entry point
 │   ├── AudioConfiguration.h           # Shared config struct
@@ -347,13 +296,12 @@ lunch_box/
 │   │   ├── PreviewPanel.h/cpp         # Waveform + audio playback
 │   │   └── FolderDropZone.h/cpp       # Simple: folder drop zone
 │   └── Processing/                    # Core processing modules
-│       ├── LunchBoxProcessor.h/cpp      # Processing orchestrator
+│       ├── LunchBoxProcessor.h/cpp    # Processing orchestrator
 │       ├── AudioConverter.h/cpp       # Format conversion
-│       ├── LunchBoxNamer.h/cpp          # CHOMPI naming + constants
+│       ├── LunchBoxNamer.h/cpp        # CHOMPI naming + constants
 │       └── BankFolderParser.h/cpp     # Bank subfolder detection
 │
-├── dev_assets/                        # Test samples
-└── logs/                              # Operation logs
+└── tests/                             # Unit tests
 ```
 
 ---
@@ -397,8 +345,8 @@ open "lunch_box_artefacts/Lunch Box.app"
 
 # Test CLI
 "lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" \
-  --cubbi ../dev_assets/cubbi \
-  --jammi ../dev_assets/jammi
+  --cubbi /path/to/cubbi/samples \
+  --jammi /path/to/jammi/samples
 # Verify: same output as GUI
 
 # Run unit tests
@@ -453,10 +401,9 @@ open "lunch_box_artefacts/Lunch Box.app"
 
 ### When Stuck
 
-1. **Read relevant milestone plan** - Likely already documented
-2. **Check existing code** - Pattern probably exists elsewhere
-3. **Review git history** - See how similar features were added
-4. **Check JUCE docs** - Framework has most functionality needed
+1. **Check existing code** - Pattern probably exists elsewhere
+2. **Review git history** - See how similar features were added
+3. **Check JUCE docs** - Framework has most functionality needed
 
 ### JUCE Resources
 
@@ -468,7 +415,6 @@ open "lunch_box_artefacts/Lunch Box.app"
 
 - **CHOMPI Hardware:** https://creditor.technology (for understanding target device)
 - **User Workflows:** See HOW_TO.md examples
-- **Architecture Decisions:** See milestone plan "Technical Architecture" sections
 
 ---
 
@@ -494,15 +440,13 @@ open "lunch_box_artefacts/Lunch Box.app"
 
 ### Common File Paths
 ```
-Source/GUI/MainComponent.cpp           # Main GUI logic (tabs, mode switching)
-Source/GUI/BankFocusPanel.cpp          # Bank tab panel
-Source/GUI/BankEditorPanel.cpp         # Advanced tab grid
-Source/CLI/CliProcessor.cpp            # CLI logic
+Source/GUI/MainComponent.cpp             # Main GUI logic (tabs, mode switching)
+Source/GUI/BankFocusPanel.cpp            # Bank tab panel
+Source/GUI/BankEditorPanel.cpp           # Advanced tab grid
+Source/CLI/CliProcessor.cpp              # CLI logic
 Source/Processing/LunchBoxProcessor.cpp  # Shared processing orchestrator
-Source/Processing/AudioConverter.cpp   # Audio conversion
+Source/Processing/AudioConverter.cpp     # Audio conversion
 Source/Processing/LunchBoxNamer.cpp      # CHOMPI naming + constants
-prompts/MILESTONES_OVERVIEW.md         # Always-current roadmap
-prompts/milestone_X_plan.md            # Individual feature plans
 ```
 
 ### Key Constants
@@ -519,21 +463,6 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 
 ---
 
-## Version History
-
-- **v2.3.0** (Current) - UI Layout Overhaul: resizable window (default 525×900), unified grid heights, 2-col bank view, floating console, footer, output section polish
-- **v2.2.0** - Bank Focus View (third tab, waveform rows, shared category tabs)
-- **v2.1.0** - M12 structural refactor: Source/Processing/ layout, constants deduplication, bug fixes
-- **v2.0.0** - M7, M8, M9 (base), M10 complete; menu bar, runtime logs, bank distribution fixes
-- **v1.3.0** - M6: Bank-subfolder detection (BankFolderParser)
-- **v1.2.0** - M5: AIFF/MP3/FLAC support + `_double` generation
-- **v1.1.0** - M4: GUI application with folder selection and output
-- **v1.0.0** - M1–M3: CLI with CHOMPI processing, naming, conversion
-
-**Next:** M9 finish (tooltips/animations) → M11 (unit testing) → M13 (open source)
-
----
-
 **Author:** [Matt from Atlanta](https://github.com/mattfromatlanta) — [Bluesky](https://bsky.app/profile/mattfromatlanta.bsky.social) · [Bandcamp](https://angsttanks.bandcamp.com/)
 **AI Assistant:** This document is specifically for AI assistants working on the codebase
 
@@ -545,12 +474,6 @@ This project has clean separation between interface (CLI/GUI) and processing log
 
 1. **Check if it's processing logic** → Add to core modules (AudioConverter, LunchBoxNamer, LunchBoxProcessor)
 2. **Check if it's interface** → Add to CliProcessor or GuiProcessor
-
-The milestone plans are comprehensive. Read them before implementing anything. They contain:
-- Complete technical architecture
-- Step-by-step implementation guidance
-- Success criteria
-- Testing requirements
 
 The code is well-structured. Follow existing patterns. Don't reinvent wheels.
 
