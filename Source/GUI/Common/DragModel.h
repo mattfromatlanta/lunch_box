@@ -75,19 +75,19 @@ namespace LunchBoxDrag
 
     // Compute every write needed to commit this drag.
     //
-    // Algorithm — stack-insertion through available cells:
-    //   1. The moving block: each source cell's file is written to source+delta
-    //      (empties travel with the selection, geometry preserved).
-    //   2. "Available cells" = every cell NOT in the destination set, walked in
-    //      global-index order with wrap. Source-only cells are conceptually empty
-    //      (their content moved to the destination) and are part of available.
-    //   3. Each filled target-only cell's original content is "displaced". Sorted
-    //      by original global index, each displaced file is stack-inserted into
-    //      available, starting at the first available cell whose global index is
-    //      >= the displaced cell's origin (wrapping to 0 if past the end). If the
-    //      target available cell is empty, the file lands there; if filled, the
-    //      file is inserted at that position and the existing files shift forward
-    //      through the available chain until an empty cell absorbs the cascade.
+    // Algorithm — reverse-shift with row-major fallback:
+    //   1. The moving block: each source cell's file is written to its
+    //      corresponding destCell (empties travel — geometry preserved).
+    //   2. Each filled target-only cell is "displaced". Its file flows BACK
+    //      against the drag direction: the displaced file at destCells[i]
+    //      lands at sourceCells[i] (the cell that emptied to make room).
+    //      Source cells that were empty in the source still receive displaced
+    //      content — "empties collapse" into the incoming files.
+    //   3. Overlap fallback: if sourceCells[i] is also in destCells (so it's
+    //      not source-only and can't hold the displaced file), the file goes
+    //      to the next available source-only cell in global-index order.
+    //   4. Source-only cells that didn't receive any displaced file get an
+    //      explicit empty write (they were vacated by the move).
     //
     // Caller must clamp the op first via clampOpToGrid(). Filled-count is invariant.
     DragResult computeDragResult(const GridAccessor& grid, const DragOp& op, GridDims dims);

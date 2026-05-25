@@ -7,8 +7,8 @@ using namespace LunchBoxDrag;
 namespace
 {
     // Build a grid accessor backed by a simple 2D vector. Files are encoded as
-    // juce::File paths "/X/<bank>_<slot>" so the test can identify which file
-    // landed where without touching the filesystem.
+    // juce::File paths "/X/<tag>" so the test can identify which file landed
+    // where without touching the filesystem.
     struct FakeGrid
     {
         GridDims dims;
@@ -47,8 +47,7 @@ namespace
         juce::String tagAt(int b, int s) const
         {
             auto f = data[b][s];
-            return f == juce::File{} ? juce::String("_")
-                                     : f.getFileName();
+            return f == juce::File{} ? juce::String("_") : f.getFileName();
         }
 
         int filledCount() const
@@ -136,7 +135,7 @@ public:
             expectEquals(g.tagAt(0, 5), juce::String("A"));
         }
 
-        beginTest ("computeDragResult: single-cell drag onto filled cell pushes displaced forward");
+        beginTest ("computeDragResult: single-cell swap via reverse-shift");
         {
             FakeGrid g(dims);
             g.put(0, 0, "A");
@@ -148,31 +147,9 @@ public:
             op.dropCell    = GridCell{0, 5};
             g.apply(computeDragResult(g.accessor(), op, dims));
 
-            // Stack insertion: A lands at (0,5). B's home was (0,5), it pushes forward
-            // to the first empty available cell — (0,6).
-            expectEquals(g.tagAt(0, 0), juce::String("_"));   // source vacated, no swap-back
+            // Reverse-shift: displaced B flows back into the vacated source cell.
+            expectEquals(g.tagAt(0, 0), juce::String("B"));
             expectEquals(g.tagAt(0, 5), juce::String("A"));
-            expectEquals(g.tagAt(0, 6), juce::String("B"));
-        }
-
-        beginTest ("computeDragResult: cascade when next slot is filled");
-        {
-            FakeGrid g(dims);
-            g.put(0, 0, "A");
-            g.put(0, 3, "B");
-            g.put(0, 4, "C");   // immediately after the drop target — must shift forward
-
-            DragOp op;
-            op.sourceCells = { GridCell{0, 0} };
-            op.pickupCell  = GridCell{0, 0};
-            op.dropCell    = GridCell{0, 3};
-            g.apply(computeDragResult(g.accessor(), op, dims));
-
-            // A lands at (0,3). B inserts at (0,4) (was C's slot) — pushes C to (0,5).
-            expectEquals(g.tagAt(0, 0), juce::String("_"));
-            expectEquals(g.tagAt(0, 3), juce::String("A"));
-            expectEquals(g.tagAt(0, 4), juce::String("B"));
-            expectEquals(g.tagAt(0, 5), juce::String("C"));
         }
 
         beginTest ("computeDragResult: cross-bank single drag");
@@ -187,13 +164,12 @@ public:
             op.dropCell    = GridCell{2, 5};
             g.apply(computeDragResult(g.accessor(), op, dims));
 
-            // A lands at (2,5). B pushes forward to (2,6).
-            expectEquals(g.tagAt(0, 5), juce::String("_"));
+            // B flows back to A's vacated cell (reverse-shift across banks).
+            expectEquals(g.tagAt(0, 5), juce::String("B"));
             expectEquals(g.tagAt(2, 5), juce::String("A"));
-            expectEquals(g.tagAt(2, 6), juce::String("B"));
         }
 
-        beginTest ("computeDragResult: cross-bank multi-cell drag with cascading displacement");
+        beginTest ("computeDragResult: cross-bank block swap");
         {
             FakeGrid g(dims);
             g.put(0, 3, "A1"); g.put(0, 4, "A2"); g.put(0, 5, "A3");
@@ -205,25 +181,41 @@ public:
             op.dropCell    = GridCell{1, 3};
             g.apply(computeDragResult(g.accessor(), op, dims));
 
-            // Source bank-0 cells vacate. Bank-1 receives A1,A2,A3. The original B1,B2,B3
-            // each stack-insert forward from their origin — B1 lands at (1,6), then B2
-            // cascades it to (1,7), then B3 cascades both to (1,8).
-            expectEquals(g.tagAt(0, 3), juce::String("_"));
-            expectEquals(g.tagAt(0, 4), juce::String("_"));
-            expectEquals(g.tagAt(0, 5), juce::String("_"));
+            // A1..A3 land at bank 1. B1..B3 reverse-shift to bank 0 (each B[i] back
+            // to where the corresponding A[i] came from). Clean block swap.
+            expectEquals(g.tagAt(0, 3), juce::String("B1"));
+            expectEquals(g.tagAt(0, 4), juce::String("B2"));
+            expectEquals(g.tagAt(0, 5), juce::String("B3"));
             expectEquals(g.tagAt(1, 3), juce::String("A1"));
             expectEquals(g.tagAt(1, 4), juce::String("A2"));
             expectEquals(g.tagAt(1, 5), juce::String("A3"));
-            expectEquals(g.tagAt(1, 6), juce::String("B3"));
-            expectEquals(g.tagAt(1, 7), juce::String("B2"));
-            expectEquals(g.tagAt(1, 8), juce::String("B1"));
         }
 
-        beginTest ("computeDragResult: empty cells in move set travel with selection");
+        beginTest ("computeDragResult: discontiguous selection preserves spatial swap");
         {
             FakeGrid g(dims);
+            g.put(0, 0, "A"); g.put(2, 5, "B");
+            g.put(1, 1, "X"); g.put(3, 6, "Y");
+
+            DragOp op;
+            op.sourceCells = { GridCell{0, 0}, GridCell{2, 5} };
+            op.pickupCell  = GridCell{0, 0};
+            op.dropCell    = GridCell{1, 1};
+            g.apply(computeDragResult(g.accessor(), op, dims));
+
+            // Each displaced file flows back to its paired source position.
+            expectEquals(g.tagAt(0, 0), juce::String("X"));
+            expectEquals(g.tagAt(2, 5), juce::String("Y"));
+            expectEquals(g.tagAt(1, 1), juce::String("A"));
+            expectEquals(g.tagAt(3, 6), juce::String("B"));
+        }
+
+        beginTest ("computeDragResult: empty cells in move set absorb displaced files");
+        {
+            FakeGrid g(dims);
+            // Source: A, _, C at (0,0)-(0,2). Target row 1 fully filled with X,Y,Z.
             g.put(0, 0, "A");
-            g.put(0, 2, "C");                     // (0,1) intentionally empty
+            g.put(0, 2, "C");
             g.put(1, 0, "X"); g.put(1, 1, "Y"); g.put(1, 2, "Z");
 
             DragOp op;
@@ -232,21 +224,18 @@ public:
             op.dropCell    = GridCell{1, 0};
             g.apply(computeDragResult(g.accessor(), op, dims));
 
-            // Bank 1 receives the moved row including the empty in the middle.
+            // Moving block (with its middle empty) lands at row 1.
             expectEquals(g.tagAt(1, 0), juce::String("A"));
             expectEquals(g.tagAt(1, 1), juce::String("_"));
             expectEquals(g.tagAt(1, 2), juce::String("C"));
-            // Source cells fully vacate.
-            expectEquals(g.tagAt(0, 0), juce::String("_"));
-            expectEquals(g.tagAt(0, 1), juce::String("_"));
-            expectEquals(g.tagAt(0, 2), juce::String("_"));
-            // Displaced X,Y,Z cascade forward into bank 1 slots 3+, in reverse-insertion order.
-            expectEquals(g.tagAt(1, 3), juce::String("Z"));
-            expectEquals(g.tagAt(1, 4), juce::String("Y"));
-            expectEquals(g.tagAt(1, 5), juce::String("X"));
+            // Displaced X,Y,Z reverse-shift back to row 0. The empty middle
+            // source cell collapses to receive Y.
+            expectEquals(g.tagAt(0, 0), juce::String("X"));
+            expectEquals(g.tagAt(0, 1), juce::String("Y"));
+            expectEquals(g.tagAt(0, 2), juce::String("Z"));
         }
 
-        beginTest ("computeDragResult: overlapping move shifts block + cascades one cell");
+        beginTest ("computeDragResult: overlapping move uses row-major fallback");
         {
             FakeGrid g(dims);
             g.put(0, 1, "A"); g.put(0, 2, "B"); g.put(0, 3, "C"); g.put(0, 4, "D");
@@ -257,16 +246,16 @@ public:
             op.dropCell    = GridCell{0, 2};
             g.apply(computeDragResult(g.accessor(), op, dims));
 
-            // Block A,B,C shifts right by 1. D was at (0,4); it pushes forward to (0,5).
-            // Source-only cell (0,1) vacates.
-            expectEquals(g.tagAt(0, 1), juce::String("_"));
+            // Block A,B,C shifts right by 1. D at (0,4) is target-only; its paired
+            // source (0,3) is overlap, so D falls to row-major fallback into the
+            // only source-only cell (0,1).
+            expectEquals(g.tagAt(0, 1), juce::String("D"));
             expectEquals(g.tagAt(0, 2), juce::String("A"));
             expectEquals(g.tagAt(0, 3), juce::String("B"));
             expectEquals(g.tagAt(0, 4), juce::String("C"));
-            expectEquals(g.tagAt(0, 5), juce::String("D"));
         }
 
-        beginTest ("computeDragResult: filled-count invariant under stack insertion");
+        beginTest ("computeDragResult: filled-count invariant");
         {
             FakeGrid g(dims);
             g.put(0, 0, "F0"); g.put(0, 5, "F1"); g.put(1, 2, "F2");
