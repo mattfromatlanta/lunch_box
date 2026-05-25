@@ -58,34 +58,42 @@ target_sources(lunch_box
         Source/AudioConfiguration.h
         Source/CLI/CliProcessor.h
         Source/CLI/CliProcessor.cpp
-        Source/GUI/MainWindow.h
-        Source/GUI/MainWindow.cpp
-        Source/GUI/AppMenuBar.h
-        Source/GUI/AppMenuBar.cpp
-        Source/GUI/MainComponent.h
-        Source/GUI/MainComponent.cpp
-        Source/GUI/GuiProcessor.h
-        Source/GUI/GuiProcessor.cpp
-        Source/GUI/FolderDropZone.h
-        Source/GUI/FolderDropZone.cpp
-        Source/GUI/BankSlotComponent.h
-        Source/GUI/BankSlotComponent.cpp
-        Source/GUI/BankRowComponent.h
-        Source/GUI/BankRowComponent.cpp
-        Source/GUI/BankEditorPanel.h
-        Source/GUI/BankEditorPanel.cpp
-        Source/GUI/FocusedSlotRow.h
-        Source/GUI/FocusedSlotRow.cpp
-        Source/GUI/BankFocusPanel.h
-        Source/GUI/BankFocusPanel.cpp
-        Source/GUI/AudioPreviewPlayer.h
-        Source/GUI/AudioPreviewPlayer.cpp
-        Source/GUI/WaveformDisplay.h
-        Source/GUI/WaveformDisplay.cpp
-        Source/GUI/PreviewPanel.h
-        Source/GUI/PreviewPanel.cpp
-        Source/GUI/ClipboardHelper.h
-        Source/GUI/ClipboardHelper.mm
+        Source/GUI/Shell/MainWindow.h
+        Source/GUI/Shell/MainWindow.cpp
+        Source/GUI/Shell/AppMenuBar.h
+        Source/GUI/Shell/AppMenuBar.cpp
+        Source/GUI/Shell/MainComponent.h
+        Source/GUI/Shell/MainComponent.cpp
+        Source/GUI/Shell/GuiProcessor.h
+        Source/GUI/Shell/GuiProcessor.cpp
+        Source/GUI/Shell/FolderDropZone.h
+        Source/GUI/Shell/FolderDropZone.cpp
+        Source/GUI/Shell/ClipboardHelper.h
+        Source/GUI/Shell/ClipboardHelper.mm
+        Source/GUI/Shell/WipeTabButton.h
+        Source/GUI/Shell/PackButton.h
+        Source/GUI/Shell/PackNameOverlay.h
+        Source/GUI/Shell/PackNameOverlay.cpp
+        Source/GUI/Pack/BankSlotComponent.h
+        Source/GUI/Pack/BankSlotComponent.cpp
+        Source/GUI/Pack/BankRowComponent.h
+        Source/GUI/Pack/BankRowComponent.cpp
+        Source/GUI/Pack/BankEditorPanel.h
+        Source/GUI/Pack/BankEditorPanel.cpp
+        Source/GUI/Bank/FocusedSlotRow.h
+        Source/GUI/Bank/FocusedSlotRow.cpp
+        Source/GUI/Bank/BankFocusPanel.h
+        Source/GUI/Bank/BankFocusPanel.cpp
+        Source/GUI/Preview/AudioPreviewPlayer.h
+        Source/GUI/Preview/AudioPreviewPlayer.cpp
+        Source/GUI/Preview/WaveformDisplay.h
+        Source/GUI/Preview/WaveformDisplay.cpp
+        Source/GUI/Preview/PreviewPanel.h
+        Source/GUI/Preview/PreviewPanel.cpp
+        Source/GUI/Style/UIConstants.h
+        Source/GUI/Style/UIColours.h
+        Source/GUI/Style/LunchBoxFonts.h
+        Source/GUI/Style/FooterButtonLAF.h
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/Processing/AudioConverter.h
@@ -96,6 +104,17 @@ target_sources(lunch_box
         Source/Processing/LunchBoxProcessor.cpp
         Source/Processing/BankFolderParser.h
         Source/Processing/BankFolderParser.cpp)
+
+# Include directories — allow flat #include "Foo.h" across GUI subfolders
+target_include_directories(lunch_box
+    PRIVATE
+        Source
+        Source/GUI
+        Source/GUI/Bank
+        Source/GUI/Pack
+        Source/GUI/Preview
+        Source/GUI/Shell
+        Source/GUI/Style)
 
 # Link required JUCE modules
 target_link_libraries(lunch_box

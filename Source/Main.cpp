@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "CLI/CliProcessor.h"
-#include "GUI/MainWindow.h"
-#include "GUI/AppMenuBar.h"
+#include "GUI/Shell/MainWindow.h"
+#include "GUI/Shell/AppMenuBar.h"
 
 //==============================================================================
 // LunchBoxApplication - JUCE application wrapper
