@@ -94,6 +94,7 @@ target_sources(lunch_box
         Source/GUI/Style/UIColours.h
         Source/GUI/Style/LunchBoxFonts.h
         Source/GUI/Style/FooterButtonLAF.h
+        Source/GUI/Style/LabelStrings.h
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/Processing/AudioConverter.h

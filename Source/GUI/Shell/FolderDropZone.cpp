@@ -3,6 +3,7 @@
 #include "LunchBoxFonts.h"
 #include "UIColours.h"
 #include "UIConstants.h"
+#include "LabelStrings.h"
 
 namespace
 {
@@ -55,7 +56,7 @@ void FolderDropZone::paint(juce::Graphics& g)
         // Overlay text
         g.setColour(hoverBorder);
         g.setFont(LunchBoxFonts::cta());
-        g.drawText("Drop folder here", getLocalBounds(), juce::Justification::centred);
+        g.drawText(LunchBoxLabels::kDropZonePlaceholder, getLocalBounds(), juce::Justification::centred);
     }
     else
     {

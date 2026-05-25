@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "AppMenuBar.h"
 #include "MainComponent.h"
+#include "LabelStrings.h"
 
 AppMenuBar::AppMenuBar(MainComponent* mc) : mainComponent(mc) {}
 
@@ -12,7 +13,7 @@ AppMenuBar::~AppMenuBar()
 
 juce::StringArray AppMenuBar::getMenuBarNames()
 {
-    return { "File", "Edit", "Settings" };
+    return { LunchBoxLabels::kMenuFile, LunchBoxLabels::kMenuEdit, LunchBoxLabels::kMenuSettings };
 }
 
 juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
@@ -21,7 +22,7 @@ juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
 
     if (menuIndex == 0) // File
     {
-        menu.addItem(openOutputFolder, "Change Output Folder...");
+        menu.addItem(openOutputFolder, LunchBoxLabels::kMenuChangeOutput);
         if (mainComponent != nullptr)
             menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdOpenOutput);
         menu.addSeparator();
@@ -52,10 +53,10 @@ juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
         if (mainComponent != nullptr)
             menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdToggleConsole);
 
-        menu.addItem(showRuntimeLogs, "Show Runtime Logs", true, runtimeLogsOn);
+        menu.addItem(showRuntimeLogs, LunchBoxLabels::kMenuShowRuntimeLogs, true, runtimeLogsOn);
         menu.addSeparator();
-        menu.addItem(showLogFolder,   "Show Log Folder in Finder");
-        menu.addItem(clearStatusLog,  "Clear Status Log");
+        menu.addItem(showLogFolder,   LunchBoxLabels::kMenuShowLogFolder);
+        menu.addItem(clearStatusLog,  LunchBoxLabels::kMenuClearStatusLog);
     }
 
     return menu;

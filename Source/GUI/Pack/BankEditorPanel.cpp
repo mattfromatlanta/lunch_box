@@ -2,6 +2,7 @@
 #include "BankEditorPanel.h"
 #include "UIColours.h"
 #include "UIConstants.h"
+#include "LabelStrings.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -122,7 +123,7 @@ void BankEditorPanel::autoFillFromFolder(const juce::File&)
                         : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
 
     fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Folder to Auto-Fill", startDir, "", true);
+        LunchBoxLabels::kChooseAutoFillFolder, startDir, "", true);
 
     auto flags = juce::FileBrowserComponent::openMode
                | juce::FileBrowserComponent::canSelectDirectories;

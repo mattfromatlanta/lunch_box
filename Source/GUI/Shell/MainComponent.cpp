@@ -2,6 +2,7 @@
 #include "MainComponent.h"
 #include "ClipboardHelper.h"
 #include "UIColours.h"
+#include "LabelStrings.h"
 #include <BinaryData.h>
 
 namespace
@@ -17,7 +18,7 @@ class ConsoleWindow : public juce::DocumentWindow
 {
 public:
     explicit ConsoleWindow(const juce::String& initialContent)
-        : juce::DocumentWindow("Console", LunchBoxColours::CONSOLE_BG, DocumentWindow::closeButton)
+        : juce::DocumentWindow(LunchBoxLabels::kConsoleTitle, LunchBoxColours::CONSOLE_BG, DocumentWindow::closeButton)
     {
         setUsingNativeTitleBar(true);
         editor.setMultiLine(true);
@@ -62,11 +63,13 @@ MainComponent::MainComponent()
 
     lastPackName = getSavedString("lastPackName", lastPackName);
 
+    using namespace LunchBoxLabels;
+
     // Mode toggle buttons
-    packModeButton.setButtonText("Pack");
-    bankModeButton.setButtonText("Bank");
-    packModeButton.setTooltip("Pack view: 5-bank x 14-slot grid");
-    bankModeButton.setTooltip("Bank view: focused single-bank waveform list");
+    packModeButton.setButtonText(kTabPack);
+    bankModeButton.setButtonText(kTabBank);
+    packModeButton.setTooltip(kTipTabPack);
+    bankModeButton.setTooltip(kTipTabBank);
     packModeButton.onClick = [this] { if (!isTransitioning) setViewMode(ViewMode::Pack); };
     bankModeButton.onClick = [this] { if (!isTransitioning) setViewMode(ViewMode::Bank); };
     addAndMakeVisible(packModeButton);
@@ -75,10 +78,10 @@ MainComponent::MainComponent()
 
     // ── Pack mode components ───────────────────────────────
 
-    cubbiTabButton.setButtonText("Cubbi");
-    jammiTabButton.setButtonText("Jammi");
-    cubbiTabButton.setTooltip("Cubbi: percussive samples (Tab to toggle)");
-    jammiTabButton.setTooltip("Jammi: chromatic / melodic samples (Tab to toggle)");
+    cubbiTabButton.setButtonText(kTabCubbi);
+    jammiTabButton.setButtonText(kTabJammi);
+    cubbiTabButton.setTooltip(kTipTabCubbi);
+    jammiTabButton.setTooltip(kTipTabJammi);
     cubbiTabButton.onClick = [this] {
         if (isTransitioning) return;
         if (viewMode == ViewMode::Bank)
@@ -163,12 +166,12 @@ MainComponent::MainComponent()
             outputBaseFolder = saved;
     }
 
-    processButton.setButtonText("Pack");
+    processButton.setButtonText(kBtnProcess);
     processButton.setLookAndFeel(&footerButtonLAF);
     fillButton.setLookAndFeel(&footerButtonLAF);
     clearButton.setLookAndFeel(&footerButtonLAF);
 
-    processButton.setTooltip("Convert and export all samples to CHOMPI format (Cmd+Return)");
+    processButton.setTooltip(kTipBtnProcess);
     processButton.setColour(juce::TextButton::buttonColourId,  LunchBoxColours::BUTTON_BG);
     processButton.setColour(juce::TextButton::buttonOnColourId, LunchBoxColours::BUTTON_BG);
     processButton.setColour(juce::TextButton::textColourOffId,  LunchBoxColours::WHITE_CREAM);
@@ -176,8 +179,8 @@ MainComponent::MainComponent()
     processButton.setEnabled(false);
     addAndMakeVisible(processButton);
 
-    fillButton.setButtonText("Fill");
-    fillButton.setTooltip("Auto-fill empty slots from a folder");
+    fillButton.setButtonText(kBtnFill);
+    fillButton.setTooltip(kTipBtnFill);
     fillButton.setColour(juce::TextButton::buttonColourId,  LunchBoxColours::BUTTON_BG);
     fillButton.setColour(juce::TextButton::textColourOffId, LunchBoxColours::WHITE_CREAM);
     fillButton.onClick = [this]
@@ -189,8 +192,8 @@ MainComponent::MainComponent()
     };
     addAndMakeVisible(fillButton);
 
-    clearButton.setButtonText("Clear");
-    clearButton.setTooltip("Clear all slots in the current view");
+    clearButton.setButtonText(kBtnClear);
+    clearButton.setTooltip(kTipBtnClear);
     clearButton.setColour(juce::TextButton::buttonColourId,  LunchBoxColours::BUTTON_BG);
     clearButton.setColour(juce::TextButton::textColourOffId, LunchBoxColours::WHITE_CREAM);
     clearButton.onClick = [this]
@@ -249,7 +252,7 @@ void MainComponent::paint(juce::Graphics& g)
         auto headerArea = getLocalBounds().removeFromTop(LunchBoxConstants::HEADER_HEIGHT).toFloat();
         g.setFont(LunchBoxFonts::logoTitle(60.0f));
         g.setColour(LunchBoxColours::WHITE_CREAM);
-        g.drawText("LUNCH BOX", headerArea, juce::Justification::centred, false);
+        g.drawText(LunchBoxLabels::kAppHeader, headerArea, juce::Justification::centred, false);
     }
 }
 
@@ -1226,52 +1229,53 @@ void MainComponent::getAllCommands(juce::Array<juce::CommandID>& commands)
 
 void MainComponent::getCommandInfo(juce::CommandID id, juce::ApplicationCommandInfo& result)
 {
+    using namespace LunchBoxLabels;
     switch (id)
     {
         case cmdUndo:
-            result.setInfo("Undo", "Undo last action", "Edit", 0);
+            result.setInfo(kCmdUndo, kCmdUndoDesc, kMenuEdit, 0);
             result.addDefaultKeypress('z', juce::ModifierKeys::commandModifier);
             break;
         case cmdRedo:
-            result.setInfo("Redo", "Redo last undone action", "Edit", 0);
+            result.setInfo(kCmdRedo, kCmdRedoDesc, kMenuEdit, 0);
             result.addDefaultKeypress('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier);
             break;
         case cmdCopy:
-            result.setInfo("Copy",  "Copy selected samples",  "Edit", 0);
+            result.setInfo(kCmdCopy, kCmdCopyDesc, kMenuEdit, 0);
             result.addDefaultKeypress('c', juce::ModifierKeys::commandModifier);
             break;
         case cmdCut:
-            result.setInfo("Cut",   "Cut selected samples",   "Edit", 0);
+            result.setInfo(kCmdCut, kCmdCutDesc, kMenuEdit, 0);
             result.addDefaultKeypress('x', juce::ModifierKeys::commandModifier);
             break;
         case cmdPaste:
-            result.setInfo("Paste", "Paste samples",          "Edit", 0);
+            result.setInfo(kCmdPaste, kCmdPasteDesc, kMenuEdit, 0);
             result.addDefaultKeypress('v', juce::ModifierKeys::commandModifier);
             break;
         case cmdSelectAll:
-            result.setInfo("Select All", "Select all slots", "Edit", 0);
+            result.setInfo(kCmdSelectAll, kCmdSelectAllDesc, kMenuEdit, 0);
             result.addDefaultKeypress('a', juce::ModifierKeys::commandModifier);
             break;
         case cmdOpenOutput:
-            result.setInfo("Open Output Folder", "Open output folder in Finder", "File", 0);
+            result.setInfo(kCmdOpenOutput, kCmdOpenOutputDesc, kMenuFile, 0);
             result.addDefaultKeypress('o', juce::ModifierKeys::commandModifier);
             break;
         case cmdProcess:
-            result.setInfo("Process Samples", "Convert and export all samples", "File", 0);
+            result.setInfo(kCmdProcess, kCmdProcessDesc, kMenuFile, 0);
             result.addDefaultKeypress(juce::KeyPress::returnKey, juce::ModifierKeys::commandModifier);
             result.addDefaultKeypress('p', juce::ModifierKeys::commandModifier);
             break;
         case cmdFill:
-            result.setInfo("Fill Slots", "Auto-fill empty slots from a folder", "Edit", 0);
+            result.setInfo(kCmdFill, kCmdFillDesc, kMenuEdit, 0);
             result.addDefaultKeypress('f', juce::ModifierKeys::commandModifier);
             break;
         case cmdClear:
-            result.setInfo("Clear Slots", "Clear selected slots", "Edit", 0);
+            result.setInfo(kCmdClear, kCmdClearDesc, kMenuEdit, 0);
             result.addDefaultKeypress('c', juce::ModifierKeys::commandModifier | juce::ModifierKeys::altModifier);
             break;
         case cmdToggleConsole:
-            result.setInfo(consoleVisible ? "Hide Console" : "Show Console",
-                           "Toggle the console window", "Settings", 0);
+            result.setInfo(consoleVisible ? kCmdHideConsole : kCmdShowConsole,
+                           kCmdToggleConsoleDesc, kMenuSettings, 0);
             result.addDefaultKeypress('/', juce::ModifierKeys::commandModifier);
             result.setTicked(consoleVisible);
             break;

@@ -15,6 +15,7 @@
 #include "PackButton.h"
 #include "PackNameOverlay.h"
 #include "FooterButtonLAF.h"
+#include "LabelStrings.h"
 #if CHOMPI_MELATONIN_INSPECTOR
 #include "melatonin_inspector/melatonin_inspector.h"
 #endif
@@ -89,7 +90,7 @@ private:
     WipeTabButton packModeButton;
     WipeTabButton bankModeButton;
     bool consoleVisible = false;
-    juce::String     consoleContent { "Ready to process samples...\n" };
+    juce::String     consoleContent { LunchBoxLabels::kConsoleInitial };
     std::unique_ptr<ConsoleWindow> consoleWindow;
 
     // ── Pack mode ───────────────────────────────────────────

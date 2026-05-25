@@ -3,6 +3,7 @@
 #include "UIColours.h"
 #include "UIConstants.h"
 #include "LunchBoxFonts.h"
+#include "LabelStrings.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -286,7 +287,7 @@ void BankFocusPanel::triggerAutoFill()
         startDir = juce::File::getSpecialLocation(juce::File::userHomeDirectory);
 
     fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Folder to Auto-Fill From", startDir);
+        LunchBoxLabels::kChooseAutoFillBankFolder, startDir);
 
     fileChooser->launchAsync(
         juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,

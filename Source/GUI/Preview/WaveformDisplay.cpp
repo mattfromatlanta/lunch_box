@@ -3,6 +3,7 @@
 #include "LunchBoxFonts.h"
 #include "UIColours.h"
 #include "UIConstants.h"
+#include "LabelStrings.h"
 
 namespace
 {
@@ -58,7 +59,7 @@ void WaveformDisplay::paint(juce::Graphics& g)
     {
         g.setColour(emptyText);
         g.setFont(LunchBoxFonts::footer());
-        g.drawText("select a folder to preview", bounds, juce::Justification::centred);
+        g.drawText(LunchBoxLabels::kWaveformEmpty, bounds, juce::Justification::centred);
         return;
     }
 

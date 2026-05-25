@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "PreviewPanel.h"
 #include "LunchBoxFonts.h"
+#include "LabelStrings.h"
 
 namespace
 {
@@ -12,8 +13,8 @@ namespace
 
 PreviewPanel::PreviewPanel()
     : waveformDisplay(player),
-      playPauseButton("Play"),
-      stopButton("Stop")
+      playPauseButton(LunchBoxLabels::kBtnPlay),
+      stopButton(LunchBoxLabels::kBtnStop)
 {
     addAndMakeVisible(waveformDisplay);
 
@@ -48,7 +49,7 @@ PreviewPanel::PreviewPanel()
 
     fileInfoLabel.setFont(LunchBoxFonts::footer());
     fileInfoLabel.setColour(juce::Label::textColourId, mutedText);
-    fileInfoLabel.setText("PREVIEW", juce::dontSendNotification);
+    fileInfoLabel.setText(LunchBoxLabels::kPreviewLabel, juce::dontSendNotification);
     addAndMakeVisible(fileInfoLabel);
 
     player.addChangeListener(this);
@@ -75,7 +76,7 @@ void PreviewPanel::loadFile(const juce::File& file)
     double duration = player.getDurationSeconds();
     int mins = (int)(duration / 60.0);
     int secs = (int)(duration) % 60;
-    juce::String info = "PREVIEW  |  " + file.getFileNameWithoutExtension()
+    juce::String info = LunchBoxLabels::kPreviewLabelPrefix + file.getFileNameWithoutExtension()
                       + "  (" + juce::String::formatted("%d:%02d", mins, secs) + ")";
     fileInfoLabel.setText(info, juce::dontSendNotification);
 
@@ -139,5 +140,5 @@ void PreviewPanel::changeListenerCallback(juce::ChangeBroadcaster*)
 
 void PreviewPanel::updatePlayPauseButton()
 {
-    playPauseButton.setButtonText(player.isPlaying() ? "Pause" : "Play");
+    playPauseButton.setButtonText(player.isPlaying() ? LunchBoxLabels::kBtnPause : LunchBoxLabels::kBtnPlay);
 }

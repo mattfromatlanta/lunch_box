@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "PackNameOverlay.h"
 #include "UIColours.h"
+#include "LabelStrings.h"
 
 PackNameOverlay::PackNameOverlay()
 {
@@ -26,12 +27,12 @@ PackNameOverlay::PackNameOverlay()
         btn.setLookAndFeel(&btnLAF);
     };
 
-    continueButton.setButtonText("Continue");
+    continueButton.setButtonText(LunchBoxLabels::kDlgContinue);
     setupBtn(continueButton, LunchBoxColours::BUTTON_BG, 1.0f);
     continueButton.onClick = [this] { confirm(); };
     addAndMakeVisible(continueButton);
 
-    cancelButton.setButtonText("Cancel");
+    cancelButton.setButtonText(LunchBoxLabels::kDlgCancel);
     setupBtn(cancelButton, LunchBoxColours::DARK_GREY, 0.6f);
     cancelButton.onClick = [this] { cancel(); };
     addAndMakeVisible(cancelButton);
@@ -86,7 +87,7 @@ void PackNameOverlay::paint(juce::Graphics& g)
 
     g.setFont(LunchBoxFonts::h3());
     g.setColour(LunchBoxColours::WHITE_CREAM);
-    g.drawText("Name your pack.",
+    g.drawText(LunchBoxLabels::kDlgPackNamePrompt,
                db.reduced(INNER_PAD).removeFromTop(TITLE_H),
                juce::Justification::centred, false);
 

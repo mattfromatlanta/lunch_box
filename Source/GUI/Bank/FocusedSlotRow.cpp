@@ -2,6 +2,7 @@
 #include "FocusedSlotRow.h"
 #include "LunchBoxFonts.h"
 #include "UIConstants.h"
+#include "LabelStrings.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -21,7 +22,7 @@ FocusedSlotRow::FocusedSlotRow(int slot,
 {
     thumbnail.addChangeListener(this);
     previewThumbnail.addChangeListener(this);
-    setTooltip("Drop a file, double-click to browse, or paste (Cmd+V)");
+    setTooltip(LunchBoxLabels::kTipSlotBank);
 }
 
 FocusedSlotRow::~FocusedSlotRow()
@@ -41,7 +42,7 @@ void FocusedSlotRow::setSample(const juce::File& file)
     else
     {
         thumbnail.clear();
-        setTooltip("Drop a file, double-click to browse, or paste (Cmd+V)");
+        setTooltip(LunchBoxLabels::kTipSlotBank);
     }
     repaint();
     if (onSampleChanged) onSampleChanged(this);
@@ -51,7 +52,7 @@ void FocusedSlotRow::clearSample()
 {
     sample = juce::File{};
     thumbnail.clear();
-    setTooltip("Drop a file, double-click to browse, or paste (Cmd+V)");
+    setTooltip(LunchBoxLabels::kTipSlotBank);
     repaint();
     if (onSampleChanged) onSampleChanged(this);
 }
@@ -254,7 +255,7 @@ void FocusedSlotRow::browseForFile()
                               : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
 
     fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Audio File", startDir, "*.wav;*.aiff;*.aif;*.mp3;*.flac", true);
+        LunchBoxLabels::kChooseAudioFile, startDir, "*.wav;*.aiff;*.aif;*.mp3;*.flac", true);
 
     fileChooser->launchAsync(
         juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -272,13 +273,13 @@ void FocusedSlotRow::browseForFile()
 void FocusedSlotRow::showContextMenu()
 {
     juce::PopupMenu menu;
-    menu.addItem(1, "Browse for File...");
+    menu.addItem(1, LunchBoxLabels::kCtxBrowse);
     if (hasSample())
     {
         menu.addSeparator();
-        menu.addItem(2, "Preview");
+        menu.addItem(2, LunchBoxLabels::kCtxPreview);
         menu.addSeparator();
-        menu.addItem(3, "Clear Slot");
+        menu.addItem(3, LunchBoxLabels::kCtxClearSlot);
     }
 
     menu.showMenuAsync(juce::PopupMenu::Options{}.withTargetComponent(this),

@@ -3,6 +3,7 @@
 #include "UIColours.h"
 #include "UIConstants.h"
 #include "LunchBoxFonts.h"
+#include "LabelStrings.h"
 #include "../FileSystemHelper.h"
 
 namespace
@@ -39,7 +40,7 @@ BankSlotComponent::BankSlotComponent(char bank, int slot)
     : bankLetter(bank >= 'a' ? (char)(bank - ('a' - 'A')) : bank)
     , slotNumber(slot)
 {
-    setTooltip("Drop a file, click to browse, or paste (Cmd+V)");
+    setTooltip(LunchBoxLabels::kTipSlotPack);
 }
 
 void BankSlotComponent::setSample(const juce::File& file)
@@ -53,7 +54,7 @@ void BankSlotComponent::setSample(const juce::File& file)
 void BankSlotComponent::clearSample()
 {
     sample = juce::File{};
-    setTooltip("Drop a file, click to browse, or paste (Cmd+V)");
+    setTooltip(LunchBoxLabels::kTipSlotPack);
     repaint();
     if (onSampleChanged) onSampleChanged(this);
 }
@@ -231,7 +232,7 @@ void BankSlotComponent::browseForFile()
                               : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
 
     fileChooser = std::make_unique<juce::FileChooser>(
-        "Select Audio File", startDir, "*.wav;*.aiff;*.aif;*.mp3;*.flac", true);
+        LunchBoxLabels::kChooseAudioFile, startDir, "*.wav;*.aiff;*.aif;*.mp3;*.flac", true);
 
     fileChooser->launchAsync(
         juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -290,13 +291,13 @@ void BankSlotComponent::itemDropped(const SourceDetails& details)
 void BankSlotComponent::showContextMenu()
 {
     juce::PopupMenu menu;
-    menu.addItem(1, "Browse for File...");
+    menu.addItem(1, LunchBoxLabels::kCtxBrowse);
     if (hasSample())
     {
         menu.addSeparator();
-        menu.addItem(2, "Preview");
+        menu.addItem(2, LunchBoxLabels::kCtxPreview);
         menu.addSeparator();
-        menu.addItem(3, "Clear Slot");
+        menu.addItem(3, LunchBoxLabels::kCtxClearSlot);
     }
 
     menu.showMenuAsync(juce::PopupMenu::Options{}.withTargetComponent(this),
