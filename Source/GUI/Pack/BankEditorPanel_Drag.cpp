@@ -68,9 +68,7 @@ void BankEditorPanel::handleSlotMouseDrag(BankSlotComponent* /*src*/, const juce
     if (!dragController.isDragging())
     {
         dragController.begin(toGridCells(selection),
-                             toGridCell(mouseDownCell),
-                             panelPt,
-                             getLocalBounds());
+                             toGridCell(mouseDownCell));
         mouseDownOnSelected = false;
     }
 

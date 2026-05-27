@@ -76,9 +76,7 @@ void BankFocusPanel::handleRowMouseDrag(FocusedSlotRow* row, const juce::MouseEv
         // DragHost) returns the row's current sample — keep it that way for
         // consistency, no flushRowsToStorage() needed here.
         dragController.begin(sourceCells,
-                             { activeBank, mouseDownRowIdx },
-                             panelPt,
-                             getLocalBounds());
+                             { activeBank, mouseDownRowIdx });
         deferredDeselect = false;
     }
 

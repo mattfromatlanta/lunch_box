@@ -5,42 +5,26 @@ using namespace LunchBoxDrag;
 
 DragController::DragController(DragHost& h) : host(h) {}
 
-void DragController::begin(juce::Array<GridCell> selection,
-                           GridCell              pickup,
-                           juce::Point<int>      mouseDownPanelPt,
-                           juce::Rectangle<int>  panelBounds)
+void DragController::begin(juce::Array<GridCell> selection, GridCell pickup)
 {
     if (selection.isEmpty() || !pickup.isValid()) return;
 
     sourceCells  = std::move(selection);
     pickupCell   = pickup;
-    pickupAnchor = mouseDownPanelPt;
-    lastDropCell = GridCell{};   // invalid → force first update to rebuild previews
+    lastDropCell = GridCell{};
 
-    // Source cells dim out (their content has conceptually been picked up).
-    // The proxy renders that content following the cursor. Cell-level previews
-    // will be overlaid in update() to show where things land.
+    // Mark source cells as vacated so they render dim from drag start.
     for (const auto& s : sourceCells)
+    {
         host.setCellPreview(s, juce::File{});
-
-    // Build the proxy snapshot from current grid state.
-    juce::Array<DragProxy::ProxyCell> proxyCells;
-    proxyCells.ensureStorageAllocated(sourceCells.size());
-    for (const auto& s : sourceCells)
-        proxyCells.add({ s, host.cellBoundsInPanel(s), host.getFileAt(s) });
-
-    // Floating cursor proxy disabled — cell-level role highlights (destination
-    // selection style, displaced-border accent, vacated source) are enough to
-    // convey what's happening. Keep the proxy plumbing in place for now in case
-    // we want to re-enable it.
-    juce::ignoreUnused(proxyCells, mouseDownPanelPt, panelBounds);
+        host.setCellDragRoleSource(s, true);
+    }
 
     state = State::Active;
 }
 
-// Helper: build a DragOp in DATA coords with destCells precomputed via the
-// host's visual mapping (so Pack wraps correctly). Returns nullopt when the
-// clamped drop equals the pickup (no movement).
+// Build a DragOp in DATA coords with destCells precomputed via the host's
+// visual mapping (accounts for Pack's 7-col visual wrap).
 static DragOp buildDataOp(const DragHost& host,
                           const juce::Array<GridCell>& sourceCells,
                           GridCell pickupCell,
@@ -77,7 +61,6 @@ void DragController::update(juce::Point<int> cursorPanelPt)
     const auto dropCellData = rawDrop.isValid() ? rawDrop : lastDropCell;
 
     auto op = buildDataOp(host, sourceCells, pickupCell, dropCellData);
-    juce::ignoreUnused(cursorPanelPt);   // proxy disabled
 
     if (op.dropCell == lastDropCell) return;
     lastDropCell = op.dropCell;
@@ -148,12 +131,8 @@ void DragController::commit()
     auto accessor = [this](GridCell c) { return host.getFileAt(c); };
     auto writes   = computeDragResult(accessor, op, host.getGridDims());
 
-    juce::Array<juce::File> resolvedFiles;
-    resolvedFiles.ensureStorageAllocated(writes.size());
-    for (const auto& w : writes) resolvedFiles.add(w.file);
-
-    for (int i = 0; i < writes.size(); ++i)
-        host.setFileAt(writes[i].cell, resolvedFiles[i]);
+    for (const auto& w : writes)
+        host.setFileAt(w.cell, w.file);
 
     juce::Array<GridCell> newSelection = op.destCells;
 

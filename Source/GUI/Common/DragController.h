@@ -33,9 +33,7 @@ public:
     // `pickupCell`). `mouseDownPanelPt` is where the cursor was at mouseDown
     // — used as the proxy's anchor point.
     void begin(juce::Array<LunchBoxDrag::GridCell> selection,
-               LunchBoxDrag::GridCell              pickupCell,
-               juce::Point<int>                    mouseDownPanelPt,
-               juce::Rectangle<int>                panelBounds);
+               LunchBoxDrag::GridCell              pickupCell);
 
     // Cursor moved during a drag. Recomputes drop cell, updates proxy and
     // cell-level previews.
@@ -60,8 +58,7 @@ private:
 
     juce::Array<LunchBoxDrag::GridCell> sourceCells;
     LunchBoxDrag::GridCell              pickupCell;
-    juce::Point<int>                    pickupAnchor;   // proxy anchor in panel coords
-    LunchBoxDrag::GridCell              lastDropCell;   // cached to avoid redundant preview rebuilds
+    LunchBoxDrag::GridCell              lastDropCell;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DragController)
 };

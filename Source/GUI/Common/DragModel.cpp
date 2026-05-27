@@ -115,7 +115,10 @@ namespace LunchBoxDrag
 
             const int destIdx = dims.globalIndex(d);
             const int srcIdx  = dims.globalIndex(op.sourceCells[i]);
-            const int step    = (destIdx > srcIdx) ? -1 : +1;   // displaced flows back toward source
+            // Displaced file flows back toward where the drag came from.
+            // drag forward (destIdx > srcIdx): step = -1 (walk backward in available list)
+            // drag backward (destIdx < srcIdx): step = +1 (walk forward)
+            const int step = (destIdx > srcIdx) ? -1 : +1;
             displaced.add({ d, file, step });
         }
 
