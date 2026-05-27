@@ -5,7 +5,6 @@
 #include "DragHost.h"
 #include "DragProxy.h"
 #include <juce_gui_basics/juce_gui_basics.h>
-#include <map>
 
 //==============================================================================
 // DragController — drives a single drag operation on a DragHost panel.
@@ -53,21 +52,7 @@ public:
 private:
     enum class State { Idle, Active };
 
-    // Result of running step-by-step displacement from the initial grid to the
-    // current drop cell. Used by both preview (mouseDrag) and commit (mouseUp).
-    struct StepwiseResult
-    {
-        // GlobalIndex → final file value. Only cells that differ from the
-        // original grid are recorded.
-        std::map<int, juce::File>     finalState;
-        juce::Array<LunchBoxDrag::GridCell> finalSourceCells;   // where the selection ends up
-    };
-
-    StepwiseResult computeStepwiseFor(LunchBoxDrag::GridCell visualPickup,
-                                      LunchBoxDrag::GridCell visualDrop) const;
-
-    void rebuildPreviewsFor(LunchBoxDrag::GridCell visualPickup,
-                            LunchBoxDrag::GridCell visualDrop);
+    void rebuildPreviewsFor(const LunchBoxDrag::DragOp& op);
 
     DragHost&  host;
     DragProxy  proxy;

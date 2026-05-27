@@ -55,7 +55,7 @@ namespace LunchBoxDrag
 
         // Use precomputed destCells if the caller supplied them (controller path —
         // accounts for visual-coord wrapping). Otherwise fall back to data-space
-        // translation by `delta` (test path, single-coord-system grids).
+        // translation by `delta` (test path).
         juce::Array<GridCell> destCells;
         if (op.destCells.size() == op.sourceCells.size())
         {
@@ -75,8 +75,8 @@ namespace LunchBoxDrag
             return false;
         };
 
-        // ── Step 1: Moving block. Each dest cell receives the file from its
-        //    corresponding source (empties in the source travel as empties).
+        // ── Step 1: The moving block. Each dest cell receives the file from
+        //    its corresponding source (empties travel — geometry preserved).
         for (int i = 0; i < op.sourceCells.size(); ++i)
         {
             const auto d = destCells[i];
@@ -84,58 +84,83 @@ namespace LunchBoxDrag
             writes.add({ d, grid(op.sourceCells[i]) });
         }
 
-        // ── Step 2: Source-only cells (vacated by the move). These are where
-        //    displaced files will land via reverse-shift.
-        juce::Array<GridCell> remainingSourceOnly;
-        for (const auto& s : op.sourceCells)
-            if (! contains(destCells, s))
-                remainingSourceOnly.add(s);
+        // ── Step 2: Build available-cells list (everything not in destCells).
+        //    Iteration is row-major so the list is already in global-index order.
+        juce::Array<GridCell> available;
+        available.ensureStorageAllocated(dims.numBanks * dims.slotsPerBank - destCells.size());
+        for (int b = 0; b < dims.numBanks; ++b)
+            for (int s = 0; s < dims.slotsPerBank; ++s)
+            {
+                GridCell c { b, s };
+                if (! contains(destCells, c)) available.add(c);
+            }
 
-        // ── Step 3: Reverse-shift each filled target-only cell to its paired
-        //    source cell. Pairing comes from the index-aligned sourceCells/destCells
-        //    arrays. Files for overlap-source pairs (where the paired source is
-        //    itself in destCells) are collected for the row-major fallback.
-        juce::Array<juce::File> unplacedFiles;
+        // Initial state: source-only cells are vacated (empty); other available
+        // cells keep their current grid value. Cascade mutates this array.
+        juce::Array<juce::File> state;
+        state.resize(available.size());
+        for (int i = 0; i < available.size(); ++i)
+            state.set(i, contains(op.sourceCells, available[i]) ? juce::File{}
+                                                                : grid(available[i]));
 
+        // ── Step 3: Collect displaced files with per-pair direction.
+        struct Displaced { GridCell origin; juce::File file; int step; };
+        juce::Array<Displaced> displaced;
         for (int i = 0; i < op.sourceCells.size(); ++i)
         {
             const auto d = destCells[i];
             if (contains(op.sourceCells, d)) continue;   // overlap, not target-only
             const auto file = grid(d);
-            if (file == juce::File{}) continue;           // not filled, nothing to displace
+            if (file == juce::File{}) continue;           // empty target — no displacement
 
-            const auto s = op.sourceCells[i];
+            const int destIdx = dims.globalIndex(d);
+            const int srcIdx  = dims.globalIndex(op.sourceCells[i]);
+            const int step    = (destIdx > srcIdx) ? -1 : +1;   // displaced flows back toward source
+            displaced.add({ d, file, step });
+        }
 
-            int idx = -1;
-            for (int k = 0; k < remainingSourceOnly.size(); ++k)
-                if (remainingSourceOnly[k] == s) { idx = k; break; }
+        // ── Step 4: Stack-insert each displaced file in its direction through
+        //    the available list (wrap-around at the ends).
+        const int A = available.size();
+        for (const auto& dp : displaced)
+        {
+            if (A == 0) break;
 
-            if (idx >= 0)
+            const int originGI = dims.globalIndex(dp.origin);
+
+            // Starting index in `available`: first cell strictly past origin
+            // in the displacement direction.
+            int idx;
+            if (dp.step >= 0)
             {
-                writes.add({ s, file });
-                remainingSourceOnly.remove(idx);
+                idx = 0;
+                while (idx < A && dims.globalIndex(available[idx]) <= originGI) ++idx;
+                if (idx >= A) idx = 0;   // wrap
             }
             else
             {
-                // s is overlap (also in destCells). The displaced file can't land
-                // there. Defer to row-major fallback among remaining source-only.
-                unplacedFiles.add(file);
+                idx = A - 1;
+                while (idx >= 0 && dims.globalIndex(available[idx]) >= originGI) --idx;
+                if (idx < 0) idx = A - 1;   // wrap
             }
+
+            juce::File carry = dp.file;
+            for (int hop = 0; hop < A; ++hop)
+            {
+                auto existing = state[idx];
+                state.set(idx, carry);
+                if (existing == juce::File{}) { carry = juce::File{}; break; }
+                carry = existing;
+                idx = ((idx + dp.step) % A + A) % A;   // step with wrap (handles negative)
+            }
+            // Filled-count invariance guarantees the cascade terminates.
         }
 
-        // ── Step 4: Row-major fallback for any unplaced (overlap) displaced files.
-        std::sort(remainingSourceOnly.begin(), remainingSourceOnly.end(),
-                  [&](GridCell a, GridCell b)
-                  { return dims.globalIndex(a) < dims.globalIndex(b); });
-
-        const int pairs = juce::jmin(unplacedFiles.size(), remainingSourceOnly.size());
-        for (int k = 0; k < pairs; ++k)
-            writes.add({ remainingSourceOnly[k], unplacedFiles[k] });
-
-        // ── Step 5: Any source-only cell that didn't receive a displaced file
-        //    gets an explicit empty write (it was filled originally; vacated now).
-        for (int k = pairs; k < remainingSourceOnly.size(); ++k)
-            writes.add({ remainingSourceOnly[k], juce::File{} });
+        // ── Step 5: Emit writes for any available cell whose final state
+        //    differs from its original grid value.
+        for (int i = 0; i < available.size(); ++i)
+            if (state[i] != grid(available[i]))
+                writes.add({ available[i], state[i] });
 
         return writes;
     }
