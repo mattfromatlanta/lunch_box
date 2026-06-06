@@ -14,6 +14,7 @@
 #include "WipeTabButton.h"
 #include "PackButton.h"
 #include "PackNameOverlay.h"
+#include "HelpOverlay.h"
 #include "FooterButtonLAF.h"
 #include "LabelStrings.h"
 #if CHOMPI_MELATONIN_INSPECTOR
@@ -54,6 +55,7 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
     void parentHierarchyChanged() override;
+    void mouseDown(const juce::MouseEvent&) override;
 
     // Public interface for menu bar actions
     void selectOutputFolder();
@@ -112,6 +114,7 @@ private:
     FooterButtonLAF footerButtonLAF;
     PackButton      processButton;
     PackNameOverlay packNameOverlay;
+    HelpOverlay     helpOverlay;
 
     juce::TextButton fillButton;
     juce::TextButton clearButton;

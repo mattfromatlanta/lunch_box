@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "DragModel.h"
+#include <algorithm>
 
 namespace LunchBoxDrag
 {
@@ -122,7 +123,22 @@ namespace LunchBoxDrag
             displaced.add({ d, file, step });
         }
 
-        // ── Step 4: Stack-insert each displaced file in its direction through
+        // ── Step 4: Sort displaced so cascades land in original relative order.
+        //    Forward drag (step=-1): process ascending origin so each pushes lower.
+        //    Backward drag (step=+1): process descending origin so each finds empty space
+        //    before the next one arrives (avoids reversing relative order).
+        if (!displaced.isEmpty())
+        {
+            const int step = displaced[0].step;
+            std::sort(displaced.begin(), displaced.end(),
+                      [&](const Displaced& a, const Displaced& b) {
+                          const int ai = dims.globalIndex(a.origin);
+                          const int bi = dims.globalIndex(b.origin);
+                          return step < 0 ? ai < bi : ai > bi;
+                      });
+        }
+
+        // ── Step 5: Stack-insert each displaced file in its direction through
         //    the available list (wrap-around at the ends).
         const int A = available.size();
         for (const auto& dp : displaced)
@@ -159,7 +175,7 @@ namespace LunchBoxDrag
             // Filled-count invariance guarantees the cascade terminates.
         }
 
-        // ── Step 5: Emit writes for any available cell whose final state
+        // ── Step 6: Emit writes for any available cell whose final state
         //    differs from its original grid value.
         for (int i = 0; i < available.size(); ++i)
             if (state[i] != grid(available[i]))

@@ -67,6 +67,14 @@ public:
     //      +1 = displaced content moves to a higher global index (right/down arrow)
     virtual void setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, int dir) = 0;
 
+    // Called for each displaced cell with the cell the content originally came from.
+    // Default delegates to setCellDragRoleDisplace so existing hosts need no change.
+    virtual void setCellDragRoleDisplaceWithSource(LunchBoxDrag::GridCell dest, int dir,
+                                                   LunchBoxDrag::GridCell /*src*/)
+    {
+        setCellDragRoleDisplace(dest, dir);
+    }
+
     virtual void clearAllCellPreviews() = 0;
 
     // Called once at the start of rebuildPreviewsFor(), before any per-cell role

@@ -81,6 +81,8 @@ target_sources(lunch_box
         Source/GUI/Shell/PackButton.h
         Source/GUI/Shell/PackNameOverlay.h
         Source/GUI/Shell/PackNameOverlay.cpp
+        Source/GUI/Shell/HelpOverlay.h
+        Source/GUI/Shell/HelpOverlay.cpp
         Source/GUI/Pack/BankSlotComponent.h
         Source/GUI/Pack/BankSlotComponent.cpp
         Source/GUI/Pack/BankRowComponent.h

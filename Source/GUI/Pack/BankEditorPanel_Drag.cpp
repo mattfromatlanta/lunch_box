@@ -184,16 +184,15 @@ void BankEditorPanel::setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool 
 void BankEditorPanel::setCellDragRoleDisplace(LunchBoxDrag::GridCell c, int dir)
 {
     if (auto* slot = getSlotAt(c.bank, c.slot))
+        slot->setDragRoleDisplace(dir);
+}
+
+void BankEditorPanel::setCellDragRoleDisplaceWithSource(LunchBoxDrag::GridCell dest, int dir,
+                                                         LunchBoxDrag::GridCell src)
+{
+    if (auto* slot = getSlotAt(dest.bank, dest.slot))
     {
         slot->setDragRoleDisplace(dir);
-
-        // Compute per-cell from→to labels.
-        // c is where this displaced content LANDS; from is one step opposite to dir.
-        const auto dims   = getGridDims();
-        const int  toIdx  = dims.globalIndex(c);
-        const int  fromIdx = toIdx - dir;
-        const LunchBoxDrag::GridCell fromCell { fromIdx / dims.slotsPerBank,
-                                                fromIdx % dims.slotsPerBank };
 
         auto makeLabel = [](int bank, int s) -> juce::String
         {
@@ -201,14 +200,15 @@ void BankEditorPanel::setCellDragRoleDisplace(LunchBoxDrag::GridCell c, int dir)
                    + juce::String(s + 1);
         };
 
-        const juce::String fromLabel = makeLabel(fromCell.bank, fromCell.slot);
-        const juce::String toLabel   = makeLabel(c.bank, c.slot);
+        const juce::String srcLabel  = makeLabel(src.bank,  src.slot);
+        const juce::String destLabel = makeLabel(dest.bank, dest.slot);
+        const auto dims = getGridDims();
 
         // Lower global index always on the left.
-        if (dir > 0)
-            slot->setDisplaceLabels(fromLabel, toLabel);
+        if (dims.globalIndex(src) < dims.globalIndex(dest))
+            slot->setDisplaceLabels(srcLabel, destLabel);
         else
-            slot->setDisplaceLabels(toLabel, fromLabel);
+            slot->setDisplaceLabels(destLabel, srcLabel);
     }
 }
 

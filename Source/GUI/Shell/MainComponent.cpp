@@ -180,6 +180,7 @@ MainComponent::MainComponent()
     processor = std::make_unique<GuiProcessor>();
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
     addChildComponent(packNameOverlay);
+    addChildComponent(helpOverlay);
 
     // Apply initial mode styling
     styleTabButton(packModeButton, true,  LunchBoxColours::YELLOW);
@@ -287,6 +288,7 @@ void MainComponent::resized()
     }
 
     packNameOverlay.setBounds(getLocalBounds());
+    helpOverlay.setBounds(getLocalBounds());
 }
 
 // ─── Mode switching ───────────────────────────────────────────────────────────
@@ -346,6 +348,14 @@ void MainComponent::selectOutputFolder()
 void MainComponent::stopPreview()
 {
     previewPanel.stopPlayback();
+}
+
+void MainComponent::mouseDown(const juce::MouseEvent& e)
+{
+    if (packNameOverlay.isVisible() || helpOverlay.isVisible())
+        return;
+    if (e.y < LunchBoxConstants::HEADER_HEIGHT)
+        helpOverlay.show();
 }
 
 bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origin)

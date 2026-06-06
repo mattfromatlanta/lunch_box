@@ -109,6 +109,17 @@ void DragController::rebuildPreviewsFor(const DragOp& op)
     auto accessor = [this](GridCell c) { return host.getFileAt(c); };
     auto writes   = computeDragResult(accessor, op, dataDims);
 
+    // Build file-path → original cell map so displaced cells know their true source.
+    juce::HashMap<juce::String, GridCell> fileOrigin;
+    for (int b = 0; b < dataDims.numBanks; ++b)
+        for (int s = 0; s < dataDims.slotsPerBank; ++s)
+        {
+            GridCell c { b, s };
+            auto f = host.getFileAt(c);
+            if (f != juce::File{})
+                fileOrigin.set(f.getFullPathName(), c);
+        }
+
     for (const auto& w : writes)
     {
         host.setCellPreview(w.cell, w.file);
@@ -120,8 +131,11 @@ void DragController::rebuildPreviewsFor(const DragOp& op)
         }
         else if (w.file != juce::File{})
         {
-            host.setCellDragRoleDisplace(w.cell, displaceDir);
-            host.setCellDragRoleSource  (w.cell, false);
+            const GridCell src = fileOrigin.contains(w.file.getFullPathName())
+                                     ? fileOrigin[w.file.getFullPathName()]
+                                     : w.cell;
+            host.setCellDragRoleDisplaceWithSource(w.cell, displaceDir, src);
+            host.setCellDragRoleSource(w.cell, false);
         }
     }
 }

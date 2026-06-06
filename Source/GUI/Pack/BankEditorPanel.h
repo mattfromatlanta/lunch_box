@@ -114,6 +114,8 @@ public:
     void                    setCellDragRoleSource     (LunchBoxDrag::GridCell c, bool s) override;
     void                    setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s) override;
     void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, int dir) override;
+    void                    setCellDragRoleDisplaceWithSource(LunchBoxDrag::GridCell dest, int dir,
+                                                              LunchBoxDrag::GridCell src) override;
     void                    clearAllCellPreviews() override;
     void                    onPreviewRebuild(const LunchBoxDrag::DragOp& op) override;
     void                    onDragCommitWillBegin() override;
