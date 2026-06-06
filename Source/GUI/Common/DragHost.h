@@ -62,15 +62,26 @@ public:
     //   Displace   — displaced content from elsewhere will land here; render with a thicker accent border.
     virtual void setCellDragRoleSource     (LunchBoxDrag::GridCell c, bool s) = 0;
     virtual void setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s) = 0;
-    virtual void setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, bool s) = 0;
+    // dir: -1 = displaced content moves to a lower global index (left/up arrow)
+    //       0 = clear
+    //      +1 = displaced content moves to a higher global index (right/down arrow)
+    virtual void setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, int dir) = 0;
 
     virtual void clearAllCellPreviews() = 0;
+
+    // Called once at the start of rebuildPreviewsFor(), before any per-cell role
+    // calls. Hosts that need the full op context (e.g. to derive label strings)
+    // can override; the default is a no-op.
+    virtual void onPreviewRebuild(const LunchBoxDrag::DragOp& /*op*/) {}
 
     // Called once at the start of a drag commit, before any writes — gives the
     // host a chance to capture an undo snapshot.
     virtual void onDragCommitWillBegin() = 0;
 
-    // Called once at the end of a drag commit, after all writes are applied —
-    // lets the host fire its onAssignmentsChanged callback, update visuals, etc.
-    virtual void onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection) = 0;
+    // Called once at the end of a drag commit, after all writes are applied.
+    // `newSelection` is where the dragged cells landed (destCells in data coords).
+    // `oldSources`   is where they came from (sourceCells in data coords).
+    // The host uses both to move keyboard focus to follow the previously-focused cell.
+    virtual void onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection,
+                                      const juce::Array<LunchBoxDrag::GridCell>& oldSources) = 0;
 };

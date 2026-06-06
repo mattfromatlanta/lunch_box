@@ -41,7 +41,8 @@ juce_add_binary_data(lunch_box_assets SOURCES
     fonts/Poppins-Regular.ttf
     fonts/Poppins-Medium.ttf
     fonts/Poppins-SemiBold.ttf
-    fonts/Poppins-Bold.ttf)
+    fonts/Poppins-Bold.ttf
+    assets/arrow_icon.svg)
 
 # Create the GUI application
 juce_add_gui_app(lunch_box

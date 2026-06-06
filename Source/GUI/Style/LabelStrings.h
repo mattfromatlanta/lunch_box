@@ -48,6 +48,28 @@ namespace LunchBoxLabels
     inline constexpr const char* kChooseAudioFile        = "Select Audio File";
     inline constexpr const char* kChooseAutoFillFolder   = "Select Folder to Auto-Fill";
     inline constexpr const char* kChooseAutoFillBankFolder = "Select Folder to Auto-Fill From";
+    inline constexpr const char* kChooseOutputFolder     = "Please select a home folder for your pack.";
+
+    // ── Export / overwrite confirmation dialogs ────────────
+    inline constexpr const char* kDlgFolderNotEmpty         = " is not empty.";
+    inline constexpr const char* kDlgFolderNotEmptyBody     = "The export folder already exists:\n";
+    inline constexpr const char* kDlgFolderNotEmptyWillDel  = " will be deleted before exporting.\n\nContinue?";
+    inline constexpr const char* kDlgOutsideHomeTitle       = "Folder Outside Home Directory";
+    inline constexpr const char* kDlgOutsideHomeBody        = "\" is outside your home directory.\n\n";
+    inline constexpr const char* kDlgOutsideHomeSuffix      = "\" folder will be created there. Are you sure?";
+
+    // ── Processing status lines ────────────────────────────
+    inline constexpr const char* kStatusProcessStart    = "\n=== Starting CHOMPI Processing ===";
+    inline constexpr const char* kStatusProcessComplete = "\n=== Processing Complete ===";
+    inline constexpr const char* kStatusProcessFailed   = "\n=== Processing Failed ===";
+    inline constexpr const char* kStatusErrorPrefix     = "Error: ";
+    inline constexpr const char* kStatusCubbiLabel      = "  Cubbi: ";
+    inline constexpr const char* kStatusJammiLabel      = "  Jammi: ";
+    inline constexpr const char* kStatusTotalLabel      = "  Total: ";
+    inline constexpr const char* kStatusDoublesLabel    = "  Doubles: ";
+    inline constexpr const char* kStatusOutputLabel     = "  Output: ";
+    inline constexpr const char* kStatusSamplesUnit     = " samples";
+    inline constexpr const char* kStatusOptimizedSuffix = " optimized versions created";
 
     // ── PackNameOverlay dialog ─────────────────────────────
     inline constexpr const char* kDlgPackNamePrompt   = "Name your pack.";
@@ -90,7 +112,7 @@ namespace LunchBoxLabels
     inline constexpr const char* kCmdPasteDesc        = "Paste samples";
     inline constexpr const char* kCmdSelectAll        = "Select All";
     inline constexpr const char* kCmdSelectAllDesc    = "Select all slots";
-    inline constexpr const char* kCmdOpenOutput       = "Open Output Folder";
+    inline constexpr const char* kCmdOpenOutput       = "Open Export Home";
     inline constexpr const char* kCmdOpenOutputDesc   = "Open output folder in Finder";
     inline constexpr const char* kCmdProcess          = "Process Samples";
     inline constexpr const char* kCmdProcessDesc      = "Convert and export all samples";

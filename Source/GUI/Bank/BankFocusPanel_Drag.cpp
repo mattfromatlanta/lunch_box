@@ -181,11 +181,11 @@ void BankFocusPanel::setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s
     rows[c.slot]->setDragRoleDestination(s);
 }
 
-void BankFocusPanel::setCellDragRoleDisplace(LunchBoxDrag::GridCell c, bool s)
+void BankFocusPanel::setCellDragRoleDisplace(LunchBoxDrag::GridCell c, int dir)
 {
     if (c.bank != activeBank) return;
     if (c.slot < 0 || c.slot >= rows.size()) return;
-    rows[c.slot]->setDragRoleDisplace(s);
+    rows[c.slot]->setDragRoleDisplace(dir);
 }
 
 void BankFocusPanel::clearAllCellPreviews()
@@ -196,7 +196,7 @@ void BankFocusPanel::clearAllCellPreviews()
         row->setDragSource(false);
         row->setDragRoleSource(false);
         row->setDragRoleDestination(false);
-        row->setDragRoleDisplace(false);
+        row->setDragRoleDisplace(0);
     }
 }
 
@@ -208,19 +208,26 @@ void BankFocusPanel::onDragCommitWillBegin()
     flushRowsToStorage();
 }
 
-void BankFocusPanel::onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection)
+void BankFocusPanel::onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection,
+                                           const juce::Array<LunchBoxDrag::GridCell>& oldSources)
 {
     flushRowsToStorage();
 
     selection.clear();
-    int newFocus = focusedRowIdx;
     for (const auto& g : newSelection)
         if (g.bank == activeBank)
             selection.add(g.slot);
 
-    if (! newSelection.isEmpty())
-        newFocus = newSelection.getFirst().slot;
-
+    // Move focus to the destination corresponding to the previously-focused row.
+    int newFocus = newSelection.isEmpty() ? focusedRowIdx : newSelection.getFirst().slot;
+    for (int i = 0; i < oldSources.size() && i < newSelection.size(); ++i)
+    {
+        if (oldSources[i].bank == activeBank && oldSources[i].slot == focusedRowIdx)
+        {
+            newFocus = newSelection[i].slot;
+            break;
+        }
+    }
     focusedRowIdx   = newFocus;
     selectionAnchor = newFocus;
 

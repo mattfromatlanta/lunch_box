@@ -60,7 +60,11 @@ public:
     // Drag-preview visual roles (all reset between drags). Each is independent.
     void setDragRoleSource     (bool s);   // content has been picked up — render vacated, suppress selection
     void setDragRoleDestination(bool s);   // moving content lands here — render with selection style
-    void setDragRoleDisplace   (bool s);   // displaced content lands here — thicker accent border
+    // Displaced content lands here. dir: -1 = moves to lower index (left arrow),
+    //   0 = clear, +1 = moves to higher index (right arrow).
+    void setDragRoleDisplace   (int dir);
+    // Labels shown during displace preview: lower-index slot on left, higher on right.
+    void setDisplaceLabels(const juce::String& left, const juce::String& right);
 
     // Selection callbacks (wired by BankEditorPanel)
     std::function<void(BankSlotComponent*, const juce::MouseEvent&)> onSlotMouseDown;
@@ -101,7 +105,9 @@ private:
     bool swapHighlight  = false;
     bool dragRoleSource      = false;
     bool dragRoleDestination = false;
-    bool dragRoleDisplace    = false;
+    int  dragRoleDisplace    = 0;    // -1 left arrow, 0 off, +1 right arrow
+    juce::String displaceLeftLabel;
+    juce::String displaceRightLabel;
     juce::File previewFile;
 
     std::unique_ptr<juce::FileChooser> fileChooser;

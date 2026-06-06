@@ -63,7 +63,7 @@ void BankFocusPanel::selectRowRange(int from, int to)
 
 // ─── Copy / cut / paste ───────────────────────────────────────────────────────
 
-juce::Array<juce::File> BankFocusPanel::getSelectedFiles()
+juce::Array<ClipboardEntry> BankFocusPanel::getSelectedClipboard()
 {
     flushRowsToStorage();
     const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
@@ -73,21 +73,22 @@ juce::Array<juce::File> BankFocusPanel::getSelectedFiles()
         for (int j = i + 1; j < sorted.size(); ++j)
             if (sorted[j] < sorted[i]) sorted.swap(i, j);
 
-    juce::Array<juce::File> files;
+    const int anchor = sorted.isEmpty() ? 0 : sorted[0];
+    juce::Array<ClipboardEntry> entries;
     for (int idx : sorted)
-        files.add(slots[catIdx][activeBank][idx]);
-    return files;
+        entries.add({ slots[catIdx][activeBank][idx], idx - anchor, 0 });
+    return entries;
 }
 
-void BankFocusPanel::pasteFiles(const juce::Array<juce::File>& files)
+void BankFocusPanel::pasteClipboard(const juce::Array<ClipboardEntry>& entries)
 {
-    if (files.isEmpty()) return;
+    if (entries.isEmpty()) return;
     const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    for (int i = 0; i < files.size(); ++i)
+    for (const auto& e : entries)
     {
-        int slot = focusedRowIdx + i;
-        if (slot >= LunchBoxNamer::SLOTS_PER_BANK) break;
-        slots[catIdx][activeBank][slot] = files[i];
+        int slot = focusedRowIdx + e.rowOffset;
+        if (slot < 0 || slot >= LunchBoxNamer::SLOTS_PER_BANK) continue;
+        slots[catIdx][activeBank][slot] = e.file;
     }
     populateRowsFromStorage();
     if (onAssignmentsChanged) onAssignmentsChanged();

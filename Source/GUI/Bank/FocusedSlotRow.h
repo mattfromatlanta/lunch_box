@@ -38,7 +38,9 @@ public:
     // Drag-preview visual roles (all reset between drags). Each is independent.
     void setDragRoleSource     (bool s);   // content has been picked up — render vacated, suppress selection
     void setDragRoleDestination(bool s);   // moving content lands here — render with selection style
-    void setDragRoleDisplace   (bool s);   // displaced content lands here — thicker accent border
+    // Displaced content lands here. dir: -1 = moves to lower index (up arrow),
+    //   0 = clear, +1 = moves to higher index (down arrow).
+    void setDragRoleDisplace   (int dir);
     void setBankColour(juce::Colour c) { bankColour = c; repaint(); }
 
     // Drag preview: show a different file's waveform without changing the actual sample
@@ -92,7 +94,7 @@ private:
     bool isDragSrc        = false;
     bool dragRoleSource      = false;
     bool dragRoleDestination = false;
-    bool dragRoleDisplace    = false;
+    int  dragRoleDisplace    = 0;    // -1 up arrow, 0 off, +1 down arrow
     juce::Colour bankColour = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
 
     std::unique_ptr<juce::FileChooser> fileChooser;

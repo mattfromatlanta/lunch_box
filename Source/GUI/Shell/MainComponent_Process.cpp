@@ -26,7 +26,7 @@ void MainComponent::processFiles()
                                                   : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
 
         fileChooser = std::make_unique<juce::FileChooser>(
-            "Please select a folder for your pack.", startDir, "", true);
+            LunchBoxLabels::kChooseOutputFolder, startDir, "", true);
 
         auto flags = juce::FileBrowserComponent::openMode
                    | juce::FileBrowserComponent::canSelectDirectories;
@@ -52,7 +52,7 @@ void MainComponent::processFiles()
 
                 auto runExport = [this]()
                 {
-                    appendStatus("\n=== Starting CHOMPI Processing ===");
+                    appendStatus(LunchBoxLabels::kStatusProcessStart);
                     if (viewMode == ViewMode::Bank)
                         syncBankFocusToPack();
                     processFilesFromEditors();
@@ -86,9 +86,9 @@ void MainComponent::processFiles()
 
                 juce::NativeMessageBox::showOkCancelBox(
                     juce::MessageBoxIconType::WarningIcon,
-                    packName + " is not empty.",
-                    "The export folder already exists:\n" + packFolder.getFullPathName() + "\n\n"
-                    + countStr + " will be deleted before exporting.\n\nContinue?",
+                    packName + LunchBoxLabels::kDlgFolderNotEmpty,
+                    LunchBoxLabels::kDlgFolderNotEmptyBody + packFolder.getFullPathName() + "\n\n"
+                    + countStr + LunchBoxLabels::kDlgFolderNotEmptyWillDel,
                     nullptr,
                     juce::ModalCallbackFunction::create([this, children, runExport](int res2) mutable
                     {
@@ -102,9 +102,9 @@ void MainComponent::processFiles()
             {
                 juce::NativeMessageBox::showOkCancelBox(
                     juce::MessageBoxIconType::WarningIcon,
-                    "Folder Outside Home Directory",
-                    "\"" + f.getFullPathName() + "\" is outside your home directory.\n\n"
-                    "A \"" + packName + "\" folder will be created there. Are you sure?",
+                    LunchBoxLabels::kDlgOutsideHomeTitle,
+                    "\"" + f.getFullPathName() + LunchBoxLabels::kDlgOutsideHomeBody
+                    + "A \"" + packName + LunchBoxLabels::kDlgOutsideHomeSuffix,
                     nullptr,
                     juce::ModalCallbackFunction::create([this, continueWithFolder](int res2) mutable
                     {
@@ -138,8 +138,8 @@ void MainComponent::processFilesFromEditors()
     }
     else
     {
-        appendStatus("\n=== Processing Failed ===");
-        appendStatus("Error: " + result.message);
+        appendStatus(LunchBoxLabels::kStatusProcessFailed);
+        appendStatus(LunchBoxLabels::kStatusErrorPrefix + result.message);
     }
 }
 
@@ -148,14 +148,14 @@ void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult&
 {
     int totalProcessed = result.cubbiFilesProcessed + result.jammiFilesProcessed;
     int totalOptimized = result.cubbiOptimized + result.jammiOptimized;
-    appendStatus("\n=== Processing Complete ===");
+    appendStatus(LunchBoxLabels::kStatusProcessComplete);
     if (result.cubbiFilesProcessed > 0)
-        appendStatus("  Cubbi: " + juce::String(result.cubbiFilesProcessed) + " samples");
+        appendStatus(LunchBoxLabels::kStatusCubbiLabel + juce::String(result.cubbiFilesProcessed) + LunchBoxLabels::kStatusSamplesUnit);
     if (result.jammiFilesProcessed > 0)
-        appendStatus("  Jammi: " + juce::String(result.jammiFilesProcessed) + " samples");
-    appendStatus("  Total: " + juce::String(totalProcessed) + " samples processed");
-    appendStatus("  Doubles: " + juce::String(totalOptimized) + " optimized versions created");
-    appendStatus("  Output: " + outputFolder.getFullPathName());
+        appendStatus(LunchBoxLabels::kStatusJammiLabel + juce::String(result.jammiFilesProcessed) + LunchBoxLabels::kStatusSamplesUnit);
+    appendStatus(LunchBoxLabels::kStatusTotalLabel + juce::String(totalProcessed) + LunchBoxLabels::kStatusSamplesUnit + " processed");
+    appendStatus(LunchBoxLabels::kStatusDoublesLabel + juce::String(totalOptimized) + LunchBoxLabels::kStatusOptimizedSuffix);
+    appendStatus(LunchBoxLabels::kStatusOutputLabel + outputFolder.getFullPathName());
 }
 
 void MainComponent::updateProcessButtonState()

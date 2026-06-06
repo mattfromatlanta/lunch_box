@@ -138,7 +138,7 @@ private:
         g.drawRoundedRectangle (b, r, LunchBoxConstants::BORDER_WIDTH_ACTIVE);
 
         g.setColour (findColour (juce::TextButton::textColourOffId));
-        g.setFont (LunchBoxFonts::nav());
+        g.setFont (LunchBoxFonts::nav (16.0f));
         g.drawText (getButtonText(), getLocalBounds(), juce::Justification::centred, false);
     }
 

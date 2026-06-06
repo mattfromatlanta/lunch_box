@@ -323,9 +323,8 @@ juce::File MainComponent::getResolvedOutputFolder()
 
 void MainComponent::selectOutputFolder()
 {
-    auto startDir = getResolvedOutputFolder();
-    if (!startDir.exists())
-        startDir = outputBaseFolder;
+    auto startDir = outputBaseFolder.exists() ? outputBaseFolder
+                                              : juce::File::getSpecialLocation(juce::File::userHomeDirectory);
 
     fileChooser = std::make_unique<juce::FileChooser>(
         "Select Output Folder", startDir, "", true);
@@ -363,7 +362,11 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     if (key == juce::KeyPress(juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier, 0))
     {
         if (!isTransitioning)
-            setViewMode(viewMode == ViewMode::Pack ? ViewMode::Bank : ViewMode::Pack);
+        {
+            setCategoryTab(!showCubbiEditor, true);
+            bankFocusPanel->switchToCategory(showCubbiEditor ? LunchBoxNamer::Category::Cubbi
+                                                             : LunchBoxNamer::Category::Jammi);
+        }
         return true;
     }
 
@@ -422,7 +425,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
         if (key == juce::KeyPress::tabKey)
         {
             if (!isTransitioning)
-                animateBankCategorySwitch(!showCubbiEditor);
+                setViewMode(ViewMode::Pack);
             return true;
         }
         if (key == juce::KeyPress::returnKey)
@@ -453,11 +456,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     if (key == juce::KeyPress::tabKey)
     {
         if (!isTransitioning)
-        {
-            setCategoryTab(!showCubbiEditor, true);
-            bankFocusPanel->switchToCategory(showCubbiEditor ? LunchBoxNamer::Category::Cubbi
-                                                             : LunchBoxNamer::Category::Jammi);
-        }
+            setViewMode(viewMode == ViewMode::Pack ? ViewMode::Bank : ViewMode::Pack);
         return true;
     }
 
@@ -506,9 +505,9 @@ void MainComponent::clearStatusLog()
 void MainComponent::editCopy()
 {
     if (viewMode == ViewMode::Bank)
-        sampleClipboard = bankFocusPanel->getSelectedFiles();
+        sampleClipboard = bankFocusPanel->getSelectedClipboard();
     else
-        sampleClipboard = getActiveEditor()->getSelectedFiles();
+        sampleClipboard = getActiveEditor()->getSelectedClipboard();
 
     // Record the current system clipboard change count so editPaste() can detect
     // whether an external copy happened after this one.
@@ -520,12 +519,12 @@ void MainComponent::editCut()
     captureUndoState();
     if (viewMode == ViewMode::Bank)
     {
-        sampleClipboard = bankFocusPanel->getSelectedFiles();
+        sampleClipboard = bankFocusPanel->getSelectedClipboard();
         bankFocusPanel->clearFocusedRows();
     }
     else
     {
-        sampleClipboard = getActiveEditor()->getSelectedFiles();
+        sampleClipboard = getActiveEditor()->getSelectedClipboard();
         getActiveEditor()->clearSelectedCells();
     }
 
@@ -538,19 +537,29 @@ void MainComponent::editPaste()
     // the user copied something externally — prefer that over the stale internal clipboard.
     const bool externalCopyIsNewer = (ClipboardHelper::getChangeCount() != lastInternalCopyChangeCount);
 
-    juce::Array<juce::File> files;
     if (externalCopyIsNewer)
-        files = ClipboardHelper::getAudioFilesFromClipboard();
+    {
+        // External files have no geometry context — paste sequentially from focus
+        juce::Array<juce::File> files = ClipboardHelper::getAudioFilesFromClipboard();
+        if (!files.isEmpty())
+        {
+            juce::Array<ClipboardEntry> entries;
+            for (int i = 0; i < files.size(); ++i)
+                entries.add({ files[i], i, 0 });
+            captureUndoState();
+            if (viewMode == ViewMode::Bank)
+                bankFocusPanel->pasteClipboard(entries);
+            else
+                getActiveEditor()->pasteClipboard(entries);
+            return;
+        }
+    }
 
-    // Fall back to internal clipboard if external yielded nothing
-    if (files.isEmpty())
-        files = sampleClipboard;
-
-    if (files.isEmpty()) return;
+    if (sampleClipboard.isEmpty()) return;
 
     captureUndoState();
     if (viewMode == ViewMode::Bank)
-        bankFocusPanel->pasteFiles(files);
+        bankFocusPanel->pasteClipboard(sampleClipboard);
     else
-        getActiveEditor()->pasteFiles(files);
+        getActiveEditor()->pasteClipboard(sampleClipboard);
 }

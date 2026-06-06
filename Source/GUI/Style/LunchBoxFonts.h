@@ -85,9 +85,9 @@ namespace LunchBoxFonts
     }
 
     // Nav links — Medium 14px, uppercase, tracking 0.05em
-    inline juce::Font nav()
+    inline juce::Font nav(float height = 14.0f)
     {
-        return juce::Font(juce::FontOptions{}.withTypeface(medium()).withHeight(14.0f))
+        return juce::Font(juce::FontOptions{}.withTypeface(medium()).withHeight(height))
                .withExtraKerningFactor(0.05f);
     }
 

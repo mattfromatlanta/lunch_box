@@ -122,7 +122,7 @@ private:
     std::unique_ptr<GuiProcessor> processor;
 
     juce::ApplicationProperties appProperties;
-    juce::Array<juce::File> sampleClipboard;       // shared between Pack and Bank views
+    juce::Array<ClipboardEntry> sampleClipboard;   // shared between Pack and Bank views
     int lastInternalCopyChangeCount = -1;          // NSPasteboard changeCount at last internal copy
 
     bool showRuntimeLogs = false;

@@ -5,6 +5,7 @@
 #include "LunchBoxFonts.h"
 #include "LabelStrings.h"
 #include "../FileSystemHelper.h"
+#include <BinaryData.h>
 
 namespace
 {
@@ -69,13 +70,15 @@ void BankSlotComponent::paint(juce::Graphics& g)
 
     const juce::Colour filledBg = LunchBoxColours::getFocused(bankBorderColour(bankLetter));
 
-    // Drag preview overrides regular selection visuals:
-    //   Source cells vacate (suppress selection look)
-    //   Destination cells take over the selection look
-    //   Displace cells render normally but get a thicker accent border
-    const bool effectiveSelected = (dragRoleDestination)
-                                    ? true
-                                    : (dragRoleSource ? false : selected);
+    // Drag preview overrides regular selection and focus visuals. Destination cells
+    // take the selection look; source and displace cells suppress it. Focus styling
+    // is fully suppressed whenever any drag role is active — the destination stripe
+    // pattern is the only "focus" indicator during a drag.
+    const bool inDragRole        = dragRoleDestination || dragRoleSource || dragRoleDisplace;
+    const bool effectiveFocused  = focused && !inDragRole;
+    const bool effectiveSelected = dragRoleDestination                    ? true
+                                 : (dragRoleSource || dragRoleDisplace)   ? false
+                                                                          : selected;
 
     juce::Colour bg;
     if      (dragTarget)                          bg = displayFilled ? filledBg.brighter(0.25f)      : slotDragTargetBg;
@@ -85,7 +88,7 @@ void BankSlotComponent::paint(juce::Graphics& g)
     g.setColour(bg);
     g.fillRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS);
 
-    if (effectiveSelected && !focused && !dragTarget && !swapHighlight)
+    if (effectiveSelected && !effectiveFocused && !dragTarget && !swapHighlight)
     {
         auto* top = getTopLevelComponent();
         auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
@@ -100,7 +103,7 @@ void BankSlotComponent::paint(juce::Graphics& g)
     else if (dragRoleDisplace)                   { border = LunchBoxColours::WHITE_CREAM.withAlpha(0.7f);
                                                    bw     = LunchBoxConstants::BORDER_WIDTH * 1.25f; }
     else if (dragRoleSource)                     { border = LunchBoxColours::getBorder(bankBorderColour(bankLetter)); }
-    else if (focused)                            { border = slotFocusBdr;             bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
+    else if (effectiveFocused)                   { border = slotFocusBdr;             bw = LunchBoxConstants::BORDER_WIDTH_ACTIVE; }
     else if (swapHighlight && effectiveSelected) { border = slotSwapSourceBdr; }
     else if (effectiveSelected)                  { border = slotSelectedBdr; }
     else if (isHovered)                          { border = slotHoverBdr; }
@@ -108,10 +111,66 @@ void BankSlotComponent::paint(juce::Graphics& g)
     g.setColour(border);
     g.drawRoundedRectangle(bounds, LunchBoxConstants::CORNER_RADIUS, bw);
 
-    // Always show cell label (e.g. "A1", "E14") at 16pt
+    g.setFont(LunchBoxFonts::body());
+
+    // Displacement preview — replaces pill + label with "A1 → A2" layout.
+    if (dragRoleDisplace != 0)
+    {
+        const auto iconColour = LunchBoxColours::getLabelBg (bankBorderColour (bankLetter));
+
+        auto xml = juce::XmlDocument::parse (
+            juce::String::fromUTF8 (BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
+
+        if (xml != nullptr)
+        {
+            auto* g_el   = xml->getChildByName ("g");
+            auto* pathEl = g_el ? g_el->getChildByName ("path") : xml->getChildByName ("path");
+            if (pathEl != nullptr)
+                pathEl->setAttribute ("fill", "#" + iconColour.toDisplayString (false));
+
+            g.setFont (LunchBoxFonts::medium());
+            g.setColour (iconColour);
+            const float fontH  = g.getCurrentFont().getHeight();
+            const float iconH  = fontH * 0.65f;
+            const float iconW  = iconH;
+            const float gap    = 3.0f;
+            const float leftW  = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), displaceLeftLabel);
+            const float rightW = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), displaceRightLabel);
+            const float totalW = leftW + gap + iconW + gap + rightW;
+
+            const auto  fb = getLocalBounds().toFloat();
+            const float cy = fb.getCentreY();
+            float       x  = fb.getCentreX() - totalW * 0.5f;
+
+            g.drawText (displaceLeftLabel,
+                        juce::Rectangle<float> (x, cy - iconH * 0.5f, leftW, iconH),
+                        juce::Justification::centredLeft);
+            x += leftW + gap;
+
+            juce::Rectangle<float> arrowBounds (x, cy - iconH * 0.5f, iconW, iconH);
+            if (auto drawable = juce::Drawable::createFromSVG (*xml))
+            {
+                auto transform = juce::RectanglePlacement (juce::RectanglePlacement::centred)
+                                     .getTransformToFit (drawable->getDrawableBounds(), arrowBounds);
+
+                if (dragRoleDisplace < 0)  // displaced content moves to lower index → left arrow ←
+                    transform = transform.followedBy (juce::AffineTransform::scale (
+                        -1.0f, 1.0f, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
+
+                drawable->draw (g, 1.0f, transform);
+            }
+            x += iconW + gap;
+
+            g.drawText (displaceRightLabel,
+                        juce::Rectangle<float> (x, cy - iconH * 0.5f, rightW, iconH),
+                        juce::Justification::centredLeft);
+        }
+        return;
+    }
+
+    // Normal: show cell label (e.g. "A1", "E14") with optional pill when filled.
     const juce::String cellLabel = juce::String::charToString((juce::juce_wchar)bankLetter)
                                    + juce::String(slotNumber);
-    g.setFont(LunchBoxFonts::body());
 
     if (displayFilled)
     {
@@ -192,9 +251,16 @@ void BankSlotComponent::setDragRoleDestination(bool s)
     if (dragRoleDestination != s) { dragRoleDestination = s; repaint(); }
 }
 
-void BankSlotComponent::setDragRoleDisplace(bool s)
+void BankSlotComponent::setDragRoleDisplace(int dir)
 {
-    if (dragRoleDisplace != s) { dragRoleDisplace = s; repaint(); }
+    if (dragRoleDisplace != dir) { dragRoleDisplace = dir; repaint(); }
+}
+
+void BankSlotComponent::setDisplaceLabels(const juce::String& left, const juce::String& right)
+{
+    displaceLeftLabel  = left;
+    displaceRightLabel = right;
+    if (dragRoleDisplace != 0) repaint();
 }
 
 void BankSlotComponent::setSwapHighlight(bool s)

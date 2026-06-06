@@ -201,9 +201,9 @@ void BankEditorPanel::browseForFocused()
 
 // ─── Copy / cut / paste ───────────────────────────────────────────────────────
 
-juce::Array<juce::File> BankEditorPanel::getSelectedFiles() const
+juce::Array<ClipboardEntry> BankEditorPanel::getSelectedClipboard() const
 {
-    // Return files ordered by visual row-major (top-left → bottom-right)
+    // Sort selected cells in visual row-major order (top-left → bottom-right)
     juce::Array<Cell> sorted = selection;
     for (int i = 0; i < sorted.size() - 1; ++i)
         for (int j = i + 1; j < sorted.size(); ++j)
@@ -214,19 +214,26 @@ juce::Array<juce::File> BankEditorPanel::getSelectedFiles() const
                 sorted.swap(i, j);
         }
 
-    juce::Array<juce::File> files;
+    // Anchor is the earliest cell; record each cell's offset relative to it
+    const Cell anchor = sorted.isEmpty() ? Cell{0,0} : sorted[0];
+    juce::Array<ClipboardEntry> entries;
     for (const auto& c : sorted)
         if (auto* slot = getSlotAt(c.row, c.col))
-            files.add(slot->getSample());
-    return files;
+            entries.add({ slot->getSample(), c.row - anchor.row, c.col - anchor.col });
+    return entries;
 }
 
-void BankEditorPanel::pasteFiles(const juce::Array<juce::File>& files)
+void BankEditorPanel::pasteClipboard(const juce::Array<ClipboardEntry>& entries)
 {
-    if (files.isEmpty()) return;
-    auto targets = getExternalDropCells(focusCell, files.size());
-    for (int i = 0; i < targets.size(); ++i)
-        if (auto* slot = getSlotAt(targets[i].row, targets[i].col))
-            slot->setSample(files[i]);
+    if (entries.isEmpty()) return;
+    for (const auto& e : entries)
+    {
+        int r = focusCell.row + e.rowOffset;
+        int c = focusCell.col + e.colOffset;
+        if (r < 0 || r >= LunchBoxNamer::NUM_BANKS)   continue;
+        if (c < 0 || c >= LunchBoxNamer::SLOTS_PER_BANK) continue;
+        if (auto* slot = getSlotAt(r, c))
+            slot->setSample(e.file);
+    }
     if (onAssignmentsChanged) onAssignmentsChanged();
 }

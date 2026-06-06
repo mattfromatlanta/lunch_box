@@ -4,6 +4,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "FocusedSlotRow.h"
+#include "../Common/ClipboardEntry.h"
 #include "../Common/DragController.h"
 #include "../Common/DragHost.h"
 #include "../Processing/LunchBoxNamer.h"
@@ -57,8 +58,8 @@ public:
     void triggerClear();      // clears active bank and refreshes rows
 
     // Copy / cut / paste
-    juce::Array<juce::File> getSelectedFiles();
-    void pasteFiles(const juce::Array<juce::File>& files);
+    juce::Array<ClipboardEntry> getSelectedClipboard();
+    void pasteClipboard(const juce::Array<ClipboardEntry>& entries);
 
     // --- Category / bank switching (driven by MainComponent) ---
     void switchToCategory(LunchBoxNamer::Category cat);
@@ -104,10 +105,11 @@ public:
     void                    setCellPreview(LunchBoxDrag::GridCell c, const juce::File& f) override;
     void                    setCellDragRoleSource     (LunchBoxDrag::GridCell c, bool s) override;
     void                    setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s) override;
-    void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, bool s) override;
+    void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, int dir) override;
     void                    clearAllCellPreviews() override;
     void                    onDragCommitWillBegin() override;
-    void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection) override;
+    void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection,
+                                                const juce::Array<LunchBoxDrag::GridCell>& oldSources) override;
 
 private:
     // Shared audio resources (from AudioPreviewPlayer, owned by MainComponent)

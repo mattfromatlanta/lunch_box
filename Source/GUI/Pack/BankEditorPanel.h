@@ -3,6 +3,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "BankRowComponent.h"
+#include "../Common/ClipboardEntry.h"
 #include "../Common/DragController.h"
 #include "../Common/DragHost.h"
 #include "../Processing/LunchBoxNamer.h"
@@ -55,8 +56,8 @@ public:
     void browseForFocused();
 
     // Copy / cut / paste
-    juce::Array<juce::File> getSelectedFiles() const;
-    void pasteFiles(const juce::Array<juce::File>& files);
+    juce::Array<ClipboardEntry> getSelectedClipboard() const;
+    void pasteClipboard(const juce::Array<ClipboardEntry>& entries);
 
     // Fired just before any slot content is about to change (for undo capture)
     std::function<void()> onBeforeChange;
@@ -112,10 +113,12 @@ public:
     void                    setCellPreview(LunchBoxDrag::GridCell c, const juce::File& f) override;
     void                    setCellDragRoleSource     (LunchBoxDrag::GridCell c, bool s) override;
     void                    setCellDragRoleDestination(LunchBoxDrag::GridCell c, bool s) override;
-    void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, bool s) override;
+    void                    setCellDragRoleDisplace   (LunchBoxDrag::GridCell c, int dir) override;
     void                    clearAllCellPreviews() override;
+    void                    onPreviewRebuild(const LunchBoxDrag::DragOp& op) override;
     void                    onDragCommitWillBegin() override;
-    void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection) override;
+    void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection,
+                                                const juce::Array<LunchBoxDrag::GridCell>& oldSources) override;
 
 private:
     LunchBoxNamer::Category category;

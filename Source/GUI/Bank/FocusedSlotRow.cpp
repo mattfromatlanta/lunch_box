@@ -4,6 +4,7 @@
 #include "UIConstants.h"
 #include "LabelStrings.h"
 #include "../FileSystemHelper.h"
+#include <BinaryData.h>
 
 namespace
 {
@@ -82,9 +83,9 @@ void FocusedSlotRow::setDragRoleDestination(bool s)
     if (dragRoleDestination != s) { dragRoleDestination = s; repaint(); }
 }
 
-void FocusedSlotRow::setDragRoleDisplace(bool s)
+void FocusedSlotRow::setDragRoleDisplace(int dir)
 {
-    if (dragRoleDisplace != s) { dragRoleDisplace = s; repaint(); }
+    if (dragRoleDisplace != dir) { dragRoleDisplace = dir; repaint(); }
 }
 
 
@@ -117,12 +118,15 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     const bool            displayFilled = (displayFile != juce::File{});
     juce::AudioThumbnail& displayThumb  = showingPreview ? previewThumbnail : thumbnail;
 
-    // Drag-preview overrides regular selection visuals:
-    //   Source cells vacate; Destination cells take over the selection look;
-    //   Displace cells render normally with a thicker accent border.
-    const bool effectiveSelected = dragRoleDestination ? true
-                                 : dragRoleSource      ? false
-                                                       : selected;
+    // Drag preview overrides regular selection and focus visuals. Destination cells
+    // take the selection look; source and displace cells suppress it. Focus styling
+    // is fully suppressed whenever any drag role is active — the destination stripe
+    // pattern is the only "focus" indicator during a drag.
+    const bool inDragRole        = dragRoleDestination || dragRoleSource || dragRoleDisplace;
+    const bool effectiveFocused  = focused && !inDragRole;
+    const bool effectiveSelected = dragRoleDestination                  ? true
+                                 : (dragRoleSource || dragRoleDisplace) ? false
+                                                                        : selected;
 
     // Background
     juce::Colour bg;
@@ -137,7 +141,7 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     g.setColour(bg);
     g.fillRoundedRectangle(fbounds, rowRadius);
 
-    if (effectiveSelected && !focused && !isDragSrc && !isDraggingOver)
+    if (effectiveSelected && !effectiveFocused && !isDragSrc && !isDraggingOver)
     {
         auto* top = getTopLevelComponent();
         auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
@@ -166,7 +170,7 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     {
         // Vacated source — render neutral, no focus/selection visuals.
     }
-    else if (focused)
+    else if (effectiveFocused)
     {
         g.setColour(LunchBoxColours::FOCUS_BORDER);
         g.drawRoundedRectangle(borderBounds, rowRadius, LunchBoxConstants::BORDER_WIDTH_ACTIVE);
@@ -207,6 +211,47 @@ void FocusedSlotRow::paint(juce::Graphics& g)
         g.setColour(bankColour.withAlpha(showingPreview ? 0.5f : 0.85f));
         displayThumb.drawChannels(g, bounds.reduced(0, 4),
                                   0.0, displayThumb.getTotalLength(), 1.0f);
+    }
+
+    // Displacement direction arrow — centered in the row when drag-displaced.
+    // Up triangle (↑) = content moving to a lower global index.
+    // Down triangle (↓) = content moving to a higher global index.
+    if (dragRoleDisplace != 0)
+    {
+        const auto fb   = getLocalBounds().toFloat();
+        const float cx  = fb.getCentreX();
+        const float cy  = fb.getCentreY();
+        const float arrowSize = 10.0f;
+        juce::Rectangle<float> arrowBounds (cx - arrowSize * 0.5f, cy - arrowSize * 0.5f,
+                                            arrowSize, arrowSize);
+
+        auto xml = juce::XmlDocument::parse (
+            juce::String::fromUTF8 (BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
+
+        if (xml != nullptr)
+        {
+            auto* g_el   = xml->getChildByName ("g");
+            auto* pathEl = g_el ? g_el->getChildByName ("path") : xml->getChildByName ("path");
+            if (pathEl != nullptr)
+            {
+                auto col = LunchBoxColours::WHITE_CREAM.withAlpha (0.8f);
+                pathEl->setAttribute ("fill", "#" + col.toDisplayString (false));
+            }
+
+            if (auto drawable = juce::Drawable::createFromSVG (*xml))
+            {
+                auto transform = juce::RectanglePlacement (juce::RectanglePlacement::centred)
+                                     .getTransformToFit (drawable->getDrawableBounds(), arrowBounds);
+
+                // SVG points right; rotate to point up (−90°) or down (+90°)
+                const float angle = (dragRoleDisplace < 0) ? -juce::MathConstants<float>::halfPi
+                                                           :  juce::MathConstants<float>::halfPi;
+                transform = transform.followedBy (
+                    juce::AffineTransform::rotation (angle, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
+
+                drawable->draw (g, 1.0f, transform);
+            }
+        }
     }
 }
 

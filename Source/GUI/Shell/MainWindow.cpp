@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "MainWindow.h"
+#include "../Style/LunchBoxFonts.h"
 
 // Tooltip that only appears after the cursor has been still for the full delay,
 // and disappears immediately on intentional mouse movement.
@@ -11,16 +12,33 @@ static bool g_tooltipsSuppressed = false;
 
 void suppressTooltipsUntilMouseMove() { g_tooltipsSuppressed = true; }
 
+struct TooltipLAF : public juce::LookAndFeel_V4
+{
+    void drawTooltip (juce::Graphics& g, const juce::String& text, int w, int h) override
+    {
+        juce::Rectangle<int> bounds (w, h);
+        g.setColour (findColour (juce::TooltipWindow::backgroundColourId));
+        g.fillRoundedRectangle (bounds.toFloat(), 4.0f);
+        g.setColour (findColour (juce::TooltipWindow::outlineColourId));
+        g.drawRoundedRectangle (bounds.toFloat().reduced (0.5f), 4.0f, 1.0f);
+        g.setColour (findColour (juce::TooltipWindow::textColourId));
+        g.setFont (juce::Font (juce::FontOptions{}.withTypeface (LunchBoxFonts::regular()).withHeight (16.0f)));
+        g.drawFittedText (text, bounds.reduced (6, 3), juce::Justification::centred, 1);
+    }
+};
+
 struct LunchBoxTooltipWindow : public juce::TooltipWindow
 {
     LunchBoxTooltipWindow (juce::Component* parent, int delayMs)
         : juce::TooltipWindow (parent, delayMs)
     {
+        setLookAndFeel (&laf);
         juce::Desktop::getInstance().addGlobalMouseListener (this);
     }
 
     ~LunchBoxTooltipWindow() override
     {
+        setLookAndFeel (nullptr);
         juce::Desktop::getInstance().removeGlobalMouseListener (this);
     }
 
@@ -53,6 +71,7 @@ struct LunchBoxTooltipWindow : public juce::TooltipWindow
     }
 
 private:
+    TooltipLAF         laf;
     juce::uint32       lastMoveMs = 0;
     juce::Point<float> lastPos;
 };

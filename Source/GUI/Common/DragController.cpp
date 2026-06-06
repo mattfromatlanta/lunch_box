@@ -70,6 +70,7 @@ void DragController::update(juce::Point<int> cursorPanelPt)
 
 void DragController::rebuildPreviewsFor(const DragOp& op)
 {
+    host.onPreviewRebuild(op);
     host.clearAllCellPreviews();
 
     const auto& destCells = op.destCells;
@@ -88,9 +89,25 @@ void DragController::rebuildPreviewsFor(const DragOp& op)
         host.setCellDragRoleSource(s, true);
     }
 
+    // Compute displacement direction: -1 = backward (lower index), +1 = forward.
+    // For uniform drags this is the same for every pair; take the first target-only
+    // pair as representative. Direction is shown as arrow icons on displaced cells.
+    const auto dataDims   = host.getGridDims();
+    int displaceDir = 0;
+    for (int i = 0; i < op.sourceCells.size(); ++i)
+    {
+        if (! containsCell(op.sourceCells, destCells[i]))   // target-only pair
+        {
+            const int dIdx = dataDims.globalIndex(destCells[i]);
+            const int sIdx = dataDims.globalIndex(op.sourceCells[i]);
+            displaceDir = (dIdx > sIdx) ? -1 : +1;         // mirrors computeDragResult step
+            break;
+        }
+    }
+
     // One-shot direction-aware stack-insert against the current real grid.
     auto accessor = [this](GridCell c) { return host.getFileAt(c); };
-    auto writes   = computeDragResult(accessor, op, host.getGridDims());
+    auto writes   = computeDragResult(accessor, op, dataDims);
 
     for (const auto& w : writes)
     {
@@ -103,7 +120,7 @@ void DragController::rebuildPreviewsFor(const DragOp& op)
         }
         else if (w.file != juce::File{})
         {
-            host.setCellDragRoleDisplace(w.cell, true);
+            host.setCellDragRoleDisplace(w.cell, displaceDir);
             host.setCellDragRoleSource  (w.cell, false);
         }
     }
@@ -134,14 +151,16 @@ void DragController::commit()
     for (const auto& w : writes)
         host.setFileAt(w.cell, w.file);
 
-    juce::Array<GridCell> newSelection = op.destCells;
-
     host.clearAllCellPreviews();
     proxy.finish();
+
+    juce::Array<GridCell> oldSources = sourceCells;
+    juce::Array<GridCell> newSel     = op.destCells;
+
     state = State::Idle;
     sourceCells.clear();
 
-    host.onDragCommitFinished(newSelection);
+    host.onDragCommitFinished(newSel, oldSources);
 }
 
 void DragController::cancel()
