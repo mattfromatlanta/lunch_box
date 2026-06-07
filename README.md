@@ -12,12 +12,12 @@ naming convention.
 
 ## Features
 
-- **Three GUI Modes** — Simple (folder drop zones), Pack (5-bank x 14-slot grid), Bank (single-bank focus view)
+- **Two GUI Modes** — Pack (5-bank x 14-slot grid), Bank (single-bank focus view)
 - **CLI Support** — Full command-line interface for scripting and automation
 - **Format Support** — WAV, AIFF, MP3, FLAC input
 - **CHOMPI Bank Assignment** — Automatic bank/slot organization with bank-subfolder detection
 - **Dual Categories** — Process Cubbi (percussive) and Jammi (chromatic) samples independently
-- **Waveform Preview** — Per-slot waveform display with click-to-play preview
+- **Waveform Preview** — Click-to-play preview. Waveform previews in bank mode
 - **Drag and Drop** — Drag folders or individual files directly onto slots
 - **Undo / Redo** — 10-step history across all view modes
 - **Keyboard Navigation** — Full keyboard control (Cmd+Z/C/X/V/A, arrows, Tab, Space, Enter)

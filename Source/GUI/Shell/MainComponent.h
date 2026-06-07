@@ -121,8 +121,6 @@ private:
 
     PreviewPanel previewPanel;
 
-    std::unique_ptr<juce::Drawable> boxIconDrawable;
-    std::unique_ptr<juce::Drawable> toastIconDrawable;
     std::unique_ptr<juce::Drawable> logoDrawable;
 
     std::unique_ptr<juce::FileChooser> fileChooser;

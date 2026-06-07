@@ -67,7 +67,7 @@ private:
     void runCliMode(const juce::StringArray& args)
     {
         CliProcessor cliProcessor;
-        cliProcessor.run(args);
+        setApplicationReturnValue(cliProcessor.run(args));
     }
 };
 

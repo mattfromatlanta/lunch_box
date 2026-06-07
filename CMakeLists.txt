@@ -43,13 +43,12 @@ juce_add_binary_data(lunch_box_assets SOURCES
     fonts/Poppins-SemiBold.ttf
     fonts/Poppins-Bold.ttf
     assets/arrow_icon.svg
-    assets/box_icon.svg
-    assets/toast_icon.svg
     assets/lunch_box_logo.svg)
 
 # Create the GUI application
 juce_add_gui_app(lunch_box
     PRODUCT_NAME "Lunch Box"
+    EXECUTABLE_NAME "lunch_box"
     COMPANY_NAME "Matt from Atlanta"
     BUNDLE_ID "com.mattfromatlanta.lunchbox")
 
@@ -161,6 +160,15 @@ target_link_libraries(lunch_box
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+# Copy app icon into bundle and set CFBundleIconFile after build
+add_custom_command(TARGET lunch_box POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/assets/AppIcon.icns"
+        "$<TARGET_BUNDLE_CONTENT_DIR:lunch_box>/Resources/Icon.icns"
+    COMMAND /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile Icon.icns"
+        "$<TARGET_BUNDLE_CONTENT_DIR:lunch_box>/Info.plist"
+    COMMENT "Copying app icon")
 
 # Set compiler definitions
 target_compile_definitions(lunch_box

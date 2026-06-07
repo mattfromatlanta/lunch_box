@@ -41,9 +41,7 @@ MainComponent::MainComponent()
             auto xml = juce::XmlDocument::parse(juce::String::fromUTF8(data, size));
             return xml ? juce::Drawable::createFromSVG(*xml) : nullptr;
         };
-        boxIconDrawable   = loadSvgDrawable(BinaryData::box_icon_svg,       BinaryData::box_icon_svgSize);
-        toastIconDrawable = loadSvgDrawable(BinaryData::toast_icon_svg,     BinaryData::toast_icon_svgSize);
-        logoDrawable      = loadSvgDrawable(BinaryData::lunch_box_logo_svg, BinaryData::lunch_box_logo_svgSize);
+        logoDrawable = loadSvgDrawable(BinaryData::lunch_box_logo_svg, BinaryData::lunch_box_logo_svgSize);
     }
 
     using namespace LunchBoxLabels;

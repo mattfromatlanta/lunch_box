@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "CliProcessor.h"
-#include "../Processing/AudioConverter.h"
-#include "../FileSystemHelper.h"
 #include "../Processing/LunchBoxProcessor.h"
 
 CliProcessor::CliProcessor()
@@ -10,39 +8,16 @@ CliProcessor::CliProcessor()
 
 int CliProcessor::run(const juce::StringArray& args)
 {
-    // Initialize application and parse arguments
+    if (args.contains("--install"))
+        return installCliTool();
+
     if (!initializeApplication(args))
-    {
         return 1;
-    }
 
-    // Handle different operation modes
-    if (config.mode == OperationMode::Scan)
-    {
-        // Legacy scan-only mode
-        processAudioFiles(config.wavFiles, config.targetFolder);
-        logger.logLine("Scan complete!");
-    }
-    else if (config.mode == OperationMode::Convert)
-    {
-        // Legacy conversion mode
-        processAudioFiles(config.wavFiles, config.targetFolder);
-        logger.logLine("Scan complete!");
+    LunchBoxProcessor processor(logger);
 
-        juce::File outputFolder = FileSystemHelper::getDefaultOutputDirectory();
-        AudioConverter converter(logger);
-        converter.convertFiles(config.wavFiles, config.targetFolder, outputFolder, formatManager);
-    }
-    else if (config.mode == OperationMode::Chompi)
-    {
-        // CHOMPI mode - process cubbi and jammi samples
-        LunchBoxProcessor processor(logger);
-
-        if (!processor.processSamples(config, formatManager))
-        {
-            return 1;
-        }
-    }
+    if (!processor.processSamples(config, formatManager))
+        return 1;
 
     logger.logLine("");
     logger.logLine("All operations complete!");
@@ -50,52 +25,65 @@ int CliProcessor::run(const juce::StringArray& args)
     return 0;
 }
 
+int CliProcessor::installCliTool()
+{
+    juce::File binary = juce::File::getSpecialLocation(juce::File::currentExecutableFile);
+    juce::File installTarget("/usr/local/bin/lunch_box");
+
+    juce::String script = "#!/bin/bash\nexec \"" + binary.getFullPathName() + "\" \"$@\"\n";
+
+    if (!installTarget.replaceWithText(script))
+    {
+        logger.logLine("Error: Could not write to " + installTarget.getFullPathName());
+        logger.logLine("Try: sudo \"" + binary.getFullPathName() + "\" --install");
+        return 1;
+    }
+
+    // Make executable (chmod +x)
+    juce::ChildProcess chmod;
+    chmod.start("chmod +x " + installTarget.getFullPathName());
+    chmod.waitForProcessToFinish(5000);
+
+    logger.logLine("Installed: " + installTarget.getFullPathName());
+    logger.logLine("You can now run 'lunch_box' from anywhere.");
+    return 0;
+}
+
 void CliProcessor::displayUsage()
 {
     logger.logLine("Usage: lunch_box [OPTIONS]");
     logger.logLine("");
-    logger.logLine("CHOMPI Mode (process samples for CHOMPI sampler):");
+    logger.logLine("Options:");
     logger.logLine("  --cubbi, --c <path>    Process cubbi samples (percussive/loop/SFX)");
     logger.logLine("  --jammi, --j <path>    Process jammi samples (tuned/chromatic)");
-    logger.logLine("  --output, --o <path>   Output directory (default: converted/)");
+    logger.logLine("  --output, --o <path>   Output directory (default: ./converted/)");
+    logger.logLine("  --install              Install 'lunch_box' command to /usr/local/bin");
+    logger.logLine("  --help, -h             Show this help message");
     logger.logLine("");
     logger.logLine("Examples:");
     logger.logLine("  lunch_box --cubbi /samples/cubbi --jammi /samples/jammi");
     logger.logLine("  lunch_box --c /samples/cubbi --o /my/output");
     logger.logLine("  lunch_box --j /samples/jammi");
-    logger.logLine("");
-    logger.logLine("Legacy Modes:");
-    logger.logLine("  lunch_box <folder>              Scan only");
-    logger.logLine("  lunch_box --convert <folder>    Convert without CHOMPI naming");
 }
 
 bool CliProcessor::initializeApplication(const juce::StringArray& args)
 {
     logger.logLine("==================================");
-    logger.logLine("Lunch Box - Audio File Scanner");
+    logger.logLine("Lunch Box - CHOMPI Sample Processor");
     logger.logLine("==================================");
     logger.logLine("");
 
-    // Register audio formats
     formatManager.registerBasicFormats();
 
-    logger.logLine("JUCE modules loaded successfully!");
-    logger.logLine("Registered audio formats: " + juce::String(formatManager.getNumKnownFormats()));
-    logger.logLine("");
-
-    // Check for minimum arguments
-    if (args.isEmpty())
+    if (args.isEmpty() || args.contains("--help") || args.contains("-h"))
     {
         displayUsage();
         return false;
     }
 
-    // Parse command-line arguments
-    juce::String legacyFolderPath;
     juce::String cubbiPath;
     juce::String jammiPath;
     juce::String outputPath;
-    bool hasConvertFlag = false;
 
     for (int i = 0; i < args.size(); ++i)
     {
@@ -110,7 +98,7 @@ bool CliProcessor::initializeApplication(const juce::StringArray& args)
             }
             else
             {
-                logger.logLine("Error: --cubbi (--c) requires a folder path");
+                logger.logLine("Error: --cubbi requires a folder path");
                 return false;
             }
         }
@@ -123,7 +111,7 @@ bool CliProcessor::initializeApplication(const juce::StringArray& args)
             }
             else
             {
-                logger.logLine("Error: --jammi (--j) requires a folder path");
+                logger.logLine("Error: --jammi requires a folder path");
                 return false;
             }
         }
@@ -135,18 +123,9 @@ bool CliProcessor::initializeApplication(const juce::StringArray& args)
             }
             else
             {
-                logger.logLine("Error: --output (--o) requires a folder path");
+                logger.logLine("Error: --output requires a folder path");
                 return false;
             }
-        }
-        else if (arg == "--convert")
-        {
-            hasConvertFlag = true;
-        }
-        else if (!arg.startsWith("-"))
-        {
-            // This is a legacy folder path
-            legacyFolderPath = arg;
         }
         else
         {
@@ -154,182 +133,43 @@ bool CliProcessor::initializeApplication(const juce::StringArray& args)
         }
     }
 
-    // Determine operation mode
-    if (config.hasCubbi || config.hasJammi)
+    if (!config.hasCubbi && !config.hasJammi)
     {
-        // CHOMPI mode
-        config.mode = OperationMode::Chompi;
-        logger.logLine("Mode: CHOMPI Sample Processing");
-        logger.logLine("");
-
-        // Set output folder (use specified or default)
-        if (!outputPath.isEmpty())
-        {
-            config.outputFolder = juce::File(outputPath);
-        }
-        else
-        {
-            config.outputFolder = juce::File::getCurrentWorkingDirectory().getChildFile("converted");
-        }
-
-        logger.logLine("Output folder: " + config.outputFolder.getFullPathName());
-        logger.logLine("");
-
-        // Validate cubbi folder if specified
-        if (config.hasCubbi)
-        {
-            config.cubbiFolder = juce::File(cubbiPath);
-            if (!config.cubbiFolder.exists())
-            {
-                logger.logLine("Error: Cubbi folder does not exist: " + cubbiPath);
-                return false;
-            }
-            if (!config.cubbiFolder.isDirectory())
-            {
-                logger.logLine("Error: Cubbi path is not a directory: " + cubbiPath);
-                return false;
-            }
-            logger.logLine("Cubbi folder: " + config.cubbiFolder.getFullPathName());
-        }
-
-        // Validate jammi folder if specified
-        if (config.hasJammi)
-        {
-            config.jammiFolder = juce::File(jammiPath);
-            if (!config.jammiFolder.exists())
-            {
-                logger.logLine("Error: Jammi folder does not exist: " + jammiPath);
-                return false;
-            }
-            if (!config.jammiFolder.isDirectory())
-            {
-                logger.logLine("Error: Jammi path is not a directory: " + jammiPath);
-                return false;
-            }
-            logger.logLine("Jammi folder: " + config.jammiFolder.getFullPathName());
-        }
-
-        logger.logLine("");
-        return true;
-    }
-    else if (!legacyFolderPath.isEmpty())
-    {
-        // Legacy mode (scan or convert)
-        config.mode = hasConvertFlag ? OperationMode::Convert : OperationMode::Scan;
-
-        if (hasConvertFlag)
-        {
-            logger.logLine("Mode: Legacy Conversion (16-bit 48kHz)");
-            logger.logLine("");
-        }
-        else
-        {
-            logger.logLine("Mode: Scan Only");
-            logger.logLine("");
-        }
-
-        logger.logLine("Target folder: " + legacyFolderPath);
-        logger.logLine("");
-
-        // Verify folder exists
-        config.targetFolder = juce::File(legacyFolderPath);
-        if (!config.targetFolder.exists())
-        {
-            logger.logLine("Error: Folder does not exist: " + legacyFolderPath);
-            return false;
-        }
-
-        if (!config.targetFolder.isDirectory())
-        {
-            logger.logLine("Error: Path is not a directory: " + legacyFolderPath);
-            return false;
-        }
-
-        logger.logLine("Folder validated successfully!");
-        logger.logLine("");
-
-        // Scan for supported audio files recursively
-        logger.logLine("Scanning for audio files...");
-        logger.logLine("");
-
-        const auto extensions = FileSystemHelper::getSupportedAudioExtensions();
-        for (const auto& ext : extensions)
-            config.targetFolder.findChildFiles(config.wavFiles,
-                                               juce::File::findFiles,
-                                               true,  // search recursively
-                                               ext);
-
-        // Check if any files were found
-        if (config.wavFiles.isEmpty())
-        {
-            logger.logLine("No supported audio files found in the specified directory.");
-            return false;
-        }
-
-        logger.logLine("Found " + juce::String(config.wavFiles.size()) + " audio file(s):");
-        logger.logLine("");
-
-        return true;
-    }
-    else
-    {
-        // No valid mode specified
-        logger.logLine("Error: No valid operation mode specified");
+        logger.logLine("Error: At least one of --cubbi or --jammi must be specified");
         logger.logLine("");
         displayUsage();
         return false;
     }
-}
 
-void CliProcessor::processAudioFiles(const juce::Array<juce::File>& wavFiles,
-                                     const juce::File& targetFolder)
-{
-    for (int i = 0; i < wavFiles.size(); ++i)
+    config.outputFolder = outputPath.isEmpty()
+        ? juce::File::getCurrentWorkingDirectory().getChildFile("converted")
+        : juce::File(outputPath);
+
+    logger.logLine("Output folder: " + config.outputFolder.getFullPathName());
+    logger.logLine("");
+
+    if (config.hasCubbi)
     {
-        const juce::File& file = wavFiles[i];
-
-        // Get relative path from target folder for cleaner display
-        juce::String relativePath = file.getRelativePathFrom(targetFolder);
-        if (relativePath.isEmpty())
-            relativePath = file.getFileName();
-
-        logger.logLine(juce::String(i + 1) + ". " + relativePath);
-
-        // Analyze audio file properties
-        std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
-
-        if (reader != nullptr)
+        config.cubbiFolder = juce::File(cubbiPath);
+        if (!config.cubbiFolder.isDirectory())
         {
-            // Extract audio properties
-            int numChannels = reader->numChannels;
-            int bitsPerSample = reader->bitsPerSample;
-            double sampleRate = reader->sampleRate;
-
-            // Format channel information
-            juce::String channelInfo;
-            if (numChannels == 1)
-                channelInfo = "Mono (1)";
-            else if (numChannels == 2)
-                channelInfo = "Stereo (2)";
-            else
-                channelInfo = "Multi-channel (" + juce::String(numChannels) + ")";
-
-            // Display audio properties
-            logger.logLine("   Channels: " + channelInfo);
-            logger.logLine("   Bit Depth: " + juce::String(bitsPerSample) + "-bit");
-            logger.logLine("   Sample Rate: " + juce::String((int)sampleRate) + " Hz");
-
-            // Display file size
-            juce::int64 fileSize = file.getSize();
-            double fileSizeMB = fileSize / (1024.0 * 1024.0);
-            logger.logLine("   Size: " + juce::String(fileSizeMB, 2) + " MB");
+            logger.logLine("Error: Cubbi path is not a valid directory: " + cubbiPath);
+            return false;
         }
-        else
-        {
-            // Could not read file
-            logger.logLine("   Error: Unable to read audio file (corrupted or unsupported format)");
-        }
-
-        logger.logLine("");
+        logger.logLine("Cubbi folder: " + config.cubbiFolder.getFullPathName());
     }
+
+    if (config.hasJammi)
+    {
+        config.jammiFolder = juce::File(jammiPath);
+        if (!config.jammiFolder.isDirectory())
+        {
+            logger.logLine("Error: Jammi path is not a valid directory: " + jammiPath);
+            return false;
+        }
+        logger.logLine("Jammi folder: " + config.jammiFolder.getFullPathName());
+    }
+
+    logger.logLine("");
+    return true;
 }

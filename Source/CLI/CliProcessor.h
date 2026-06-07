@@ -34,9 +34,9 @@ private:
     // Returns false if program should exit early
     bool initializeApplication(const juce::StringArray& args);
 
-    // Process and analyze audio files (legacy scan mode)
-    void processAudioFiles(const juce::Array<juce::File>& wavFiles,
-                          const juce::File& targetFolder);
+    // Install shell wrapper to /usr/local/bin/lunch_box
+    // Returns exit code (0 = success, 1 = error)
+    int installCliTool();
 
     // Display usage information
     void displayUsage();
