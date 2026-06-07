@@ -34,6 +34,18 @@ MainComponent::MainComponent()
 
     lastPackName = getSavedString("lastPackName", lastPackName);
 
+    // Header icons
+    {
+        auto loadSvgDrawable = [](const char* data, int size) -> std::unique_ptr<juce::Drawable>
+        {
+            auto xml = juce::XmlDocument::parse(juce::String::fromUTF8(data, size));
+            return xml ? juce::Drawable::createFromSVG(*xml) : nullptr;
+        };
+        boxIconDrawable   = loadSvgDrawable(BinaryData::box_icon_svg,       BinaryData::box_icon_svgSize);
+        toastIconDrawable = loadSvgDrawable(BinaryData::toast_icon_svg,     BinaryData::toast_icon_svgSize);
+        logoDrawable      = loadSvgDrawable(BinaryData::lunch_box_logo_svg, BinaryData::lunch_box_logo_svgSize);
+    }
+
     using namespace LunchBoxLabels;
 
     // Mode toggle buttons
@@ -222,9 +234,19 @@ void MainComponent::paint(juce::Graphics& g)
 
     {
         auto headerArea = getLocalBounds().removeFromTop(LunchBoxConstants::HEADER_HEIGHT).toFloat();
-        g.setFont(LunchBoxFonts::logoTitle(60.0f));
-        g.setColour(LunchBoxColours::WHITE_CREAM);
-        g.drawText(LunchBoxLabels::kAppHeader, headerArea, juce::Justification::centred, false);
+
+        if (logoDrawable != nullptr)
+        {
+            const juce::Colour logoColour = LunchBoxColours::WHITE_CREAM;
+            auto copy = logoDrawable->createCopy();
+            copy->replaceColour(juce::Colours::black, logoColour);
+            copy->replaceColour(juce::Colours::white, logoColour);
+            constexpr float scale = 0.85f;
+            auto logoBounds = headerArea.withSizeKeepingCentre(headerArea.getWidth()  * scale,
+                                                               headerArea.getHeight() * scale);
+            copy->drawWithin(g, logoBounds,
+                             juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize, 1.0f);
+        }
     }
 }
 

@@ -115,13 +115,13 @@ int HelpOverlay::computeDialogHeight() const
     };
 
     int h = INNER_PAD;
-    h += measureParagraph(kSection1, LunchBoxFonts::body());
+    h += measureParagraph(kSection1, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
     h += SECTION_GAP;
-    h += measureParagraph(kSection2, LunchBoxFonts::body());
+    h += measureParagraph(kSection2, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
     h += SECTION_GAP;
-    h += measureParagraph(kSection3, LunchBoxFonts::body());
+    h += measureParagraph(kSection3, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
     h += SECTION_GAP;
-    h += (int)std::ceil(LunchBoxFonts::body().getHeight());  // "Hotkeys" label
+    h += (int)std::ceil(juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)).getHeight());  // "Hotkeys" label
     h += 8;
     h += NUM_HOTKEY_ROWS * HOTKEY_ROW_H;
     h += INNER_PAD;
@@ -165,17 +165,17 @@ void HelpOverlay::paint(juce::Graphics& g)
     };
 
     // ── Sections 1-3 ──────────────────────────────────────────────────────
-    drawParagraph(kSection1, LunchBoxFonts::body(), textCol);
+    drawParagraph(kSection1, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)), textCol);
     y += SECTION_GAP;
-    drawParagraph(kSection2, LunchBoxFonts::body(), textCol);
+    drawParagraph(kSection2, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)), textCol);
     y += SECTION_GAP;
-    drawParagraph(kSection3, LunchBoxFonts::body(), textCol);
+    drawParagraph(kSection3, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)), textCol);
     y += SECTION_GAP;
 
     // ── Hotkeys header ────────────────────────────────────────────────────
-    g.setFont(LunchBoxFonts::body());
+    g.setFont(juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
     g.setColour(textCol);
-    float headerH = LunchBoxFonts::body().getHeight();
+    float headerH = juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)).getHeight();
     g.drawText("Hotkeys", (int)x, (int)y, (int)cw, (int)headerH, juce::Justification::centredLeft);
     y += std::ceil(headerH) + 8.0f;
 
