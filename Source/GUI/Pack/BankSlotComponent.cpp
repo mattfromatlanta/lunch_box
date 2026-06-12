@@ -122,7 +122,7 @@ void BankSlotComponent::paint(juce::Graphics& g)
     {
         const auto iconColour = LunchBoxColours::getLabelBg(bankBorderColour(bankLetter));
 
-        g.setFont(LunchBoxFonts::medium());
+        g.setFont(juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::medium())));
         g.setColour(iconColour);
         const float fontH  = g.getCurrentFont().getHeight();
         const float iconH  = fontH * 0.65f;

@@ -14,7 +14,7 @@ bool BankFolderParser::isBankFolder(const juce::String& folderName, char& bankLe
     // Single letter: "a", "b", "c", "d", "e"
     if (lower.length() == 1 && lower[0] >= 'a' && lower[0] <= 'e')
     {
-        bankLetter = lower[0];
+        bankLetter = static_cast<char>(lower[0]);  // guarded to 'a'..'e' above
         return true;
     }
 
@@ -25,7 +25,7 @@ bool BankFolderParser::isBankFolder(const juce::String& folderName, char& bankLe
                           .removeCharacters("_- ").trim();
         if (suffix.length() == 1 && suffix[0] >= 'a' && suffix[0] <= 'e')
         {
-            bankLetter = suffix[0];
+            bankLetter = static_cast<char>(suffix[0]);  // guarded to 'a'..'e' above
             return true;
         }
     }

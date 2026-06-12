@@ -12,7 +12,7 @@ bool AudioConverter::needsConversion(const juce::AudioFormatReader* reader) cons
         return false;
 
     bool bitDepthDiffers = (reader->bitsPerSample != TARGET_BIT_DEPTH);
-    bool sampleRateDiffers = (reader->sampleRate != TARGET_SAMPLE_RATE);
+    bool sampleRateDiffers = ! juce::exactlyEqual(reader->sampleRate, TARGET_SAMPLE_RATE);
 
     return bitDepthDiffers || sampleRateDiffers;
 }
@@ -93,24 +93,26 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
         outputFile.deleteFile();
     }
 
-    std::unique_ptr<juce::FileOutputStream> outputStream(outputFile.createOutputStream());
+    std::unique_ptr<juce::FileOutputStream> fileStream(outputFile.createOutputStream());
 
-    if (outputStream == nullptr || outputStream->failedToOpen())
+    if (fileStream == nullptr || fileStream->failedToOpen())
     {
         result.message = "Error: Could not create output file";
         logger.logLine("   " + result.message);
         return result;
     }
 
-    juce::WavAudioFormat wavFormat;
+    const int numChannels = static_cast<int>(reader->numChannels);
 
-    std::unique_ptr<juce::AudioFormatWriter> writer(
-        wavFormat.createWriterFor(outputStream.get(),
-                                  TARGET_SAMPLE_RATE,
-                                  reader->numChannels,
-                                  TARGET_BIT_DEPTH,
-                                  {},  // metadata
-                                  0)); // quality option
+    // On success the writer takes ownership of the stream; on failure the
+    // unique_ptr still owns it and cleans up.
+    juce::WavAudioFormat wavFormat;
+    std::unique_ptr<juce::OutputStream> outputStream = std::move(fileStream);
+    auto writer = wavFormat.createWriterFor(outputStream,
+                                            juce::AudioFormatWriterOptions{}
+                                                .withSampleRate(TARGET_SAMPLE_RATE)
+                                                .withNumChannels(numChannels)
+                                                .withBitsPerSample(TARGET_BIT_DEPTH));
 
     if (writer == nullptr)
     {
@@ -119,14 +121,12 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
         return result;
     }
 
-    outputStream.release(); // Writer takes ownership
-
-    bool needsSampleRateConversion = (reader->sampleRate != TARGET_SAMPLE_RATE);
+    bool needsSampleRateConversion = ! juce::exactlyEqual(reader->sampleRate, TARGET_SAMPLE_RATE);
 
     if (needsSampleRateConversion)
     {
         juce::AudioFormatReaderSource readerSource(reader, false);
-        juce::ResamplingAudioSource resamplingSource(&readerSource, false, reader->numChannels);
+        juce::ResamplingAudioSource resamplingSource(&readerSource, false, numChannels);
 
         double ratio = reader->sampleRate / TARGET_SAMPLE_RATE;
         resamplingSource.setResamplingRatio(ratio);
@@ -137,7 +137,7 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
         juce::int64 samplesWritten = 0;
 
         const int bufferSize = 4096;
-        juce::AudioBuffer<float> buffer(reader->numChannels, bufferSize);
+        juce::AudioBuffer<float> buffer(numChannels, bufferSize);
 
         while (samplesWritten < totalOutputSamples)
         {
@@ -225,29 +225,26 @@ bool AudioConverter::generateOptimizedSample(const juce::File& baseFile,
     if (optimizedFile.exists())
         optimizedFile.deleteFile();
 
-    std::unique_ptr<juce::FileOutputStream> outputStream(optimizedFile.createOutputStream());
-    if (outputStream == nullptr || outputStream->failedToOpen())
+    std::unique_ptr<juce::FileOutputStream> fileStream(optimizedFile.createOutputStream());
+    if (fileStream == nullptr || fileStream->failedToOpen())
     {
         logger.logLine("   Error: Could not create optimized output file");
         return false;
     }
 
     juce::WavAudioFormat wavFormat;
-    std::unique_ptr<juce::AudioFormatWriter> writer(
-        wavFormat.createWriterFor(outputStream.get(),
-                                  TARGET_SAMPLE_RATE,
-                                  numChannels,
-                                  TARGET_BIT_DEPTH,
-                                  {},
-                                  0));
+    std::unique_ptr<juce::OutputStream> outputStream = std::move(fileStream);
+    auto writer = wavFormat.createWriterFor(outputStream,
+                                            juce::AudioFormatWriterOptions{}
+                                                .withSampleRate(TARGET_SAMPLE_RATE)
+                                                .withNumChannels(numChannels)
+                                                .withBitsPerSample(TARGET_BIT_DEPTH));
 
     if (writer == nullptr)
     {
         logger.logLine("   Error: Could not create optimized file writer");
         return false;
     }
-
-    outputStream.release(); // Writer takes ownership
 
     if (!writer->writeFromAudioSampleBuffer(optimizedBuffer, 0, optimizedSamples))
     {
