@@ -2,6 +2,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 #include <functional>
 
 //==============================================================================
@@ -80,11 +81,9 @@ public:
     void mouseEnter      (const juce::MouseEvent& e) override;
     void mouseExit       (const juce::MouseEvent& e) override;
 
-    // juce::FileDragAndDropTarget (external — from Finder)
+    // juce::FileDragAndDropTarget (external — delegated to panel; filesDropped required by interface)
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
-    void filesDropped(const juce::StringArray& files, int x, int y) override;
-    void fileDragEnter(const juce::StringArray& files, int x, int y) override;
-    void fileDragExit(const juce::StringArray& files) override;
+    void filesDropped(const juce::StringArray&, int, int) override {}
 
     // juce::DragAndDropTarget (internal — slot to slot)
     bool isInterestedInDragSource(const SourceDetails& details) override;
@@ -110,10 +109,10 @@ private:
     juce::String displaceRightLabel;
     juce::File previewFile;
 
-    std::unique_ptr<juce::FileChooser> fileChooser;
+    std::unique_ptr<juce::FileChooser>  fileChooser;
+    std::unique_ptr<juce::Drawable>     arrowDrawable;
 
     void showContextMenu();
-    static bool isSupportedAudioFile(const juce::String& path);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BankSlotComponent)
 };

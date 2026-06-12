@@ -4,7 +4,6 @@
 #include "UIConstants.h"
 #include "LunchBoxFonts.h"
 #include "LabelStrings.h"
-#include "../FileSystemHelper.h"
 #include <BinaryData.h>
 
 namespace
@@ -42,6 +41,11 @@ BankSlotComponent::BankSlotComponent(char bank, int slot)
     , slotNumber(slot)
 {
     setTooltip(LunchBoxLabels::kTipSlotPack);
+
+    auto xml = juce::XmlDocument::parse(
+        juce::String::fromUTF8(BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
+    if (xml != nullptr)
+        arrowDrawable = juce::Drawable::createFromSVG(*xml);
 }
 
 void BankSlotComponent::setSample(const juce::File& file)
@@ -116,55 +120,47 @@ void BankSlotComponent::paint(juce::Graphics& g)
     // Displacement preview — replaces pill + label with "A1 → A2" layout.
     if (dragRoleDisplace != 0)
     {
-        const auto iconColour = LunchBoxColours::getLabelBg (bankBorderColour (bankLetter));
+        const auto iconColour = LunchBoxColours::getLabelBg(bankBorderColour(bankLetter));
 
-        auto xml = juce::XmlDocument::parse (
-            juce::String::fromUTF8 (BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
+        g.setFont(LunchBoxFonts::medium());
+        g.setColour(iconColour);
+        const float fontH  = g.getCurrentFont().getHeight();
+        const float iconH  = fontH * 0.65f;
+        const float iconW  = iconH;
+        const float gap    = 3.0f;
+        const float leftW  = juce::GlyphArrangement::getStringWidth(g.getCurrentFont(), displaceLeftLabel);
+        const float rightW = juce::GlyphArrangement::getStringWidth(g.getCurrentFont(), displaceRightLabel);
+        const float totalW = leftW + gap + iconW + gap + rightW;
 
-        if (xml != nullptr)
+        const auto  fb = getLocalBounds().toFloat();
+        const float cy = fb.getCentreY();
+        float       x  = fb.getCentreX() - totalW * 0.5f;
+
+        g.drawText(displaceLeftLabel,
+                   juce::Rectangle<float>(x, cy - iconH * 0.5f, leftW, iconH),
+                   juce::Justification::centredLeft);
+        x += leftW + gap;
+
+        if (arrowDrawable != nullptr)
         {
-            auto* g_el   = xml->getChildByName ("g");
-            auto* pathEl = g_el ? g_el->getChildByName ("path") : xml->getChildByName ("path");
-            if (pathEl != nullptr)
-                pathEl->setAttribute ("fill", "#" + iconColour.toDisplayString (false));
+            juce::Rectangle<float> arrowBounds(x, cy - iconH * 0.5f, iconW, iconH);
+            auto drawable = arrowDrawable->createCopy();
+            drawable->replaceColour(juce::Colours::black, iconColour);
 
-            g.setFont (LunchBoxFonts::medium());
-            g.setColour (iconColour);
-            const float fontH  = g.getCurrentFont().getHeight();
-            const float iconH  = fontH * 0.65f;
-            const float iconW  = iconH;
-            const float gap    = 3.0f;
-            const float leftW  = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), displaceLeftLabel);
-            const float rightW = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), displaceRightLabel);
-            const float totalW = leftW + gap + iconW + gap + rightW;
+            auto transform = juce::RectanglePlacement(juce::RectanglePlacement::centred)
+                                 .getTransformToFit(drawable->getDrawableBounds(), arrowBounds);
 
-            const auto  fb = getLocalBounds().toFloat();
-            const float cy = fb.getCentreY();
-            float       x  = fb.getCentreX() - totalW * 0.5f;
+            if (dragRoleDisplace < 0)  // displaced content moves to lower index → left arrow ←
+                transform = transform.followedBy(juce::AffineTransform::scale(
+                    -1.0f, 1.0f, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
 
-            g.drawText (displaceLeftLabel,
-                        juce::Rectangle<float> (x, cy - iconH * 0.5f, leftW, iconH),
-                        juce::Justification::centredLeft);
-            x += leftW + gap;
-
-            juce::Rectangle<float> arrowBounds (x, cy - iconH * 0.5f, iconW, iconH);
-            if (auto drawable = juce::Drawable::createFromSVG (*xml))
-            {
-                auto transform = juce::RectanglePlacement (juce::RectanglePlacement::centred)
-                                     .getTransformToFit (drawable->getDrawableBounds(), arrowBounds);
-
-                if (dragRoleDisplace < 0)  // displaced content moves to lower index → left arrow ←
-                    transform = transform.followedBy (juce::AffineTransform::scale (
-                        -1.0f, 1.0f, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
-
-                drawable->draw (g, 1.0f, transform);
-            }
-            x += iconW + gap;
-
-            g.drawText (displaceRightLabel,
-                        juce::Rectangle<float> (x, cy - iconH * 0.5f, rightW, iconH),
-                        juce::Justification::centredLeft);
+            drawable->draw(g, 1.0f, transform);
         }
+        x += iconW + gap;
+
+        g.drawText(displaceRightLabel,
+                   juce::Rectangle<float>(x, cy - iconH * 0.5f, rightW, iconH),
+                   juce::Justification::centredLeft);
         return;
     }
 
@@ -280,39 +276,9 @@ void BankSlotComponent::mouseExit(const juce::MouseEvent&)
     repaint();
 }
 
-bool BankSlotComponent::isSupportedAudioFile(const juce::String& path)
-{
-    auto ext = "*" + juce::File(path).getFileExtension().toLowerCase();
-    return FileSystemHelper::getSupportedAudioExtensions().contains(ext);
-}
-
 bool BankSlotComponent::isInterestedInFileDrag(const juce::StringArray&)
 {
     return false;  // Panel handles all external file drops
-}
-
-void BankSlotComponent::filesDropped(const juce::StringArray& files, int, int)
-{
-    isDraggingOver = false;
-    if (files.size() == 1)
-    {
-        juce::File f(files[0]);
-        if (f.existsAsFile())
-            setSample(f);
-    }
-    repaint();
-}
-
-void BankSlotComponent::fileDragEnter(const juce::StringArray&, int, int)
-{
-    isDraggingOver = true;
-    repaint();
-}
-
-void BankSlotComponent::fileDragExit(const juce::StringArray&)
-{
-    isDraggingOver = false;
-    repaint();
 }
 
 void BankSlotComponent::browseForFile()

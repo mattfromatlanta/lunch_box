@@ -3,15 +3,13 @@
 #include "LunchBoxFonts.h"
 #include "UIConstants.h"
 #include "LabelStrings.h"
-#include "../FileSystemHelper.h"
 #include <BinaryData.h>
 
 namespace
 {
-    const juce::Colour rowHoverBdr     = LunchBoxColours::WHITE_CREAM;
-    const juce::Colour rowDropBdr      { 0xff4caf50 };
-    const juce::Colour rowSelectedBdr  = LunchBoxColours::WHITE_CREAM;
-    const juce::Colour insertionCol    { 0xffddaa33 };
+    const juce::Colour rowHoverBdr    = LunchBoxColours::WHITE_CREAM;
+    const juce::Colour rowSelectedBdr = LunchBoxColours::WHITE_CREAM;
+    const juce::Colour insertionCol   { 0xffddaa33 };
 }
 
 FocusedSlotRow::FocusedSlotRow(int slot,
@@ -24,6 +22,11 @@ FocusedSlotRow::FocusedSlotRow(int slot,
     thumbnail.addChangeListener(this);
     previewThumbnail.addChangeListener(this);
     setTooltip(LunchBoxLabels::kTipSlotBank);
+
+    auto xml = juce::XmlDocument::parse(
+        juce::String::fromUTF8(BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
+    if (xml != nullptr)
+        arrowDrawable = juce::Drawable::createFromSVG(*xml);
 }
 
 FocusedSlotRow::~FocusedSlotRow()
@@ -141,7 +144,7 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     g.setColour(bg);
     g.fillRoundedRectangle(fbounds, rowRadius);
 
-    if (effectiveSelected && !effectiveFocused && !isDragSrc && !isDraggingOver)
+    if (effectiveSelected && !effectiveFocused && !isDragSrc)
     {
         auto* top = getTopLevelComponent();
         auto origin = top ? top->getLocalPoint(this, juce::Point<int>(0, 0))
@@ -154,11 +157,6 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     if (isDragSrc)
     {
         g.setColour(insertionCol);
-        g.drawRoundedRectangle(borderBounds, rowRadius, 4.0f);
-    }
-    else if (isDraggingOver)
-    {
-        g.setColour(rowDropBdr);
         g.drawRoundedRectangle(borderBounds, rowRadius, 4.0f);
     }
     else if (dragRoleDisplace)
@@ -216,42 +214,28 @@ void FocusedSlotRow::paint(juce::Graphics& g)
     // Displacement direction arrow — centered in the row when drag-displaced.
     // Up triangle (↑) = content moving to a lower global index.
     // Down triangle (↓) = content moving to a higher global index.
-    if (dragRoleDisplace != 0)
+    if (dragRoleDisplace != 0 && arrowDrawable != nullptr)
     {
         const auto fb   = getLocalBounds().toFloat();
         const float cx  = fb.getCentreX();
         const float cy  = fb.getCentreY();
         const float arrowSize = 10.0f;
-        juce::Rectangle<float> arrowBounds (cx - arrowSize * 0.5f, cy - arrowSize * 0.5f,
-                                            arrowSize, arrowSize);
+        juce::Rectangle<float> arrowBounds(cx - arrowSize * 0.5f, cy - arrowSize * 0.5f,
+                                           arrowSize, arrowSize);
 
-        auto xml = juce::XmlDocument::parse (
-            juce::String::fromUTF8 (BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
+        auto drawable = arrowDrawable->createCopy();
+        drawable->replaceColour(juce::Colours::black, LunchBoxColours::WHITE_CREAM.withAlpha(0.8f));
 
-        if (xml != nullptr)
-        {
-            auto* g_el   = xml->getChildByName ("g");
-            auto* pathEl = g_el ? g_el->getChildByName ("path") : xml->getChildByName ("path");
-            if (pathEl != nullptr)
-            {
-                auto col = LunchBoxColours::WHITE_CREAM.withAlpha (0.8f);
-                pathEl->setAttribute ("fill", "#" + col.toDisplayString (false));
-            }
+        auto transform = juce::RectanglePlacement(juce::RectanglePlacement::centred)
+                             .getTransformToFit(drawable->getDrawableBounds(), arrowBounds);
 
-            if (auto drawable = juce::Drawable::createFromSVG (*xml))
-            {
-                auto transform = juce::RectanglePlacement (juce::RectanglePlacement::centred)
-                                     .getTransformToFit (drawable->getDrawableBounds(), arrowBounds);
+        // SVG points right; rotate to point up (−90°) or down (+90°)
+        const float angle = (dragRoleDisplace < 0) ? -juce::MathConstants<float>::halfPi
+                                                   :  juce::MathConstants<float>::halfPi;
+        transform = transform.followedBy(
+            juce::AffineTransform::rotation(angle, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
 
-                // SVG points right; rotate to point up (−90°) or down (+90°)
-                const float angle = (dragRoleDisplace < 0) ? -juce::MathConstants<float>::halfPi
-                                                           :  juce::MathConstants<float>::halfPi;
-                transform = transform.followedBy (
-                    juce::AffineTransform::rotation (angle, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
-
-                drawable->draw (g, 1.0f, transform);
-            }
-        }
+        drawable->draw(g, 1.0f, transform);
     }
 }
 
@@ -290,38 +274,9 @@ void FocusedSlotRow::mouseExit(const juce::MouseEvent&)
     repaint();
 }
 
-bool FocusedSlotRow::isSupportedAudioFile(const juce::String& path)
-{
-    auto ext = "*" + juce::File(path).getFileExtension().toLowerCase();
-    return FileSystemHelper::getSupportedAudioExtensions().contains(ext);
-}
-
 bool FocusedSlotRow::isInterestedInFileDrag(const juce::StringArray&)
 {
     return false;  // Panel handles all external file drops
-}
-
-void FocusedSlotRow::filesDropped(const juce::StringArray& files, int, int)
-{
-    isDraggingOver = false;
-    if (files.size() == 1)
-    {
-        juce::File f(files[0]);
-        if (f.existsAsFile()) setSample(f);
-    }
-    repaint();
-}
-
-void FocusedSlotRow::fileDragEnter(const juce::StringArray&, int, int)
-{
-    isDraggingOver = true;
-    repaint();
-}
-
-void FocusedSlotRow::fileDragExit(const juce::StringArray&)
-{
-    isDraggingOver = false;
-    repaint();
 }
 
 void FocusedSlotRow::browseForFile()

@@ -156,10 +156,6 @@ private:
 
     DragController dragController { *this };
 
-    static constexpr int BANK_COL_WIDTH  = 45;
-    static constexpr int ROW_HEIGHT      = 55;
-    static constexpr int ROW_GAP         = 1;
-
     // Internal helpers
     void switchToBank(int bankIdx);
     void flushRowsToStorage();      // write active row UI state back to slots[]

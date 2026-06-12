@@ -71,11 +71,9 @@ public:
     void mouseEnter      (const juce::MouseEvent& e) override;
     void mouseExit       (const juce::MouseEvent& e) override;
 
-    // juce::FileDragAndDropTarget
+    // juce::FileDragAndDropTarget (external — delegated to panel; filesDropped required by interface)
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
-    void filesDropped  (const juce::StringArray& files, int x, int y) override;
-    void fileDragEnter (const juce::StringArray& files, int x, int y) override;
-    void fileDragExit  (const juce::StringArray& files) override;
+    void filesDropped(const juce::StringArray&, int, int) override {}
 
 private:
     int            slotNumber;
@@ -87,7 +85,6 @@ private:
     juce::File     previewFile;
     juce::AudioThumbnail previewThumbnail;
 
-    bool isDraggingOver   = false;
     bool isHovered        = false;
     bool selected         = false;
     bool focused          = false;
@@ -97,10 +94,10 @@ private:
     int  dragRoleDisplace    = 0;    // -1 up arrow, 0 off, +1 down arrow
     juce::Colour bankColour = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
 
-    std::unique_ptr<juce::FileChooser> fileChooser;
+    std::unique_ptr<juce::FileChooser>  fileChooser;
+    std::unique_ptr<juce::Drawable>     arrowDrawable;
 
     void showContextMenu();
-    static bool isSupportedAudioFile(const juce::String& path);
 
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
 
