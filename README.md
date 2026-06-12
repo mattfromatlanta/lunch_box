@@ -1,4 +1,4 @@
-# Lunch Box
+![Lunch Box](./assets/lunch_box_logo.svg)
 
 **Audio sample processor for the CHOMPI sampler**
 
