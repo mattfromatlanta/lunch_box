@@ -44,7 +44,6 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
             LunchBoxNamer::Category::Cubbi, formatManager, converter);
 
         result.cubbiFilesProcessed = r.filesConverted;
-        result.cubbiOptimized      = r.optimizedGenerated;
         if (!r.success) overallSuccess = false;
     }
 
@@ -55,7 +54,6 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
             LunchBoxNamer::Category::Jammi, formatManager, converter);
 
         result.jammiFilesProcessed = r.filesConverted;
-        result.jammiOptimized      = r.optimizedGenerated;
         if (!r.success) overallSuccess = false;
     }
 

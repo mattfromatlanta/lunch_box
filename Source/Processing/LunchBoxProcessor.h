@@ -29,7 +29,6 @@ public:
         int filesConverted = 0;
         int filesSkipped = 0;
         int errors = 0;
-        int optimizedGenerated = 0;
         bool success = true;
     };
 

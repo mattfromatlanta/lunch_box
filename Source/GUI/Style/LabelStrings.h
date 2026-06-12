@@ -65,10 +65,8 @@ namespace LunchBoxLabels
     inline constexpr const char* kStatusCubbiLabel      = "  Cubbi: ";
     inline constexpr const char* kStatusJammiLabel      = "  Jammi: ";
     inline constexpr const char* kStatusTotalLabel      = "  Total: ";
-    inline constexpr const char* kStatusDoublesLabel    = "  Doubles: ";
     inline constexpr const char* kStatusOutputLabel     = "  Output: ";
     inline constexpr const char* kStatusSamplesUnit     = " samples";
-    inline constexpr const char* kStatusOptimizedSuffix = " optimized versions created";
 
     // ── PackNameOverlay dialog ─────────────────────────────
     inline constexpr const char* kDlgPackNamePrompt   = "Name your pack.";

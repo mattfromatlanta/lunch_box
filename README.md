@@ -103,14 +103,12 @@ of 14 slots — 70 samples per category.
 ### Naming Convention
 
 ```
-cubbi_a1.wav          # Cubbi, Bank A, Slot 1 (base)
-cubbi_a1_double.wav   # Cubbi, Bank A, Slot 1 (optimized -- pitched up one octave)
-jammi_e14.wav         # Jammi, Bank E, Slot 14 (base)
-jammi_e14_double.wav  # Jammi, Bank E, Slot 14 (optimized)
+cubbi_a1.wav          # Cubbi, Bank A, Slot 1
+jammi_e14.wav         # Jammi, Bank E, Slot 14
 ```
 
-Lunch Box generates both base and `_double` versions for every input sample so your
-CHOMPI library is complete without requiring the hardware to generate them.
+Lunch Box converts and renames each input sample to match the CHOMPI naming
+convention so your library drops straight onto the hardware.
 
 ---
 
@@ -122,7 +120,7 @@ CHOMPI library is complete without requiring the hardware to generate them.
 | **Bit depth** | Any               | 16-bit              |
 | **Sample rate** | Any             | 48kHz               |
 | **Channels**  | Mono / Stereo     | Preserved           |
-| **Max duration** | 120 sec        | 120 sec base / 60 sec _double |
+| **Max duration** | 120 sec        | 120 sec             |
 
 ---
 
@@ -130,19 +128,15 @@ CHOMPI library is complete without requiring the hardware to generate them.
 
 ```
 output/
-+-- cubbi_a1.wav          # Bank A, Slot 1 (base)
-+-- cubbi_a1_double.wav   # Bank A, Slot 1 (optimized)
++-- cubbi_a1.wav          # Bank A, Slot 1
 +-- cubbi_a2.wav
-+-- cubbi_a2_double.wav
 +-- ...
-+-- cubbi_e14.wav         # Bank E, Slot 14 (base)
-+-- cubbi_e14_double.wav  # Bank E, Slot 14 (optimized)
++-- cubbi_e14.wav         # Bank E, Slot 14
 +-- jammi_a1.wav
-+-- jammi_a1_double.wav
 +-- ...
 ```
 
-Each input generates two output files. Maximum 140 files per category (70 base + 70 optimized).
+One output file per input sample. Maximum 70 files per category.
 
 ---
 

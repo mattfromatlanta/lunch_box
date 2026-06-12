@@ -165,14 +165,12 @@ void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult&
                                             const juce::File& outputFolder)
 {
     int totalProcessed = result.cubbiFilesProcessed + result.jammiFilesProcessed;
-    int totalOptimized = result.cubbiOptimized + result.jammiOptimized;
     appendStatus(LunchBoxLabels::kStatusProcessComplete);
     if (result.cubbiFilesProcessed > 0)
         appendStatus(LunchBoxLabels::kStatusCubbiLabel + juce::String(result.cubbiFilesProcessed) + LunchBoxLabels::kStatusSamplesUnit);
     if (result.jammiFilesProcessed > 0)
         appendStatus(LunchBoxLabels::kStatusJammiLabel + juce::String(result.jammiFilesProcessed) + LunchBoxLabels::kStatusSamplesUnit);
     appendStatus(LunchBoxLabels::kStatusTotalLabel + juce::String(totalProcessed) + LunchBoxLabels::kStatusSamplesUnit + " processed");
-    appendStatus(LunchBoxLabels::kStatusDoublesLabel + juce::String(totalOptimized) + LunchBoxLabels::kStatusOptimizedSuffix);
     appendStatus(LunchBoxLabels::kStatusOutputLabel + outputFolder.getFullPathName());
 }
 

@@ -85,32 +85,18 @@ Slot assignments → GuiProcessor → AudioConfiguration → LunchBoxProcessor �
 - **5 banks per category:** A, B, C, D, E
 - **14 slots per bank:** Numbered 1-14
 - **Total capacity:** 70 samples per category (hardware limit)
-- **Output files per category:** 140 (70 base + 70 optimized)
+- **Output files per category:** 70
 
 ### Naming Convention
 ```
-{category}_{bank}{slot}.wav              # Base sample
-{category}_{bank}{slot}_double.wav       # Optimized sample (pitched up)
+{category}_{bank}{slot}.wav              # Sample
 
 Examples:
-  cubbi_a1.wav          (Cubbi, Bank A, Slot 1 - base)
-  cubbi_a1_double.wav   (Cubbi, Bank A, Slot 1 - optimized)
-  jammi_e14.wav         (Jammi, Bank E, Slot 14 - base)
-  jammi_e14_double.wav  (Jammi, Bank E, Slot 14 - optimized)
+  cubbi_a1.wav          (Cubbi, Bank A, Slot 1)
+  jammi_e14.wav         (Jammi, Bank E, Slot 14)
 ```
 
-### Optimized Samples
-**Critical CHOMPI Feature:** The CHOMPI hardware automatically creates "optimized" versions of samples if not present in the library. An optimized sample is:
-- Pitched up one octave (double playback speed)
-- Half the duration of the base sample
-- Saved with `_double` suffix
-- Generated to enable pitch-shifting on the hardware
-
-**Lunch Box Behavior:** Lunch Box proactively generates both base and optimized versions for every input sample, creating complete CHOMPI libraries without requiring the hardware to generate files.
-
-**Duration Limits:**
-- Base samples: Maximum 2 minutes (120 seconds)
-- Optimized samples: Maximum 1 minute (60 seconds) - automatically half of base
+**Duration Limit:** Maximum 2 minutes (120 seconds) per sample.
 
 ### Audio Requirements
 - **Format:** WAV (uncompressed)
@@ -214,7 +200,6 @@ make
 - Always 16-bit 48kHz WAV output
 - Always CHOMPI naming convention
 - Always 14 slots per bank, 5 banks
-- Always generate both base and optimized (_double) versions
 - Never compromise quality for speed
 - Maximum 2-minute duration per sample
 

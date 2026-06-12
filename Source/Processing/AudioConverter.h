@@ -30,13 +30,6 @@ public:
                                          const juce::String& outputFileName,
                                          juce::AudioFormatManager& formatManager);
 
-    // Generate optimized (one octave up) sample from an already-converted base WAV file.
-    // Output is half the duration of the input (double speed = one octave up).
-    // Returns true on success.
-    bool generateOptimizedSample(const juce::File& baseFile,
-                                 const juce::File& optimizedFile,
-                                 juce::AudioFormatManager& formatManager);
-
 private:
     Logger& logger;
 

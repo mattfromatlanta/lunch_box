@@ -90,8 +90,8 @@ for every filled slot.
 ### Exporting
 
 Press the **Pack** button (`Cmd+Return`), name your pack, and choose its home folder.
-Lunch Box converts every assigned sample, generates the `_double` (octave-up) versions,
-and writes the complete pack — your original files are never modified.
+Lunch Box converts and renames every assigned sample and writes the complete pack —
+your original files are never modified.
 
 ### Keyboard Shortcuts
 
@@ -189,16 +189,10 @@ The CLI exits non-zero on failure, so it composes cleanly with `&&` and CI scrip
 ### Naming Convention
 
 ```
-{category}_{bank}{slot}.wav           # base sample
-{category}_{bank}{slot}_double.wav    # optimized sample (pitched up one octave)
+{category}_{bank}{slot}.wav           # sample
 ```
 
-Examples: `cubbi_a1.wav`, `cubbi_a1_double.wav`, `jammi_e14.wav`, `jammi_e14_double.wav`.
-
-**What are optimized samples?** The CHOMPI hardware pitches samples up and down.
-Optimized (`_double`) samples are pre-generated versions pitched up one octave
-(double playback speed, half duration). The hardware creates these itself when
-missing, but Lunch Box generates them up front so your library is complete.
+Examples: `cubbi_a1.wav`, `jammi_e14.wav`.
 
 ### File Assignment (sequential mode)
 
@@ -210,8 +204,7 @@ Files 43-56 → Bank D
 Files 57-70 → Bank E
 ```
 
-Each input sample produces **two** output files (base + `_double`), so a full
-category is 140 files.
+Each input sample produces one output file, so a full category is 70 files.
 
 ---
 
@@ -226,7 +219,6 @@ category is 140 files.
 **Output (automatic):**
 - 16-bit WAV at 48kHz
 - Channel count preserved
-- `_double` versions are half the duration (under 1 minute)
 
 ---
 

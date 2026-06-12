@@ -113,13 +113,6 @@ LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
         if (convResult.success)
         {
             result.filesConverted++;
-
-            juce::File baseOutput = outputFolder.getChildFile(outputFileName);
-            juce::String doubleName = outputFileName.replace(".wav", "_double.wav");
-            juce::File doubleOutput = outputFolder.getChildFile(doubleName);
-
-            if (converter.generateOptimizedSample(baseOutput, doubleOutput, formatManager))
-                result.optimizedGenerated++;
         }
         else if (convResult.skipped)
         {
@@ -135,7 +128,6 @@ LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
 
     logger.logLine(categoryName + " conversion complete: " +
                   juce::String(result.filesConverted) + " files converted, " +
-                  juce::String(result.optimizedGenerated) + " optimized versions generated, " +
                   juce::String(result.errors) + " errors");
     logger.logLine("");
 
