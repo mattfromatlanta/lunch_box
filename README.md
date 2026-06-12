@@ -33,7 +33,15 @@ naming convention.
 
 ---
 
-## Quick Start
+## Latest Release
+
+[Lunch Box 1.0](https://github.com/mattfromatlanta/lunch_box/releases/tag/v1.0.0)
+
+_Compiled for macOS and tested for Sequoia 15.7.3_
+
+---
+
+## Developer Quick Start
 
 ### Prerequisites
 
