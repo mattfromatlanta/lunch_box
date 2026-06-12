@@ -168,16 +168,6 @@ void BankEditorPanel::expandSelection(int dRow, int dCol)
     if (onPreviewStop) onPreviewStop();
 }
 
-void BankEditorPanel::tabFocus()
-{
-    Cell next = { (focusCell.row + 1) % LunchBoxNamer::NUM_BANKS, focusCell.col };
-    selection.clear();
-    selection.add(next);
-    focusCell = next;
-    updateSlotVisuals();
-    notifyPreviewForSelection();
-}
-
 void BankEditorPanel::playFocused()
 {
     if (selection.size() != 1) return;

@@ -11,11 +11,6 @@ namespace LunchBoxConstants
     constexpr float BANK_GAP     = 8.0f;   // between banks in Pack and Bank view
     constexpr float SLOT_ROW_GAP = 4.0f;   // between slot rows in Bank view
 
-    // Base content area at default 525×900 window
-    // (525 - 2×12 margin = 501w; 900 - 2×12 - 44 header - 32 nav - 8 gap - 66 footer = 726h)
-    constexpr float BASE_CONTENT_W = 501.0f;
-    constexpr float BASE_CONTENT_H = 726.0f;
-
     constexpr int ANIM_DURATION_MS      = 350;
     constexpr int ANIM_CLEANUP_DELAY_MS = ANIM_DURATION_MS + 10;
 

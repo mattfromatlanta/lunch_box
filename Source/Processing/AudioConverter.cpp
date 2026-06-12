@@ -18,14 +18,6 @@ bool AudioConverter::needsConversion(const juce::AudioFormatReader* reader) cons
     return bitDepthDiffers || sampleRateDiffers;
 }
 
-AudioConverter::ConversionResult AudioConverter::convertFile(
-    const juce::File& sourceFile,
-    const juce::File& outputFolder,
-    juce::AudioFormatManager& formatManager)
-{
-    return convertFileWithName(sourceFile, outputFolder, sourceFile.getFileName(), formatManager);
-}
-
 AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     const juce::File& sourceFile,
     const juce::File& outputFolder,
@@ -99,54 +91,6 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     return result;
 }
 
-void AudioConverter::convertFiles(
-    const juce::Array<juce::File>& files,
-    const juce::File& sourceFolder,
-    const juce::File& outputFolder,
-    juce::AudioFormatManager& formatManager)
-{
-    logger.logLine("");
-    logger.logLine("=== Starting Batch Conversion ===");
-    logger.logLine("Output directory: " + outputFolder.getFullPathName());
-    logger.logLine("");
-
-    // Ensure output directory exists
-    if (!FileSystemHelper::ensureDirectoryExists(outputFolder, logger))
-    {
-        logger.logLine("Error: Could not create output directory");
-        return;
-    }
-
-    // Track conversion statistics
-    int totalFiles = files.size();
-    int convertedCount = 0;
-    int skippedCount = 0;
-    int errorCount = 0;
-
-    // Convert each file
-    for (int i = 0; i < files.size(); ++i)
-    {
-        const juce::File& file = files[i];
-
-        ConversionResult result = convertFile(file, outputFolder, formatManager);
-
-        if (result.success)
-            convertedCount++;
-        else if (result.skipped)
-            skippedCount++;
-        else
-            errorCount++;
-
-        logger.logLine("");
-    }
-
-    // Display summary
-    logger.logLine("=== Conversion Complete ===");
-    logger.logLine("Total files: " + juce::String(totalFiles));
-    logger.logLine("Converted: " + juce::String(convertedCount));
-    logger.logLine("Skipped: " + juce::String(skippedCount));
-    logger.logLine("Errors: " + juce::String(errorCount));
-}
 
 AudioConverter::ConversionResult AudioConverter::performConversion(
     const juce::File& sourceFile,

@@ -45,12 +45,10 @@ public:
     juce::File getSlotFile(int bankIdx, int slotIdx) const;
 
     // Selection / keyboard navigation (driven by MainComponent::keyPressed)
-    int  selectionSize()  const { return selection.size(); }
     void clearSelection();
     void selectAll();
     void moveFocus(int dRow, int dCol);
     void expandSelection(int dRow, int dCol);  // Shift+Arrow: grow the selection bbox by 1
-    void tabFocus();
     void playFocused();
     void clearSelectedCells();
     void browseForFocused();

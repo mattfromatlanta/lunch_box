@@ -34,31 +34,6 @@ namespace FileSystemHelper
         }
     }
 
-    juce::File generateOutputPath(const juce::File& sourceFile,
-                                   const juce::File& sourceFolder,
-                                   const juce::File& outputFolder)
-    {
-        // Get relative path from source folder
-        juce::String relativePath = sourceFile.getRelativePathFrom(sourceFolder);
-
-        // If relative path is empty, just use the filename
-        if (relativePath.isEmpty())
-        {
-            relativePath = sourceFile.getFileName();
-        }
-
-        // Combine output folder with relative path to preserve structure
-        juce::File outputPath = outputFolder.getChildFile(relativePath);
-
-        // Ensure the output file has .wav extension
-        if (!outputPath.hasFileExtension("wav") && !outputPath.hasFileExtension("WAV"))
-        {
-            outputPath = outputPath.withFileExtension("wav");
-        }
-
-        return outputPath;
-    }
-
     bool isDirectoryWritable(const juce::File& directory)
     {
         // Directory must exist
@@ -77,11 +52,6 @@ namespace FileSystemHelper
         }
 
         return false;
-    }
-
-    juce::File getDefaultOutputDirectory()
-    {
-        return juce::File::getCurrentWorkingDirectory().getChildFile("converted");
     }
 
     juce::String getAudioFormatName(const juce::File& file)

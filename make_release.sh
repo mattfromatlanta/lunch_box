@@ -16,7 +16,7 @@
 set -e
 
 APP_NAME="Lunch Box"
-APP_BUNDLE="build/lunch_box_artefacts/${APP_NAME}.app"
+APP_BUNDLE="build/lunch_box_artefacts/Release/${APP_NAME}.app"
 NOTARYTOOL_PROFILE="lunch_box"   # name you used with store-credentials
 
 # ── Resolve version from CMakeLists.txt ────────────────────────────────────────
@@ -45,6 +45,7 @@ echo "Signing identity: $SIGN_IDENTITY"
 # ── Build ───────────────────────────────────────────────────────────────────────
 echo ""
 echo "Building..."
+mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release > /dev/null
 make -j$(sysctl -n hw.logicalcpu)

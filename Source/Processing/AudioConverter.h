@@ -24,22 +24,11 @@ public:
 
     AudioConverter(Logger& logger);
 
-    // Convert a single audio file to target format
-    ConversionResult convertFile(const juce::File& sourceFile,
-                                 const juce::File& outputFolder,
-                                 juce::AudioFormatManager& formatManager);
-
     // Convert a single audio file with custom output filename
     ConversionResult convertFileWithName(const juce::File& sourceFile,
                                          const juce::File& outputFolder,
                                          const juce::String& outputFileName,
                                          juce::AudioFormatManager& formatManager);
-
-    // Batch convert multiple files
-    void convertFiles(const juce::Array<juce::File>& files,
-                     const juce::File& sourceFolder,
-                     const juce::File& outputFolder,
-                     juce::AudioFormatManager& formatManager);
 
     // Generate optimized (one octave up) sample from an already-converted base WAV file.
     // Output is half the duration of the input (double speed = one octave up).

@@ -208,7 +208,7 @@ MainComponent::MainComponent()
 
     loadSessionState();
 
-#if CHOMPI_MELATONIN_INSPECTOR
+#if LUNCH_BOX_MELATONIN_INSPECTOR
     inspector = std::make_unique<melatonin::Inspector>(*this);
     inspector->setVisible(true);
 #endif

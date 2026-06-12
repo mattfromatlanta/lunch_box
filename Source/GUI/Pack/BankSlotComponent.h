@@ -29,8 +29,6 @@ public:
     // Selection / focus visual state (managed by BankEditorPanel)
     void setSelected(bool s);
     void setFocused(bool f);
-    bool isSlotSelected() const     { return selected; }
-    bool isSlotFocused()  const     { return focused; }
 
     // Open file browser (called by Enter key via BankEditorPanel)
     void browseForFile();
@@ -49,7 +47,6 @@ public:
 
     // Selection / drag-move visual state (managed by BankEditorPanel)
     void setDragTarget(bool t);
-    bool isSlotDragTarget() const { return dragTarget; }
 
     // Drag preview: show a different filename label during drag without changing the actual sample
     void setPreviewSample(const juce::File& f);   // showingPreview=true, previewFile=f

@@ -8,6 +8,10 @@ naming convention.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
+| Pack view | Bank view |
+|-----------|-----------|
+| ![Pack view — 5-bank × 14-slot grid](assets/screenshots/lunchbox_pack.png) | ![Bank view — single-bank waveform list](assets/screenshots/lunchbox_bank.png) |
+
 ---
 
 ## Features
@@ -39,7 +43,9 @@ naming convention.
 git clone https://github.com/mattfromatlanta/lunch_box.git
 cd lunch_box
 
-# Update the JUCE path in CMakeLists.txt to point at your local JUCE install, then:
+# Clone JUCE alongside the repo (or pass -DJUCE_DIR=/path/to/JUCE to cmake)
+git clone --branch 8.0.12 --depth 1 https://github.com/juce-framework/JUCE.git ../JUCE
+
 mkdir -p build && cd build
 cmake ..
 make
@@ -136,20 +142,16 @@ lunch_box/
 |   +-- CLI/
 |   |   +-- CliProcessor.h/cpp         # CLI argument parsing
 |   +-- GUI/
-|   |   +-- MainWindow.h/cpp
-|   |   +-- MainComponent.h/cpp        # Tabs, mode switching
-|   |   +-- GuiProcessor.h/cpp         # GUI to processing bridge
-|   |   +-- BankEditorPanel.h/cpp      # Pack mode: 5x14 grid
-|   |   +-- BankFocusPanel.h/cpp       # Bank mode: single-bank view
-|   |   +-- FocusedSlotRow.h/cpp       # Bank mode: slot row with waveform
-|   |   +-- BankRowComponent.h/cpp
-|   |   +-- BankSlotComponent.h/cpp
-|   |   +-- PreviewPanel.h/cpp         # Waveform + playback
-|   |   +-- FolderDropZone.h/cpp       # Simple mode drop zones
+|   |   +-- Shell/                     # App window, main UI, menus, processing flow
+|   |   +-- Pack/                      # Pack view: 5x14 grid per category
+|   |   +-- Bank/                      # Bank view: single-bank waveform list
+|   |   +-- Common/                    # Shared drag-and-drop model and controller
+|   |   +-- Preview/                   # Waveform display + audio playback
+|   |   +-- Style/                     # Colours, fonts, layout constants, UI strings
 |   +-- Processing/
-|       +-- LunchBoxProcessor.h/cpp      # Processing orchestrator
+|       +-- LunchBoxProcessor.h/cpp    # Processing orchestrator
 |       +-- AudioConverter.h/cpp       # Format conversion
-|       +-- LunchBoxNamer.h/cpp          # CHOMPI naming + constants
+|       +-- LunchBoxNamer.h/cpp        # CHOMPI naming + constants
 |       +-- BankFolderParser.h/cpp     # Bank subfolder detection
 +-- tests/                             # Unit tests (JUCE UnitTest framework)
 +-- CMakeLists.txt
@@ -169,6 +171,19 @@ All operations are logged to timestamped files in the `logs/` directory:
 ```
 logs/lunch_box_log_YYYYMMDD_HHMMSS.txt
 ```
+
+---
+
+## Known Limitations
+
+- **Export blocks the UI.** Pack processing currently runs on the UI thread, so the
+  window is unresponsive while a pack is written — a few seconds for typical packs
+  of one-shots, longer for packs of very long samples. The export itself is safe to
+  interrupt: packs are written to a staging folder and only swapped into place when
+  complete, and a replaced pack goes to the Trash rather than being deleted.
+  A background-threaded export with progress is planned for 1.1 (see [ROADMAP.md](ROADMAP.md)).
+- **macOS is the supported platform.** The Linux build compiles in CI but is untested;
+  Windows hasn't been tried. Clipboard import (paste files from Finder) is macOS-only.
 
 ---
 

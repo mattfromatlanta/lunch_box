@@ -77,35 +77,6 @@ int BankRowComponent::getFilledCount() const
     return count;
 }
 
-void BankRowComponent::sortSlotsAlphabetically()
-{
-    // Collect filled files
-    juce::Array<juce::File> filled;
-    for (const auto* slot : slots)
-        if (slot->hasSample())
-            filled.add(slot->getSample());
-
-    if (filled.isEmpty()) return;
-
-    struct NameComp
-    {
-        int compareElements(const juce::File& a, const juce::File& b) const
-        {
-            return a.getFileName().compareNatural(b.getFileName());
-        }
-    } comp;
-    filled.sort(comp);
-
-    // Put sorted files back in order, clear remaining slots
-    for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
-    {
-        if (i < filled.size())
-            slots[i]->setSample(filled[i]);
-        else
-            slots[i]->clearSample();
-    }
-}
-
 void BankRowComponent::autoFillFromFiles(const juce::Array<juce::File>& files, int startIndex)
 {
     int fileIdx = startIndex;

@@ -23,7 +23,6 @@ public:
     BankSlotComponent* getSlotComponent(int index);  // for selection management
 
     // Bulk operations
-    void sortSlotsAlphabetically();
     void autoFillFromFiles(const juce::Array<juce::File>& files, int startIndex = 0);
 
     // Export for processing

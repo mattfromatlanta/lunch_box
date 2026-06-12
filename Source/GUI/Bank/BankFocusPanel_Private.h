@@ -12,15 +12,7 @@
 
 namespace BankFocusImpl
 {
-    inline const juce::Colour panelBg      = LunchBoxColours::DARK_GREY;
-    inline const juce::Colour bankColBg    { 0xff0f1420 };
-
-    // Slot-cell palette (matches BankSlotComponent)
-    inline const juce::Colour slotEmptyBg  { 0xff1d2228 };
-    inline const juce::Colour slotFilledBg { 0xff3a5060 };
-    inline const juce::Colour slotBorder   { 0xff3a4a5a };
-    inline const juce::Colour slotFocusBdr { 0xff99aaff };
-    inline const juce::Colour slotNumCol   = LunchBoxColours::WHITE_CREAM.withAlpha(0.3f);
+    inline const juce::Colour panelBg = LunchBoxColours::DARK_GREY;
 
     inline juce::Colour bankColourForIndex(int idx)
     {

@@ -32,8 +32,10 @@ Open a [discussion](https://github.com/mattfromatlanta/lunch_box/discussions) in
 - [JUCE](https://github.com/juce-framework/JUCE) 8.0.12+
 
 ```bash
-# Update the JUCE path in CMakeLists.txt to point at your local JUCE install, then:
-mkdir build && cd build
+# Clone JUCE alongside the repo (or pass -DJUCE_DIR=/path/to/JUCE to cmake)
+git clone --branch 8.0.12 --depth 1 https://github.com/juce-framework/JUCE.git ../JUCE
+
+mkdir -p build && cd build
 cmake ..
 make
 ```

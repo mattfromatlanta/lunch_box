@@ -90,10 +90,9 @@ void MainComponent::processFiles()
                     LunchBoxLabels::kDlgFolderNotEmptyBody + packFolder.getFullPathName() + "\n\n"
                     + countStr + LunchBoxLabels::kDlgFolderNotEmptyWillDel,
                     nullptr,
-                    juce::ModalCallbackFunction::create([this, children, runExport](int res2) mutable
+                    juce::ModalCallbackFunction::create([this, runExport](int res2) mutable
                     {
                         if (res2 == 0) { processButton.setEnabled(true); return; }
-                        for (auto& child : children) child.deleteRecursively();
                         runExport();
                     }));
             };
@@ -126,21 +125,40 @@ void MainComponent::processFilesFromEditors()
     auto cubbiAssignments = cubbiEditor->getAssignments();
     auto jammiAssignments = jammiEditor->getAssignments();
 
-    juce::File outputFolder = getResolvedOutputFolder();
+    // Stage the export in a hidden sibling folder and only swap it into place
+    // once every file is written, so an interrupted or failed export can never
+    // destroy an existing pack. Any previous pack goes to the Trash (recoverable),
+    // not straight to deletion.
+    const juce::File outputFolder  = getResolvedOutputFolder();
+    const juce::File stagingFolder = outputFolder
+        .getSiblingFile("." + outputFolder.getFileName() + ".exporting")
+        .getNonexistentSibling(false);
 
     auto result = processor->processFilesFromAssignments(
-        cubbiAssignments, jammiAssignments, outputFolder);
+        cubbiAssignments, jammiAssignments, stagingFolder);
 
-    if (result.success)
+    if (!result.success)
     {
-        appendProcessingResult(result, outputFolder);
-        processButton.triggerSuccessAnimation();
-    }
-    else
-    {
+        stagingFolder.deleteRecursively();
         appendStatus(LunchBoxLabels::kStatusProcessFailed);
         appendStatus(LunchBoxLabels::kStatusErrorPrefix + result.message);
+        return;
     }
+
+    if (outputFolder.exists() && !outputFolder.moveToTrash())
+        outputFolder.deleteRecursively();   // e.g. volumes with no Trash
+
+    if (!stagingFolder.moveFileTo(outputFolder))
+    {
+        appendStatus(LunchBoxLabels::kStatusProcessFailed);
+        appendStatus(juce::String(LunchBoxLabels::kStatusErrorPrefix)
+                     + "Could not move the finished pack into place. The exported files are in: "
+                     + stagingFolder.getFullPathName());
+        return;
+    }
+
+    appendProcessingResult(result, outputFolder);
+    processButton.triggerSuccessAnimation();
 }
 
 void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult& result,

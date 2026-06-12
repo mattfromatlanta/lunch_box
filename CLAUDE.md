@@ -1,4 +1,4 @@
-# CLAUDE.MD - AI Assistant Guide for Lunch Box
+# CLAUDE.md - AI Assistant Guide for Lunch Box
 
 **Purpose:** This document provides context and guidelines for AI assistants (Claude, etc.) working on the Lunch Box project.
 
@@ -6,40 +6,11 @@
 
 ## Project Overview
 
-**Lunch Box** is a dual-mode (GUI + CLI) audio sample processor for the CHOMPI sampler hardware. It converts audio files to CHOMPI-compatible format (16-bit 48kHz WAV) and organizes them using the CHOMPI naming convention.
+**Lunch Box** is a dual-mode (GUI + CLI) audio sample processor for the CHOMPI sampler hardware. It converts audio files (WAV/AIFF/MP3/FLAC) to CHOMPI-compatible format (16-bit 48kHz WAV) and organizes them using the CHOMPI naming convention.
 
 **Key Documentation:**
 - [README.md](README.md) - User-facing project overview
 - [HOW_TO.md](HOW_TO.md) - Comprehensive user guide
-
----
-
-## Current Status
-
-**Version:** 1.0.0
-
-**What Works:**
-- ✅ CLI interface with full CHOMPI processing (wav/aiff/mp3/flac)
-- ✅ GUI: Simple mode (folder drop zones), Advanced/Pack mode (5-bank × 14-slot grid), Bank mode (single-bank focus view)
-- ✅ Audio conversion (16-bit 48kHz WAV output)
-- ✅ Automatic bank assignment (A-E, 14 slots each)
-- ✅ Dual categories (Cubbi / Jammi)
-- ✅ Drag-drop folder selection and internal slot drag-to-reorder
-- ✅ AIFF, MP3, FLAC input support
-- ✅ Automatic `_double` (octave-up) generation
-- ✅ Bank-subfolder detection (BankFolderParser)
-- ✅ Waveform preview per slot (FocusedSlotRow, AudioThumbnail)
-- ✅ Preview playback (click to play, move focus to stop)
-- ✅ Persistent folder memory across sessions
-- ✅ macOS menu bar (File / Edit / Settings menus)
-- ✅ Source/Processing/ module layout; constants deduplication; code review passes
-- ✅ Resizable window (default 525×900); unified Pack/Bank grid heights (385px each)
-- ✅ Pack cells 77×77px with bank-letter prefixed labels (A1, E14); Bank rows 55px, 2-col layout
-- ✅ Floating console window; shared fixed footer (Fill/Clear + output + process buttons)
-- ✅ Full keyboard navigation: arrows + Shift-select, Tab (toggle Cubbi/Jammi), Esc (clear selection), Space (preview), Enter (browse), Delete/Backspace (clear)
-- ✅ ApplicationCommandManager hotkeys: Cmd+Z/Shift+Z (undo/redo), Cmd+C/X/V (copy/cut/paste), Cmd+A (select all), Cmd+O (open output), Cmd+Return (process)
-- ✅ 10-step undo/redo (full state snapshots, cross-view-mode)
-- ✅ System clipboard paste from external apps (Finder file URLs, Sononym plain-text paths)
 
 ---
 
@@ -77,13 +48,17 @@ AudioConverter  LunchBoxNamer  Logger
 | **Logger** | Timestamped log files | Logger.h/cpp |
 | **FileSystemHelper** | File utilities, format extension list | FileSystemHelper.h/cpp |
 | **CliProcessor** | CLI interface and argument parsing | CLI/CliProcessor.h/cpp |
-| **GuiProcessor** | GUI-processing bridge | GUI/GuiProcessor.h/cpp |
-| **MainComponent** | GUI layout, tabs, mode switching | GUI/MainComponent.h/cpp |
-| **BankEditorPanel** | Advanced: 5×14 grid per category | GUI/BankEditorPanel.h/cpp |
-| **BankFocusPanel** | Bank: single-bank 14-row focus view | GUI/BankFocusPanel.h/cpp |
-| **FocusedSlotRow** | Bank: single slot row with waveform | GUI/FocusedSlotRow.h/cpp |
-| **PreviewPanel** | Waveform + audio playback | GUI/PreviewPanel.h/cpp |
-| **MainWindow** | Application window | GUI/MainWindow.h/cpp |
+| **GuiProcessor** | GUI-processing bridge | GUI/Shell/GuiProcessor.h/cpp |
+| **MainComponent** | GUI shell: tabs, view switching, undo, clipboard, export flow | GUI/Shell/MainComponent.h/cpp + `MainComponent_{View,Session,Process,Undo,Commands}.cpp` |
+| **BankEditorPanel** | Pack view: 5×14 grid per category | GUI/Pack/BankEditorPanel.h/cpp + `_Selection/_Drag/_ExternalDrag` |
+| **BankFocusPanel** | Bank view: single-bank 14-row focus view | GUI/Bank/BankFocusPanel.h/cpp + `_Selection/_Drag/_ExternalDrag` |
+| **DragModel / DragController** | Shared drag-and-drop logic (pure model + driver) | GUI/Common/DragModel.h/cpp, DragController.h/cpp, DragHost.h |
+| **PreviewPanel / AudioPreviewPlayer** | Waveform + audio playback | GUI/Preview/ |
+| **MainWindow / AppMenuBar** | Application window, macOS menu bar | GUI/Shell/ |
+
+Several GUI classes are split across multiple translation units sharing one header
+(e.g. `MainComponent_View.cpp`, `BankEditorPanel_Drag.cpp`) plus a `_Private.h` for
+implementation-internal helpers. Each file opens with a comment mapping the split.
 
 ### Data Flow
 
@@ -94,7 +69,7 @@ Command line args → CliProcessor → AudioConfiguration → LunchBoxProcessor 
 
 **GUI Mode:**
 ```
-Folder selections → GuiProcessor → AudioConfiguration → LunchBoxProcessor → Output files
+Slot assignments → GuiProcessor → AudioConfiguration → LunchBoxProcessor → Output files
 ```
 
 **Shared:** Both modes use `AudioConfiguration` struct and call the same `LunchBoxProcessor::processSamples()`.
@@ -120,10 +95,6 @@ Folder selections → GuiProcessor → AudioConfiguration → LunchBoxProcessor 
 Examples:
   cubbi_a1.wav          (Cubbi, Bank A, Slot 1 - base)
   cubbi_a1_double.wav   (Cubbi, Bank A, Slot 1 - optimized)
-  cubbi_a14.wav         (Cubbi, Bank A, Slot 14 - base)
-  cubbi_a14_double.wav  (Cubbi, Bank A, Slot 14 - optimized)
-  cubbi_b1.wav          (Cubbi, Bank B, Slot 1 - base)
-  cubbi_b1_double.wav   (Cubbi, Bank B, Slot 1 - optimized)
   jammi_e14.wav         (Jammi, Bank E, Slot 14 - base)
   jammi_e14_double.wav  (Jammi, Bank E, Slot 14 - optimized)
 ```
@@ -179,21 +150,22 @@ Examples:
 
 ### Testing
 
-**Current Status:**
-- ✅ `test_lunch_box_namer` exists (unit tests for LunchBoxNamer)
-- ⚠️  Limited coverage on other modules
+The unit test suite lives in `tests/` (JUCE UnitTest framework, target `lunch_box_tests`):
+- `ChompiNamerTests.cpp` — naming/bank-slot math
+- `BankFolderParserTests.cpp` — bank subfolder detection
+- `FileSystemHelperTests.cpp` — file utilities
+- `DragModelTests.cpp` — drag-and-drop model logic
 
 **When adding features:**
 - Add unit tests for new functions
-- Add integration tests for new workflows
 - Update existing tests if behavior changes
 
 ### Build System
 
 **CMake Configuration:**
-- JUCE modules: `juce_core`, `juce_audio_formats`, `juce_audio_basics`, `juce_gui_basics`, `juce_gui_extra`
-- Target name: `lunch_box`
-- Test target: `test_lunch_box_namer`
+- JUCE modules: `juce_core`, `juce_audio_formats`, `juce_audio_basics`, `juce_audio_devices`, `juce_audio_utils`, `juce_gui_basics`, `juce_gui_extra`
+- App target: `lunch_box` — test target: `lunch_box_tests`
+- JUCE is resolved from a sibling `../JUCE` clone or `-DJUCE_DIR=/path/to/JUCE`
 
 **Build Process:**
 ```bash
@@ -203,8 +175,8 @@ make
 ```
 
 **Output:**
-- macOS: `lunch_box_artefacts/Lunch Box.app`
-- Tests: `test_lunch_box_namer_artefacts/test_lunch_box_namer`
+- macOS: `build/lunch_box_artefacts/Lunch Box.app`
+- Tests: `build/lunch_box_tests_artefacts/lunch_box_tests`
 
 ---
 
@@ -220,11 +192,10 @@ make
 5. Update documentation
 
 **Adding a new GUI feature:**
-1. Modify MainComponent.h/cpp
-2. Add UI elements in constructor
-3. Update `resized()` for layout
-4. Add callbacks/handlers
-5. Test in both modes (with/without feature)
+1. Find the owning panel (Shell / Pack / Bank / Preview) — keep panel logic in the panel
+2. Shared visual constants go in `GUI/Style/` (UIColours, UIConstants, LunchBoxFonts, LabelStrings)
+3. Keyboard/menu commands route through `MainComponent_Commands.cpp` (ApplicationCommandManager)
+4. State that must survive view switches belongs in MainComponent's sync layer (`MainComponent_View.cpp`)
 
 **Adding a new CLI option:**
 1. Update CliProcessor argument parsing
@@ -255,21 +226,7 @@ make
 
 ---
 
-## Key Files Reference
-
-### Essential Reading
-
-| File | Purpose | When to Read |
-|------|---------|--------------|
-| [README.md](README.md) | Project overview, quick start | Understanding project scope |
-| [HOW_TO.md](HOW_TO.md) | User guide, examples | Understanding user workflows |
-| [Source/Main.cpp](Source/Main.cpp) | Entry point, mode detection | Understanding app initialization |
-| [Source/Processing/LunchBoxProcessor.cpp](Source/Processing/LunchBoxProcessor.cpp) | Core processing logic | Understanding CHOMPI processing |
-| [Source/AudioConfiguration.h](Source/AudioConfiguration.h) | Shared data structures | Understanding data flow |
-| [Source/GUI/MainComponent.cpp](Source/GUI/MainComponent.cpp) | GUI layout, tabs, mode switching | Understanding GUI architecture |
-| [Source/GUI/BankFocusPanel.cpp](Source/GUI/BankFocusPanel.cpp) | Bank focus view | Understanding Bank tab |
-
-### Documentation Map
+## Source Layout
 
 ```
 lunch_box/
@@ -277,31 +234,33 @@ lunch_box/
 ├── HOW_TO.md                          # Comprehensive user guide
 ├── CLAUDE.md                          # This file (AI assistant guide)
 │
-├── Source/                            # C++ source code
-│   ├── Main.cpp                       # Entry point
+├── Source/
+│   ├── Main.cpp                       # Entry point, GUI/CLI routing
 │   ├── AudioConfiguration.h           # Shared config struct
 │   ├── FileSystemHelper.h/cpp         # File utilities, format extension list
 │   ├── Logger.h/cpp                   # Logging system
-│   ├── CLI/                           # CLI interface
-│   │   ├── CliProcessor.h/cpp         # CLI argument parsing + processing
-│   ├── GUI/                           # GUI interface
-│   │   ├── MainWindow.h/cpp           # Application window
-│   │   ├── MainComponent.h/cpp        # Main UI (tabs, mode switching, sync)
-│   │   ├── GuiProcessor.h/cpp         # GUI-processing bridge
-│   │   ├── BankEditorPanel.h/cpp      # Advanced: 5×14 grid per category
-│   │   ├── BankRowComponent.h/cpp     # Advanced: one bank row (14 slots)
-│   │   ├── BankSlotComponent.h/cpp    # Advanced: individual slot cell
-│   │   ├── BankFocusPanel.h/cpp       # Bank: single-bank focus view
-│   │   ├── FocusedSlotRow.h/cpp       # Bank: single slot row with waveform
-│   │   ├── PreviewPanel.h/cpp         # Waveform + audio playback
-│   │   └── FolderDropZone.h/cpp       # Simple: folder drop zone
-│   └── Processing/                    # Core processing modules
+│   ├── CLI/
+│   │   └── CliProcessor.h/cpp         # CLI argument parsing + processing
+│   ├── GUI/
+│   │   ├── Shell/                     # MainWindow, MainComponent (+ split TUs),
+│   │   │                              # AppMenuBar, GuiProcessor, ConsoleWindow,
+│   │   │                              # ClipboardHelper, overlays, footer buttons
+│   │   ├── Pack/                      # BankEditorPanel (+ split TUs),
+│   │   │                              # BankRowComponent, BankSlotComponent
+│   │   ├── Bank/                      # BankFocusPanel (+ split TUs), FocusedSlotRow
+│   │   ├── Common/                    # DragModel, DragController, DragHost,
+│   │   │                              # ClipboardEntry
+│   │   ├── Preview/                   # PreviewPanel, AudioPreviewPlayer,
+│   │   │                              # WaveformDisplay
+│   │   └── Style/                     # UIColours, UIConstants, LunchBoxFonts,
+│   │                                  # LabelStrings, FooterButtonLAF
+│   └── Processing/
 │       ├── LunchBoxProcessor.h/cpp    # Processing orchestrator
 │       ├── AudioConverter.h/cpp       # Format conversion
 │       ├── LunchBoxNamer.h/cpp        # CHOMPI naming + constants
 │       └── BankFolderParser.h/cpp     # Bank subfolder detection
 │
-└── tests/                             # Unit tests
+└── tests/                             # Unit tests (JUCE UnitTest, lunch_box_tests)
 ```
 
 ---
@@ -325,8 +284,8 @@ lunch_box/
 ✅ **Right:** Ensure feature available (or gracefully absent) in both modes
 
 ### 5. Assuming Single Platform
-❌ **Wrong:** Using macOS-specific paths or APIs
-✅ **Right:** Use JUCE cross-platform abstractions
+❌ **Wrong:** Using macOS-specific paths or APIs unguarded
+✅ **Right:** Use JUCE cross-platform abstractions; isolate platform code (see ClipboardHelper.mm / ClipboardHelper.cpp)
 
 ---
 
@@ -341,7 +300,7 @@ make
 
 # Test GUI
 open "lunch_box_artefacts/Lunch Box.app"
-# Verify: folder selection, processing, output
+# Verify: slot assignment, processing, output
 
 # Test CLI
 "lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" \
@@ -350,7 +309,7 @@ open "lunch_box_artefacts/Lunch Box.app"
 # Verify: same output as GUI
 
 # Run unit tests
-./test_lunch_box_namer_artefacts/test_lunch_box_namer
+./lunch_box_tests_artefacts/lunch_box_tests
 ```
 
 ### Regression Checks
@@ -368,7 +327,6 @@ open "lunch_box_artefacts/Lunch Box.app"
 ### Design Principles
 
 1. **User convenience over features**
-   - Simple mode should stay simple
    - Power features should be optional
    - Don't force complexity
 
@@ -425,9 +383,6 @@ open "lunch_box_artefacts/Lunch Box.app"
 # Full rebuild
 cd build && cmake .. && make
 
-# Just compile
-cd build && make
-
 # Run GUI
 open "lunch_box_artefacts/Lunch Box.app"
 
@@ -435,30 +390,18 @@ open "lunch_box_artefacts/Lunch Box.app"
 "lunch_box_artefacts/Lunch Box.app/Contents/MacOS/Lunch Box" --help
 
 # Run tests
-./test_lunch_box_namer_artefacts/test_lunch_box_namer
+./lunch_box_tests_artefacts/lunch_box_tests
 ```
 
-### Common File Paths
-```
-Source/GUI/MainComponent.cpp             # Main GUI logic (tabs, mode switching)
-Source/GUI/BankFocusPanel.cpp            # Bank tab panel
-Source/GUI/BankEditorPanel.cpp           # Advanced tab grid
-Source/CLI/CliProcessor.cpp              # CLI logic
-Source/Processing/LunchBoxProcessor.cpp  # Shared processing orchestrator
-Source/Processing/AudioConverter.cpp     # Audio conversion
-Source/Processing/LunchBoxNamer.cpp      # CHOMPI naming + constants
-```
-
-### Key Constants
+### Key Constants (Processing/LunchBoxNamer.h, Processing/AudioConverter.h)
 ```cpp
-MAX_SLOTS_PER_CATEGORY = 70        // CHOMPI hardware bank limit
 SLOTS_PER_BANK = 14                // CHOMPI structure
 NUM_BANKS = 5                      // A, B, C, D, E
+MAX_FILES_PER_CATEGORY = 70        // CHOMPI hardware limit
 TARGET_SAMPLE_RATE = 48000.0       // CHOMPI requirement
 TARGET_BIT_DEPTH = 16              // CHOMPI requirement
+MAX_CHANNELS = 2                   // mono or stereo only
 MAX_DURATION_SECONDS = 120.0       // Maximum 2 minutes per sample
-OUTPUT_FILES_PER_INPUT = 2         // Base + optimized (_double)
-MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 ```
 
 ---
@@ -473,7 +416,7 @@ MAX_OUTPUT_FILES_PER_CATEGORY = 140 // 70 base + 70 optimized
 This project has clean separation between interface (CLI/GUI) and processing logic. When adding features:
 
 1. **Check if it's processing logic** → Add to core modules (AudioConverter, LunchBoxNamer, LunchBoxProcessor)
-2. **Check if it's interface** → Add to CliProcessor or GuiProcessor
+2. **Check if it's interface** → Add to CliProcessor or the GUI panels
 
 The code is well-structured. Follow existing patterns. Don't reinvent wheels.
 

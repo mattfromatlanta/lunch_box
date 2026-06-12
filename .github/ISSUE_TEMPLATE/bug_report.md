@@ -23,7 +23,7 @@ If applicable.
 
 **System Information**
 - OS: [e.g. macOS 14.2]
-- Lunch Box version: [e.g. 2.4.0]
+- Lunch Box version: [e.g. 1.0.0]
 - Interface used: [GUI / CLI]
 
 **Log output**

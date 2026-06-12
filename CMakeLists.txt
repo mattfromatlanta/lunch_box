@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(lunch_box VERSION 0.1.0)
+project(lunch_box VERSION 1.0.0)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -37,7 +37,6 @@ if(LUNCH_BOX_MELATONIN_INSPECTOR)
 endif()
 
 juce_add_binary_data(lunch_box_assets SOURCES
-    fonts/Fredoka.ttf
     fonts/Poppins-Regular.ttf
     fonts/Poppins-Medium.ttf
     fonts/Poppins-SemiBold.ttf
@@ -75,10 +74,7 @@ target_sources(lunch_box
         Source/GUI/Shell/ConsoleWindow.h
         Source/GUI/Shell/GuiProcessor.h
         Source/GUI/Shell/GuiProcessor.cpp
-        Source/GUI/Shell/FolderDropZone.h
-        Source/GUI/Shell/FolderDropZone.cpp
         Source/GUI/Shell/ClipboardHelper.h
-        Source/GUI/Shell/ClipboardHelper.mm
         Source/GUI/Shell/WipeTabButton.h
         Source/GUI/Shell/PackButton.h
         Source/GUI/Shell/PackNameOverlay.h
@@ -117,8 +113,6 @@ target_sources(lunch_box
         Source/GUI/Common/DragModel.h
         Source/GUI/Common/DragModel.cpp
         Source/GUI/Common/DragHost.h
-        Source/GUI/Common/DragProxy.h
-        Source/GUI/Common/DragProxy.cpp
         Source/GUI/Common/DragController.h
         Source/GUI/Common/DragController.cpp
         Source/FileSystemHelper.h
@@ -131,6 +125,14 @@ target_sources(lunch_box
         Source/Processing/LunchBoxProcessor.cpp
         Source/Processing/BankFolderParser.h
         Source/Processing/BankFolderParser.cpp)
+
+# System-clipboard file paste needs NSPasteboard on macOS; other platforms
+# get a no-op fallback.
+if(APPLE)
+    target_sources(lunch_box PRIVATE Source/GUI/Shell/ClipboardHelper.mm)
+else()
+    target_sources(lunch_box PRIVATE Source/GUI/Shell/ClipboardHelper.cpp)
+endif()
 
 # Include directories — allow flat #include "Foo.h" across GUI subfolders
 target_include_directories(lunch_box
@@ -162,17 +164,20 @@ target_link_libraries(lunch_box
         juce::juce_recommended_warning_flags)
 
 # Copy app icon into bundle and set CFBundleIconFile after build
-add_custom_command(TARGET lunch_box POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_SOURCE_DIR}/assets/AppIcon.icns"
-        "$<TARGET_BUNDLE_CONTENT_DIR:lunch_box>/Resources/Icon.icns"
-    COMMAND /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile Icon.icns"
-        "$<TARGET_BUNDLE_CONTENT_DIR:lunch_box>/Info.plist"
-    COMMENT "Copying app icon")
+if(APPLE)
+    add_custom_command(TARGET lunch_box POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/assets/AppIcon.icns"
+            "$<TARGET_BUNDLE_CONTENT_DIR:lunch_box>/Resources/Icon.icns"
+        COMMAND /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile Icon.icns"
+            "$<TARGET_BUNDLE_CONTENT_DIR:lunch_box>/Info.plist"
+        COMMENT "Copying app icon")
+endif()
 
 # Set compiler definitions
 target_compile_definitions(lunch_box
     PRIVATE
+        LUNCH_BOX_VERSION="${PROJECT_VERSION}"
         JUCE_USE_CURL=0
         JUCE_WEB_BROWSER=0
         JUCE_USE_CAMERA=0
@@ -213,30 +218,3 @@ target_compile_definitions(lunch_box_tests
         JUCE_USE_CAMERA=0
         JUCE_USE_FLAC=1
         JUCE_USE_MP3AUDIOFORMAT=1)
-
-# Legacy LunchBoxNamer test executable
-juce_add_console_app(test_lunch_box_namer
-    PRODUCT_NAME "Test Lunch Box Namer")
-
-target_sources(test_lunch_box_namer
-    PRIVATE
-        Source/TestLunchBoxNamer.cpp
-        Source/Processing/LunchBoxNamer.h
-        Source/Processing/LunchBoxNamer.cpp
-        Source/Logger.h
-        Source/Logger.cpp)
-
-target_link_libraries(test_lunch_box_namer
-    PRIVATE
-        juce::juce_core
-        juce::juce_audio_formats
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
-        juce::juce_recommended_warning_flags)
-
-target_compile_definitions(test_lunch_box_namer
-    PRIVATE
-        JUCE_USE_CURL=0
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CAMERA=0)

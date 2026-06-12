@@ -166,7 +166,6 @@ void DragController::commit()
         host.setFileAt(w.cell, w.file);
 
     host.clearAllCellPreviews();
-    proxy.finish();
 
     juce::Array<GridCell> oldSources = sourceCells;
     juce::Array<GridCell> newSel     = op.destCells;
@@ -180,7 +179,6 @@ void DragController::commit()
 void DragController::cancel()
 {
     host.clearAllCellPreviews();
-    proxy.finish();
     state = State::Idle;
     sourceCells.clear();
     lastDropCell = GridCell{};

@@ -29,7 +29,6 @@ BankEditorPanel::BankEditorPanel(LunchBoxNamer::Category cat)
 
     setWantsKeyboardFocus(true);
 
-    addAndMakeVisible(dragController.getProxy());
 }
 
 void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)

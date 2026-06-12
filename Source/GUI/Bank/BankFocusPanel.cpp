@@ -55,7 +55,6 @@ BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
     setWantsKeyboardFocus(true);
     updateBankButtonStyles();
 
-    addAndMakeVisible(dragController.getProxy());
 }
 
 BankFocusPanel::~BankFocusPanel()

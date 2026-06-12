@@ -51,7 +51,6 @@ namespace LunchBoxColours
     inline const juce::Colour CONSOLE_BG      { 0xff151a26 };
     inline const juce::Colour CONSOLE_TEXT    { 0xffaabbcc };
     inline const juce::Colour CONSOLE_OUTLINE { 0xff2a3a4a };
-    inline const juce::Colour ACCENT_GREEN    { 0xff4caf50 };   // success accent
 
     // ── Bank slot state colours ────────────────────────────
     inline const juce::Colour SLOT_EMPTY_BG       { 0xff1d2228 };
@@ -69,14 +68,6 @@ namespace LunchBoxColours
     inline const juce::Colour WAVE_FG     { 0xff4caf50 };
     inline const juce::Colour WAVE_CURSOR { 0xccffffff };
     inline const juce::Colour WAVE_EMPTY  { 0xff3a4a5a };
-
-    // ── FolderDropZone colours ─────────────────────────────
-    inline const juce::Colour DROPZONE_BG       { 0xff252b3b };
-    inline const juce::Colour DROPZONE_BORDER   { 0xff3a4a5a };
-    inline const juce::Colour DROPZONE_HOVER_BG     { 0x1a2196f3 };
-    inline const juce::Colour DROPZONE_HOVER_BORDER { 0xff2196f3 };
-    inline const juce::Colour DROPZONE_PATH         { 0xffccddee };
-    inline const juce::Colour DROPZONE_PLACEHOLDER  { 0xff667788 };
 
     // Draw 45° diagonal (top-left → bottom-right) selection stripes for selected-but-not-focused
     // elements. originInRoot is the component's (0,0) in root-window coordinates, ensuring stripe

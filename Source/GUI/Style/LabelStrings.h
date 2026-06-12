@@ -11,7 +11,6 @@
 namespace LunchBoxLabels
 {
     // ── Window / app shell ──────────────────────────────────
-    inline constexpr const char* kAppHeader        = "LUNCH BOX";
     inline constexpr const char* kConsoleTitle     = "Console";
     inline constexpr const char* kConsoleInitial   = "Ready to process samples...\n";
 
@@ -53,7 +52,7 @@ namespace LunchBoxLabels
     // ── Export / overwrite confirmation dialogs ────────────
     inline constexpr const char* kDlgFolderNotEmpty         = " is not empty.";
     inline constexpr const char* kDlgFolderNotEmptyBody     = "The export folder already exists:\n";
-    inline constexpr const char* kDlgFolderNotEmptyWillDel  = " will be deleted before exporting.\n\nContinue?";
+    inline constexpr const char* kDlgFolderNotEmptyWillDel  = " will be moved to the Trash and replaced.\n\nContinue?";
     inline constexpr const char* kDlgOutsideHomeTitle       = "Folder Outside Home Directory";
     inline constexpr const char* kDlgOutsideHomeBody        = "\" is outside your home directory.\n\n";
     inline constexpr const char* kDlgOutsideHomeSuffix      = "\" folder will be created there. Are you sure?";
@@ -75,9 +74,6 @@ namespace LunchBoxLabels
     inline constexpr const char* kDlgPackNamePrompt   = "Name your pack.";
     inline constexpr const char* kDlgContinue         = "Continue";
     inline constexpr const char* kDlgCancel           = "Cancel";
-
-    // ── FolderDropZone placeholder ─────────────────────────
-    inline constexpr const char* kDropZonePlaceholder = "Drop folder here";
 
     // ── Preview panel ───────────────────────────────────────
     inline constexpr const char* kPreviewLabel        = "PREVIEW";

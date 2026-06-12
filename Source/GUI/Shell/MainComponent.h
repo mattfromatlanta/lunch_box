@@ -17,7 +17,7 @@
 #include "HelpOverlay.h"
 #include "FooterButtonLAF.h"
 #include "LabelStrings.h"
-#if CHOMPI_MELATONIN_INSPECTOR
+#if LUNCH_BOX_MELATONIN_INSPECTOR
 #include "melatonin_inspector/melatonin_inspector.h"
 #endif
 
@@ -190,7 +190,7 @@ private:
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
 
-#if CHOMPI_MELATONIN_INSPECTOR
+#if LUNCH_BOX_MELATONIN_INSPECTOR
     std::unique_ptr<melatonin::Inspector> inspector;
 #endif
 
