@@ -1,5 +1,4 @@
 ![Lunch Box](./assets/lunch_box_logo.svg)
-
 **Audio sample processor for the CHOMPI sampler**
 
 Lunch Box is a dual-mode (GUI + CLI) application that converts audio files to
