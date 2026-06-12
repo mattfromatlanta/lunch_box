@@ -39,7 +39,12 @@ void MainComponent::captureUndoState()
     redoStack.clear();
 
     // Save after the current event loop so the slot change has been applied.
-    juce::MessageManager::callAsync([this] { saveSessionState(); });
+    juce::Component::SafePointer<MainComponent> safeThis(this);
+    juce::MessageManager::callAsync([safeThis]
+    {
+        if (safeThis != nullptr)
+            safeThis->saveSessionState();
+    });
 }
 
 void MainComponent::applyUndoState(const UndoState& state)

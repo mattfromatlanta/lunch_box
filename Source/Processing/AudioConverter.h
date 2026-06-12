@@ -17,12 +17,12 @@ public:
     // Result of a conversion operation
     struct ConversionResult
     {
-        bool success;       // Conversion completed successfully
-        bool skipped;       // File was skipped (e.g., too many channels)
+        bool success = false;  // Conversion completed successfully
+        bool skipped = false;  // File was skipped (e.g., too many channels)
         juce::String message;  // Status or error message
     };
 
-    AudioConverter(Logger& loggerToUse);
+    explicit AudioConverter(Logger& loggerToUse);
 
     // Convert a single audio file with custom output filename
     ConversionResult convertFileWithName(const juce::File& sourceFile,
@@ -51,4 +51,6 @@ private:
 
     ConversionResult performConversion(const juce::File& outputFile,
                                        juce::AudioFormatReader* reader);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioConverter)
 };

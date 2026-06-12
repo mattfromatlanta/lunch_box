@@ -22,6 +22,11 @@ public:
     // Convenience method for logging with newline
     void logLine(const juce::String& message);
 
+    // Where log files live: the platform's per-user log folder
+    // (~/Library/Logs/Lunch Box on macOS). The working directory is not safe
+    // here — Finder-launched apps run with cwd "/".
+    static juce::File getLogDirectory();
+
     // Optional callback invoked for every log message (used by GUI runtime log)
     std::function<void(const juce::String&)> onLog;
 

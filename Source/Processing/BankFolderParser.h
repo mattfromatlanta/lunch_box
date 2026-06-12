@@ -25,7 +25,7 @@ public:
         bool fromBankFolder;  // true = from A-E subfolder, false = unsorted
     };
 
-    BankFolderParser(Logger& loggerToUse);
+    explicit BankFolderParser(Logger& loggerToUse);
 
     // Parse folder structure and return bank-assigned list ready for conversion.
     // If no bank subfolders exist, assigns sequentially (backward compatible).
@@ -46,4 +46,6 @@ private:
 
     // Sort files alphabetically (case-insensitive natural order)
     static void sortFilesAlphabetically(juce::Array<juce::File>& files);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BankFolderParser)
 };

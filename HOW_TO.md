@@ -258,11 +258,12 @@ Lunch Box never modifies source files; everything is written to the output folde
 
 ### Logging
 
-All operations are logged to `logs/lunch_box_log_YYYYMMDD_HHMMSS.txt`. To view the
-most recent log:
+All operations are logged to timestamped files in the per-user log folder —
+`~/Library/Logs/Lunch Box` on macOS. In the app, **Settings → Show Log Folder**
+opens it directly. To view the most recent log from the terminal:
 
 ```bash
-ls -t logs/*.txt | head -n 1 | xargs cat
+ls -t ~/Library/Logs/Lunch\ Box/*.txt | head -n 1 | xargs cat
 ```
 
 ---
@@ -298,7 +299,7 @@ ls -t logs/*.txt | head -n 1 | xargs cat
 - Check read permissions
 
 If something still looks wrong, open an issue and attach the matching log file
-from the `logs/` directory.
+from the log folder (`~/Library/Logs/Lunch Box` on macOS).
 
 ---
 

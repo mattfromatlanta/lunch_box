@@ -175,11 +175,14 @@ lunch_box/
 
 ## Logging
 
-All operations are logged to timestamped files in the `logs/` directory:
+All operations are logged to timestamped files in the per-user log folder
+(`~/Library/Logs/Lunch Box` on macOS):
 
 ```
-logs/lunch_box_log_YYYYMMDD_HHMMSS.txt
+lunch_box_log_YYYYMMDD_HHMMSS.txt
 ```
+
+In the app, **Settings → Show Log Folder** opens it directly.
 
 ---
 

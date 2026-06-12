@@ -4,6 +4,7 @@
 // paste, select-all/clear, arrow-key movement and range expansion, etc.
 
 #include "BankFocusPanel.h"
+#include <algorithm>
 
 void BankFocusPanel::setFocusedRow(int idx, bool clearOthers)
 {
@@ -69,9 +70,7 @@ juce::Array<ClipboardEntry> BankFocusPanel::getSelectedClipboard()
     const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
 
     juce::Array<int> sorted = selection;
-    for (int i = 0; i < sorted.size() - 1; ++i)
-        for (int j = i + 1; j < sorted.size(); ++j)
-            if (sorted[j] < sorted[i]) sorted.swap(i, j);
+    std::sort(sorted.begin(), sorted.end());
 
     const int anchor = sorted.isEmpty() ? 0 : sorted[0];
     juce::Array<ClipboardEntry> entries;

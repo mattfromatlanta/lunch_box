@@ -46,7 +46,7 @@ public:
         int sourceIndex;  // Position in sorted list (0-based)
     };
 
-    LunchBoxNamer(Logger& loggerToUse);
+    explicit LunchBoxNamer(Logger& loggerToUse);
 
     // Generate CHOMPI filename for a given index and category
     // index: 0-69 (0 = a1, 13 = a14, 14 = b1, 69 = e14)
@@ -63,4 +63,6 @@ public:
 
 private:
     Logger& logger;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LunchBoxNamer)
 };

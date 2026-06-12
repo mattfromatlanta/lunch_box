@@ -318,7 +318,7 @@ open "lunch_box_artefacts/Lunch Box.app"
 - ✅ GUI opens without crashes
 - ✅ Output files are valid 16-bit 48kHz WAV
 - ✅ CHOMPI naming correct (cubbi_a1.wav, etc.)
-- ✅ Logs created in logs/ directory
+- ✅ Logs created in the per-user log folder (`~/Library/Logs/Lunch Box` on macOS)
 
 ---
 

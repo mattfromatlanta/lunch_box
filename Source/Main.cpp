@@ -19,18 +19,15 @@ public:
 
     void initialise(const juce::String&) override
     {
-        // Check if CLI arguments were provided
         auto args = getCommandLineParameterArray();
 
         if (args.size() > 0)
         {
-            // CLI mode - process arguments and quit
             runCliMode(args);
             quit();
         }
         else
         {
-            // GUI mode - create window
             mainWindow = std::make_unique<MainWindow>(getApplicationName());
 
            #if JUCE_MAC

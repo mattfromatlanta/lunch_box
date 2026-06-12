@@ -6,6 +6,7 @@
 #include "BankEditorPanel.h"
 #include "BankEditorPanel_Private.h"
 #include "UIColours.h"
+#include <algorithm>
 
 using namespace BankEditorImpl;
 
@@ -195,14 +196,12 @@ juce::Array<ClipboardEntry> BankEditorPanel::getSelectedClipboard() const
 {
     // Sort selected cells in visual row-major order (top-left → bottom-right)
     juce::Array<Cell> sorted = selection;
-    for (int i = 0; i < sorted.size() - 1; ++i)
-        for (int j = i + 1; j < sorted.size(); ++j)
-        {
-            int vri = sorted[i].row * 2 + sorted[i].col / 7, vci = sorted[i].col % 7;
-            int vrj = sorted[j].row * 2 + sorted[j].col / 7, vcj = sorted[j].col % 7;
-            if (vrj < vri || (vrj == vri && vcj < vci))
-                sorted.swap(i, j);
-        }
+    std::sort(sorted.begin(), sorted.end(), [](const Cell& a, const Cell& b)
+    {
+        const int vra = a.row * 2 + a.col / 7, vca = a.col % 7;
+        const int vrb = b.row * 2 + b.col / 7, vcb = b.col % 7;
+        return vra != vrb ? vra < vrb : vca < vcb;
+    });
 
     // Anchor is the earliest cell; record each cell's offset relative to it
     const Cell anchor = sorted.isEmpty() ? Cell{0,0} : sorted[0];

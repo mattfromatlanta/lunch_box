@@ -8,14 +8,12 @@ LunchBoxNamer::LunchBoxNamer(Logger& loggerToUse)
 
 juce::String LunchBoxNamer::generateFileName(Category category, int fileIndex) const
 {
-    // Validate index range
     if (fileIndex < 0 || fileIndex >= MAX_FILES_PER_CATEGORY)
     {
         logger.logLine("Warning: File index out of range: " + juce::String(fileIndex));
         return "";
     }
 
-    // Get bank and slot
     BankSlot bankSlot = indexToBankSlot(fileIndex);
 
     // Build filename: {category}_{bank}{slot}.wav

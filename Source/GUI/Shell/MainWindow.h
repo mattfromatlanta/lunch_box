@@ -16,10 +16,10 @@ public:
 
     void closeButtonPressed() override;
 
-    MainComponent* getMainComponent() { return mainComponent.get(); }
+    // The window owns the content (setContentOwned); this is a typed view of it.
+    MainComponent* getMainComponent() { return static_cast<MainComponent*>(getContentComponent()); }
 
 private:
-    std::unique_ptr<MainComponent> mainComponent;
     std::unique_ptr<juce::TooltipWindow> tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)

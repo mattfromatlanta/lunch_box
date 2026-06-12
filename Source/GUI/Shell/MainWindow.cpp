@@ -84,8 +84,7 @@ MainWindow::MainWindow(juce::String name)
 {
     setUsingNativeTitleBar(true);
 
-    mainComponent = std::make_unique<MainComponent>();
-    setContentOwned(mainComponent.get(), true);
+    setContentOwned(new MainComponent(), true);
 
     tooltipWindow = std::make_unique<LunchBoxTooltipWindow>(this, 1200);
 
@@ -103,13 +102,12 @@ MainWindow::MainWindow(juce::String name)
 MainWindow::~MainWindow()
 {
     tooltipWindow = nullptr;
-    mainComponent = nullptr;
 }
 
 void MainWindow::closeButtonPressed()
 {
-    if (mainComponent)
-        mainComponent->saveSessionState();
+    if (auto* mc = getMainComponent())
+        mc->saveSessionState();
 
     juce::JUCEApplication::getInstance()->systemRequestedQuit();
 }

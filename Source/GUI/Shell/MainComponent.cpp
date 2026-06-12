@@ -519,9 +519,8 @@ void MainComponent::toggleConsole()
 
 void MainComponent::showLogFolder()
 {
-    juce::File logsDir = juce::File::getCurrentWorkingDirectory().getChildFile("logs");
-    if (!logsDir.exists())
-        logsDir.createDirectory();
+    juce::File logsDir = Logger::getLogDirectory();
+    logsDir.createDirectory();
     logsDir.revealToUser();
 }
 

@@ -5,7 +5,6 @@ namespace FileSystemHelper
 {
     bool ensureDirectoryExists(const juce::File& directory, Logger& logger)
     {
-        // Check if directory already exists
         if (directory.exists())
         {
             if (directory.isDirectory())
@@ -19,7 +18,6 @@ namespace FileSystemHelper
             }
         }
 
-        // Try to create the directory
         juce::Result result = directory.createDirectory();
 
         if (result.wasOk())
@@ -36,7 +34,6 @@ namespace FileSystemHelper
 
     bool isDirectoryWritable(const juce::File& directory)
     {
-        // Directory must exist
         if (!directory.exists() || !directory.isDirectory())
         {
             return false;

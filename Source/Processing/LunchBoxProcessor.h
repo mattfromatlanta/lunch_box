@@ -33,7 +33,7 @@ public:
         bool success = true;
     };
 
-    LunchBoxProcessor(Logger& loggerToUse);
+    explicit LunchBoxProcessor(Logger& loggerToUse);
 
     // Process complete CHOMPI workflow (cubbi and/or jammi)
     // Returns false if critical error occurred
@@ -65,4 +65,6 @@ private:
         LunchBoxNamer::Category category,
         juce::AudioFormatManager& formatManager,
         AudioConverter& converter);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LunchBoxProcessor)
 };

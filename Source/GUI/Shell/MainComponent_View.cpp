@@ -75,11 +75,15 @@ void MainComponent::setViewMode(ViewMode mode)
         anim.animateComponent(outgoing,         content.withX(content.getX() - w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
         anim.animateComponent(bankFocusPanel.get(), content,                        1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-        juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this, outgoing]
+        // SafePointer: the cleanup fires after a delay and must not touch a
+        // destroyed component if the window closes mid-animation.
+        juce::Component::SafePointer<MainComponent> safeThis(this);
+        juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [safeThis, outgoing]
         {
+            if (safeThis == nullptr) return;
             outgoing->setVisible(false);
-            isTransitioning = false;
-            resized();
+            safeThis->isTransitioning = false;
+            safeThis->resized();
         });
     }
     else  // Bank wipes out to the right; Pack wipes in from the left
@@ -96,12 +100,14 @@ void MainComponent::setViewMode(ViewMode mode)
         anim.animateComponent(bankFocusPanel.get(), content.withX(content.getX() + w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
         anim.animateComponent(incoming,             content,                            1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-        juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this]
+        juce::Component::SafePointer<MainComponent> safeThis(this);
+        juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [safeThis]
         {
-            bankFocusPanel->setVisible(false);
-            bankStatusLabel.setVisible(false);
-            isTransitioning = false;
-            resized();
+            if (safeThis == nullptr) return;
+            safeThis->bankFocusPanel->setVisible(false);
+            safeThis->bankStatusLabel.setVisible(false);
+            safeThis->isTransitioning = false;
+            safeThis->resized();
         });
     }
 }
@@ -177,15 +183,17 @@ void MainComponent::animateBankCategorySwitch(bool showCubbi)
     anim.animateComponent(bankTransitionOverlay.get(), content.withX(content.getX() - dir * w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
     anim.animateComponent(bankFocusPanel.get(),        content,                                  1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-    juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this]
+    juce::Component::SafePointer<MainComponent> safeThis(this);
+    juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [safeThis]
     {
-        if (bankTransitionOverlay != nullptr)
+        if (safeThis == nullptr) return;
+        if (safeThis->bankTransitionOverlay != nullptr)
         {
-            removeChildComponent(bankTransitionOverlay.get());
-            bankTransitionOverlay.reset();
+            safeThis->removeChildComponent(safeThis->bankTransitionOverlay.get());
+            safeThis->bankTransitionOverlay.reset();
         }
-        isTransitioning = false;
-        resized();
+        safeThis->isTransitioning = false;
+        safeThis->resized();
     });
 }
 
@@ -223,11 +231,13 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
             anim.animateComponent(outgoing, content.withX(content.getX() - dir * w), 1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
             anim.animateComponent(incoming, content,                                  1.0f, LunchBoxConstants::ANIM_DURATION_MS, false, 0.0, 0.0);
 
-            juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [this, outgoing]
+            juce::Component::SafePointer<MainComponent> safeThis(this);
+            juce::Timer::callAfterDelay(LunchBoxConstants::ANIM_CLEANUP_DELAY_MS, [safeThis, outgoing]
             {
+                if (safeThis == nullptr) return;
                 outgoing->setVisible(false);
-                isTransitioning = false;
-                resized();
+                safeThis->isTransitioning = false;
+                safeThis->resized();
             });
         }
         else

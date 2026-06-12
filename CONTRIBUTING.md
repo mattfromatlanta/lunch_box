@@ -10,7 +10,7 @@ Thank you for your interest in contributing!
 2. Create a new issue with:
    - Clear description and steps to reproduce
    - Expected vs. actual behavior
-   - OS, app version, and any relevant log output from the `logs/` directory
+   - OS, app version, and any relevant log output (Settings → Show Log Folder, or `~/Library/Logs/Lunch Box` on macOS)
 
 ### Suggesting Features
 

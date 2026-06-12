@@ -9,11 +9,8 @@
 //==============================================================================
 // CliProcessor - Command-line interface processor
 //==============================================================================
-// Handles all CLI-specific functionality:
-// - Command-line argument parsing
-// - Mode detection (Scan/Convert/CHOMPI)
-// - Legacy mode processing
-// - Delegates to appropriate processing modules
+// Parses the command-line options (--cubbi, --jammi, --output, --install)
+// and drives LunchBoxProcessor for terminal-based pack processing.
 //==============================================================================
 
 class CliProcessor

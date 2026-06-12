@@ -11,7 +11,6 @@ bool AudioConverter::needsConversion(const juce::AudioFormatReader* reader) cons
     if (reader == nullptr)
         return false;
 
-    // Check if bit depth or sample rate differs from target
     bool bitDepthDiffers = (reader->bitsPerSample != TARGET_BIT_DEPTH);
     bool sampleRateDiffers = (reader->sampleRate != TARGET_SAMPLE_RATE);
 
@@ -25,15 +24,10 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     juce::AudioFormatManager& formatManager)
 {
     ConversionResult result;
-    result.success = false;
-    result.skipped = false;
-    result.message = "";
 
-    // Log conversion attempt with format name
     juce::String formatName = FileSystemHelper::getAudioFormatName(sourceFile);
     logger.logLine("Converting: " + sourceFile.getFileName() + " (" + formatName + ") → " + outputFileName);
 
-    // Read source file
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(sourceFile));
 
     if (reader == nullptr)
@@ -43,20 +37,17 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
         return result;
     }
 
-    // Extract source properties
     int numChannels = static_cast<int>(reader->numChannels);
     int bitsPerSample = static_cast<int>(reader->bitsPerSample);
     double sampleRate = reader->sampleRate;
     double durationSeconds = reader->lengthInSamples / sampleRate;
 
-    // Log source properties
     logger.logLine("   Original: " +
                    juce::String(numChannels) + " channel(s), " +
                    juce::String(bitsPerSample) + "-bit, " +
                    juce::String((int)sampleRate) + " Hz, " +
                    juce::String(durationSeconds, 1) + "s");
 
-    // Check channel count - skip if more than 2 channels
     if (numChannels > MAX_CHANNELS)
     {
         result.skipped = true;
@@ -65,7 +56,6 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
         return result;
     }
 
-    // Check duration limit
     if (durationSeconds > MAX_DURATION_SECONDS)
     {
         result.skipped = true;
@@ -75,17 +65,14 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
         return result;
     }
 
-    // Generate output path with custom filename
     juce::File outputFile = outputFolder.getChildFile(outputFileName);
 
-    // Log target properties
     logger.logLine("   Target:   " +
                    juce::String(numChannels) + " channel(s), " +
                    juce::String(TARGET_BIT_DEPTH) + "-bit, " +
                    juce::String((int)TARGET_SAMPLE_RATE) + " Hz");
-    logger.logLine("   Output:   " + outputFile.getRelativePathFrom(juce::File::getCurrentWorkingDirectory()));
+    logger.logLine("   Output:   " + outputFile.getFullPathName());
 
-    // Perform the conversion
     result = performConversion(outputFile, reader.get());
 
     return result;
@@ -97,21 +84,15 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
     juce::AudioFormatReader* reader)
 {
     ConversionResult result;
-    result.success = false;
-    result.skipped = false;
-    result.message = "";
 
-    // Create output directory if needed
     juce::File outputDir = outputFile.getParentDirectory();
     outputDir.createDirectory();
 
-    // Delete existing output file if it exists
     if (outputFile.exists())
     {
         outputFile.deleteFile();
     }
 
-    // Create output file stream
     std::unique_ptr<juce::FileOutputStream> outputStream(outputFile.createOutputStream());
 
     if (outputStream == nullptr || outputStream->failedToOpen())
@@ -121,7 +102,6 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
         return result;
     }
 
-    // Create WAV format writer with target specifications
     juce::WavAudioFormat wavFormat;
 
     std::unique_ptr<juce::AudioFormatWriter> writer(
@@ -139,40 +119,30 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
         return result;
     }
 
-    // Release ownership of the stream to the writer
-    outputStream.release();
+    outputStream.release(); // Writer takes ownership
 
-    // Check if sample rate conversion is needed
     bool needsSampleRateConversion = (reader->sampleRate != TARGET_SAMPLE_RATE);
 
     if (needsSampleRateConversion)
     {
-        // Sample rate conversion using ResamplingAudioSource
-        // We need to process in blocks
-
         juce::AudioFormatReaderSource readerSource(reader, false);
         juce::ResamplingAudioSource resamplingSource(&readerSource, false, reader->numChannels);
 
-        // Calculate resampling ratio
         double ratio = reader->sampleRate / TARGET_SAMPLE_RATE;
         resamplingSource.setResamplingRatio(ratio);
 
-        // Prepare the resampling source
         resamplingSource.prepareToPlay(512, TARGET_SAMPLE_RATE);
 
-        // Calculate total number of samples in output
         juce::int64 totalOutputSamples = static_cast<juce::int64>(reader->lengthInSamples / ratio);
         juce::int64 samplesWritten = 0;
 
         const int bufferSize = 4096;
         juce::AudioBuffer<float> buffer(reader->numChannels, bufferSize);
 
-        // Process audio in blocks
         while (samplesWritten < totalOutputSamples)
         {
             int samplesToRead = juce::jmin(bufferSize, (int)(totalOutputSamples - samplesWritten));
 
-            // Get audio block from resampling source
             juce::AudioSourceChannelInfo channelInfo;
             channelInfo.buffer = &buffer;
             channelInfo.startSample = 0;
@@ -180,7 +150,6 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
 
             resamplingSource.getNextAudioBlock(channelInfo);
 
-            // Write to output file
             if (!writer->writeFromAudioSampleBuffer(buffer, 0, samplesToRead))
             {
                 result.message = "Error: Failed to write audio data";
@@ -205,7 +174,6 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
         }
     }
 
-    // Flush and close writer
     writer.reset();
 
     result.success = true;
@@ -240,7 +208,6 @@ bool AudioConverter::generateOptimizedSample(const juce::File& baseFile,
         return false;
     }
 
-    // Read all source samples into buffer
     juce::AudioBuffer<float> sourceBuffer(numChannels, sourceSamples);
     reader->read(&sourceBuffer, 0, sourceSamples, 0, true, true);
     reader.reset();
@@ -255,7 +222,6 @@ bool AudioConverter::generateOptimizedSample(const juce::File& baseFile,
         }
     }
 
-    // Write optimized file
     if (optimizedFile.exists())
         optimizedFile.deleteFile();
 

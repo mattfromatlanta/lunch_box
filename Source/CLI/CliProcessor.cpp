@@ -39,7 +39,6 @@ int CliProcessor::installCliTool()
         return 1;
     }
 
-    // Make executable (chmod +x)
     juce::ChildProcess chmod;
     chmod.start("chmod +x " + installTarget.getFullPathName());
     chmod.waitForProcessToFinish(5000);
