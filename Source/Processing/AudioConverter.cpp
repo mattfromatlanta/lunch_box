@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "AudioConverter.h"
 
-AudioConverter::AudioConverter(Logger& logger)
-    : logger(logger)
+AudioConverter::AudioConverter(Logger& loggerToUse)
+    : logger(loggerToUse)
 {
 }
 
@@ -86,17 +86,15 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     logger.logLine("   Output:   " + outputFile.getRelativePathFrom(juce::File::getCurrentWorkingDirectory()));
 
     // Perform the conversion
-    result = performConversion(sourceFile, outputFile, reader.get(), formatManager);
+    result = performConversion(outputFile, reader.get());
 
     return result;
 }
 
 
 AudioConverter::ConversionResult AudioConverter::performConversion(
-    const juce::File& sourceFile,
     const juce::File& outputFile,
-    juce::AudioFormatReader* reader,
-    juce::AudioFormatManager& formatManager)
+    juce::AudioFormatReader* reader)
 {
     ConversionResult result;
     result.success = false;

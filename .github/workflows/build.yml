@@ -11,7 +11,7 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Clone JUCE
         run: git clone --branch 8.0.12 --depth 1 https://github.com/juce-framework/JUCE.git ../JUCE
@@ -30,7 +30,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install system dependencies
         run: |

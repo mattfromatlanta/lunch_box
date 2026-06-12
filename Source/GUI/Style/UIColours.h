@@ -6,10 +6,11 @@ namespace LunchBoxColours
 {
     struct ColourFactor { float V; float S; };
 
-    constexpr ColourFactor FOCUS_FACTOR  { .V = 1.20f, .S = 0.90f };
-    constexpr ColourFactor BORDER_FACTOR { .V = 0.70f, .S = 1.25f };
-    constexpr ColourFactor TAB_BG_FACTOR   { .V = 0.50f, .S = 1.30f };
-    constexpr ColourFactor LABEL_BG_FACTOR { .V = 0.50f, .S = 1.30f };
+    //                                          V      S
+    constexpr ColourFactor FOCUS_FACTOR    { 1.20f, 0.90f };
+    constexpr ColourFactor BORDER_FACTOR   { 0.70f, 1.25f };
+    constexpr ColourFactor TAB_BG_FACTOR   { 0.50f, 1.30f };
+    constexpr ColourFactor LABEL_BG_FACTOR { 0.50f, 1.30f };
 
     inline juce::Colour getFocused(juce::Colour c)
     {

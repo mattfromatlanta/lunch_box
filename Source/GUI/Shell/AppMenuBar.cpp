@@ -7,8 +7,10 @@ AppMenuBar::AppMenuBar(MainComponent* mc) : mainComponent(mc) {}
 
 AppMenuBar::~AppMenuBar()
 {
+   #if JUCE_MAC
     // Must clear before destruction to avoid dangling pointer in JUCE internals
     juce::MenuBarModel::setMacMainMenu(nullptr);
+   #endif
 }
 
 juce::StringArray AppMenuBar::getMenuBarNames()

@@ -22,7 +22,7 @@ public:
         juce::String message;  // Status or error message
     };
 
-    AudioConverter(Logger& logger);
+    AudioConverter(Logger& loggerToUse);
 
     // Convert a single audio file with custom output filename
     ConversionResult convertFileWithName(const juce::File& sourceFile,
@@ -49,8 +49,6 @@ private:
     // Helper methods
     bool needsConversion(const juce::AudioFormatReader* reader) const;
 
-    ConversionResult performConversion(const juce::File& sourceFile,
-                                       const juce::File& outputFile,
-                                       juce::AudioFormatReader* reader,
-                                       juce::AudioFormatManager& formatManager);
+    ConversionResult performConversion(const juce::File& outputFile,
+                                       juce::AudioFormatReader* reader);
 };

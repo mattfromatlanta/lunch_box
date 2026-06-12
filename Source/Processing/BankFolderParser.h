@@ -25,7 +25,7 @@ public:
         bool fromBankFolder;  // true = from A-E subfolder, false = unsorted
     };
 
-    BankFolderParser(Logger& logger);
+    BankFolderParser(Logger& loggerToUse);
 
     // Parse folder structure and return bank-assigned list ready for conversion.
     // If no bank subfolders exist, assigns sequentially (backward compatible).

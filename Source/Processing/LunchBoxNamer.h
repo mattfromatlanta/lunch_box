@@ -46,7 +46,7 @@ public:
         int sourceIndex;  // Position in sorted list (0-based)
     };
 
-    LunchBoxNamer(Logger& logger);
+    LunchBoxNamer(Logger& loggerToUse);
 
     // Generate CHOMPI filename for a given index and category
     // index: 0-69 (0 = a1, 13 = a14, 14 = b1, 69 = e14)

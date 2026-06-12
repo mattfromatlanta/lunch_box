@@ -2,8 +2,8 @@
 #include "BankFolderParser.h"
 #include "../FileSystemHelper.h"
 
-BankFolderParser::BankFolderParser(Logger& logger)
-    : logger(logger)
+BankFolderParser::BankFolderParser(Logger& loggerToUse)
+    : logger(loggerToUse)
 {
 }
 

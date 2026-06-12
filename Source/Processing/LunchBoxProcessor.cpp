@@ -2,8 +2,8 @@
 #include "LunchBoxProcessor.h"
 #include "../FileSystemHelper.h"
 
-LunchBoxProcessor::LunchBoxProcessor(Logger& logger)
-    : logger(logger)
+LunchBoxProcessor::LunchBoxProcessor(Logger& loggerToUse)
+    : logger(loggerToUse)
 {
 }
 

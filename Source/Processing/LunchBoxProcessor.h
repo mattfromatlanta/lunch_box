@@ -33,7 +33,7 @@ public:
         bool success = true;
     };
 
-    LunchBoxProcessor(Logger& logger);
+    LunchBoxProcessor(Logger& loggerToUse);
 
     // Process complete CHOMPI workflow (cubbi and/or jammi)
     // Returns false if critical error occurred
