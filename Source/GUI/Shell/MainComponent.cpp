@@ -42,6 +42,12 @@ MainComponent::MainComponent()
             return xml ? juce::Drawable::createFromSVG(*xml) : nullptr;
         };
         logoDrawable = loadSvgDrawable(BinaryData::lunch_box_logo_svg, BinaryData::lunch_box_logo_svgSize);
+        if (logoDrawable != nullptr)
+        {
+            // Recolour once at load — paint() runs per frame and shouldn't copy the SVG tree
+            logoDrawable->replaceColour(juce::Colours::black, LunchBoxColours::WHITE_CREAM);
+            logoDrawable->replaceColour(juce::Colours::white, LunchBoxColours::WHITE_CREAM);
+        }
     }
 
     using namespace LunchBoxLabels;
@@ -235,15 +241,11 @@ void MainComponent::paint(juce::Graphics& g)
 
         if (logoDrawable != nullptr)
         {
-            const juce::Colour logoColour = LunchBoxColours::WHITE_CREAM;
-            auto copy = logoDrawable->createCopy();
-            copy->replaceColour(juce::Colours::black, logoColour);
-            copy->replaceColour(juce::Colours::white, logoColour);
             constexpr float scale = 0.85f;
             auto logoBounds = headerArea.withSizeKeepingCentre(headerArea.getWidth()  * scale,
                                                                headerArea.getHeight() * scale);
-            copy->drawWithin(g, logoBounds,
-                             juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize, 1.0f);
+            logoDrawable->drawWithin(g, logoBounds,
+                                     juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize, 1.0f);
         }
     }
 }

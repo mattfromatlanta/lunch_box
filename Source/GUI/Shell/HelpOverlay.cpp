@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "HelpOverlay.h"
+#include <iterator>
 #include "UIColours.h"
 #include "UIConstants.h"
 #include "LunchBoxFonts.h"
@@ -40,10 +41,10 @@ namespace
         { "Cmd+O",           "Open output"              },
     };
 
-    constexpr int NUM_HOTKEY_ROWS = 15;
+    constexpr int NUM_HOTKEY_ROWS = static_cast<int>(std::size(kHotkeys));
     constexpr int HOTKEY_ROW_H   = 22;
     constexpr int SECTION_GAP    = 14;
-    constexpr int CORNER_R       = 12.0f;
+    constexpr float CORNER_R     = 12.0f;
 }
 
 HelpOverlay::HelpOverlay()
@@ -102,7 +103,7 @@ int HelpOverlay::computeDialogHeight() const
     if (cachedH >= 0)
         return cachedH;
 
-    const float cw = (float)(W - 2 * INNER_PAD);
+    const float cw = static_cast<float>(W - 2 * INNER_PAD);
 
     auto measureParagraph = [cw](const char* text, const juce::Font& font) -> int
     {
@@ -111,7 +112,7 @@ int HelpOverlay::computeDialogHeight() const
         as.setJustification(juce::Justification::topLeft);
         juce::TextLayout layout;
         layout.createLayout(as, cw);
-        return (int)std::ceil(layout.getHeight());
+        return static_cast<int>(std::ceil(layout.getHeight()));
     };
 
     int h = INNER_PAD;
@@ -146,9 +147,9 @@ void HelpOverlay::paint(juce::Graphics& g)
     g.setColour(LunchBoxColours::GRID);
     g.fillRoundedRectangle(db.toFloat(), CORNER_R);
 
-    const float cw = (float)(W - 2 * INNER_PAD);
-    float x   = (float)(db.getX() + INNER_PAD);
-    float y   = (float)(db.getY() + INNER_PAD);
+    const float cw = static_cast<float>(W - 2 * INNER_PAD);
+    float x   = static_cast<float>(db.getX() + INNER_PAD);
+    float y   = static_cast<float>(db.getY() + INNER_PAD);
     const juce::Colour textCol = LunchBoxColours::WHITE_CREAM;
     const juce::Colour dimCol  = LunchBoxColours::WHITE_CREAM.withAlpha(0.7f);
 
@@ -176,7 +177,7 @@ void HelpOverlay::paint(juce::Graphics& g)
     g.setFont(juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
     g.setColour(textCol);
     float headerH = juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)).getHeight();
-    g.drawText("Hotkeys", (int)x, (int)y, (int)cw, (int)headerH, juce::Justification::centredLeft);
+    g.drawText("Hotkeys", static_cast<int>(x), static_cast<int>(y), static_cast<int>(cw), static_cast<int>(headerH), juce::Justification::centredLeft);
     y += std::ceil(headerH) + 8.0f;
 
     // ── Separator line ────────────────────────────────────────────────────
@@ -193,16 +194,16 @@ void HelpOverlay::paint(juce::Graphics& g)
 
     for (int row = 0; row < NUM_HOTKEY_ROWS; ++row)
     {
-        float rowY = y + (float)(row * HOTKEY_ROW_H);
+        float rowY = y + static_cast<float>(row * HOTKEY_ROW_H);
 
         g.setFont(keyFont);
         g.setColour(textCol);
-        g.drawText(kHotkeys[row].key, (int)x, (int)rowY, (int)keyW, HOTKEY_ROW_H,
+        g.drawText(kHotkeys[row].key, static_cast<int>(x), static_cast<int>(rowY), static_cast<int>(keyW), HOTKEY_ROW_H,
                    juce::Justification::centredLeft, true);
 
         g.setFont(descFont);
         g.setColour(dimCol);
-        g.drawText(kHotkeys[row].desc, (int)(x + keyW), (int)rowY, (int)descW, HOTKEY_ROW_H,
+        g.drawText(kHotkeys[row].desc, static_cast<int>(x + keyW), static_cast<int>(rowY), static_cast<int>(descW), HOTKEY_ROW_H,
                    juce::Justification::centredLeft, true);
     }
 }

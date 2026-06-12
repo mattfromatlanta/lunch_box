@@ -3,6 +3,7 @@
 
 #include <juce_core/juce_core.h>
 #include <map>
+#include <optional>
 #include "../Logger.h"
 #include "LunchBoxNamer.h"
 
@@ -32,9 +33,9 @@ public:
     juce::Array<BankAssignment> parseFolderStructure(const juce::File& sourceFolder,
                                                       LunchBoxNamer::Category category);
 
-    // Returns true if folderName maps to a CHOMPI bank (A-E).
-    // Sets bankLetter ('a'-'e') on success.
-    static bool isBankFolder(const juce::String& folderName, char& bankLetter);
+    // Returns the bank letter ('a'-'e') if folderName names a CHOMPI bank
+    // ("a", "Bank C", "bank_e", ...), or nullopt otherwise.
+    static std::optional<char> parseBankFolder(const juce::String& folderName);
 
 private:
     Logger& logger;

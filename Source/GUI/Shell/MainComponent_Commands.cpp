@@ -91,7 +91,7 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
                 getActiveEditor()->selectAll();
             return true;
         }
-        case cmdOpenOutput:  getResolvedOutputFolder().startAsProcess(); return true;
+        case cmdOpenOutput:  getResolvedOutputFolder().revealToUser(); return true;
         case cmdProcess:     if (processButton.isEnabled()) processFiles(); return true;
         case cmdToggleConsole: toggleConsole(); return true;
         case cmdFill:        if (fillButton.isEnabled())  fillButton.triggerClick();  return true;

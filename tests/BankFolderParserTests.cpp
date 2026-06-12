@@ -9,54 +9,35 @@ public:
 
     void runTest() override
     {
-        beginTest ("isBankFolder: single uppercase letters A-E");
+        beginTest ("parseBankFolder: single uppercase letters A-E");
         {
-            char bank = '\0';
-            expect (BankFolderParser::isBankFolder ("A", bank));
-            expectEquals (bank, 'a');
-
-            expect (BankFolderParser::isBankFolder ("B", bank));
-            expectEquals (bank, 'b');
-
-            expect (BankFolderParser::isBankFolder ("E", bank));
-            expectEquals (bank, 'e');
+            expect (BankFolderParser::parseBankFolder ("A") == 'a');
+            expect (BankFolderParser::parseBankFolder ("B") == 'b');
+            expect (BankFolderParser::parseBankFolder ("E") == 'e');
         }
 
-        beginTest ("isBankFolder: single lowercase letters a-e");
+        beginTest ("parseBankFolder: single lowercase letters a-e");
         {
-            char bank = '\0';
-            expect (BankFolderParser::isBankFolder ("a", bank));
-            expectEquals (bank, 'a');
-
-            expect (BankFolderParser::isBankFolder ("e", bank));
-            expectEquals (bank, 'e');
+            expect (BankFolderParser::parseBankFolder ("a") == 'a');
+            expect (BankFolderParser::parseBankFolder ("e") == 'e');
         }
 
-        beginTest ("isBankFolder: bank_ prefix variants");
+        beginTest ("parseBankFolder: bank_ prefix variants");
         {
-            char bank = '\0';
-            expect (BankFolderParser::isBankFolder ("bank_a", bank));
-            expectEquals (bank, 'a');
-
-            expect (BankFolderParser::isBankFolder ("bank_E", bank));
-            expectEquals (bank, 'e');
-
-            expect (BankFolderParser::isBankFolder ("Bank A", bank));
-            expectEquals (bank, 'a');
-
-            expect (BankFolderParser::isBankFolder ("Bank C", bank));
-            expectEquals (bank, 'c');
+            expect (BankFolderParser::parseBankFolder ("bank_a") == 'a');
+            expect (BankFolderParser::parseBankFolder ("bank_E") == 'e');
+            expect (BankFolderParser::parseBankFolder ("Bank A") == 'a');
+            expect (BankFolderParser::parseBankFolder ("Bank C") == 'c');
         }
 
-        beginTest ("isBankFolder: invalid names rejected");
+        beginTest ("parseBankFolder: invalid names rejected");
         {
-            char bank = '\0';
-            expect (! BankFolderParser::isBankFolder ("F", bank));
-            expect (! BankFolderParser::isBankFolder ("misc", bank));
-            expect (! BankFolderParser::isBankFolder ("AB", bank));
-            expect (! BankFolderParser::isBankFolder ("", bank));
-            expect (! BankFolderParser::isBankFolder ("1", bank));
-            expect (! BankFolderParser::isBankFolder ("bank_f", bank));
+            expect (! BankFolderParser::parseBankFolder ("F").has_value());
+            expect (! BankFolderParser::parseBankFolder ("misc").has_value());
+            expect (! BankFolderParser::parseBankFolder ("AB").has_value());
+            expect (! BankFolderParser::parseBankFolder ("").has_value());
+            expect (! BankFolderParser::parseBankFolder ("1").has_value());
+            expect (! BankFolderParser::parseBankFolder ("bank_f").has_value());
         }
     }
 };

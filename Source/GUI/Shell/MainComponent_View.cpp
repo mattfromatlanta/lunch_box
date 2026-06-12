@@ -118,13 +118,13 @@ void MainComponent::syncPackToBankFocus()
 
     for (const auto& a : cubbiEditor->getAssignments())
     {
-        int bankIdx = (int)(a.bankLetter - 'a');
+        int bankIdx = static_cast<int>(a.bankLetter - 'a');
         bankFocusPanel->setSlot(LunchBoxNamer::Category::Cubbi, bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 
     for (const auto& a : jammiEditor->getAssignments())
     {
-        int bankIdx = (int)(a.bankLetter - 'a');
+        int bankIdx = static_cast<int>(a.bankLetter - 'a');
         bankFocusPanel->setSlot(LunchBoxNamer::Category::Jammi, bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 }
@@ -136,13 +136,13 @@ void MainComponent::syncBankFocusToPack()
 
     for (const auto& a : bankFocusPanel->getAssignments(LunchBoxNamer::Category::Cubbi))
     {
-        int bankIdx = (int)(a.bankLetter - 'a');
+        int bankIdx = static_cast<int>(a.bankLetter - 'a');
         cubbiEditor->setSlotFile(bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 
     for (const auto& a : bankFocusPanel->getAssignments(LunchBoxNamer::Category::Jammi))
     {
-        int bankIdx = (int)(a.bankLetter - 'a');
+        int bankIdx = static_cast<int>(a.bankLetter - 'a');
         jammiEditor->setSlotFile(bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 }

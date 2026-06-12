@@ -165,10 +165,3 @@ void BankFocusPanel::clearFocusedRows()
     flushRowsToStorage();
     if (onAssignmentsChanged) onAssignmentsChanged();
 }
-
-// ─── Real-time Cmd-key toggle during drag ─────────────────────────────────────
-
-void BankFocusPanel::modifierKeysChanged(const juce::ModifierKeys&)
-{
-    // Drag mode is determined by destination content, not modifier keys — nothing to do
-}

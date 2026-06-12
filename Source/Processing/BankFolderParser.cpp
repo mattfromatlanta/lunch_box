@@ -7,16 +7,13 @@ BankFolderParser::BankFolderParser(Logger& loggerToUse)
 {
 }
 
-bool BankFolderParser::isBankFolder(const juce::String& folderName, char& bankLetter)
+std::optional<char> BankFolderParser::parseBankFolder(const juce::String& folderName)
 {
     auto lower = folderName.toLowerCase().trim();
 
     // Single letter: "a", "b", "c", "d", "e"
     if (lower.length() == 1 && lower[0] >= 'a' && lower[0] <= 'e')
-    {
-        bankLetter = static_cast<char>(lower[0]);  // guarded to 'a'..'e' above
-        return true;
-    }
+        return static_cast<char>(lower[0]);
 
     // Pattern: "bank_a", "bank-a", "bank a", "Bank A", etc.
     if (lower.startsWith("bank"))
@@ -24,13 +21,10 @@ bool BankFolderParser::isBankFolder(const juce::String& folderName, char& bankLe
         auto suffix = lower.fromFirstOccurrenceOf("bank", false, false)
                           .removeCharacters("_- ").trim();
         if (suffix.length() == 1 && suffix[0] >= 'a' && suffix[0] <= 'e')
-        {
-            bankLetter = static_cast<char>(suffix[0]);  // guarded to 'a'..'e' above
-            return true;
-        }
+            return static_cast<char>(suffix[0]);
     }
 
-    return false;
+    return std::nullopt;
 }
 
 juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStructure(
@@ -49,13 +43,12 @@ juce::Array<BankFolderParser::BankAssignment> BankFolderParser::parseFolderStruc
 
     for (const auto& dir : subdirs)
     {
-        char bankLetter;
-        if (isBankFolder(dir.getFileName(), bankLetter))
+        if (auto bankLetter = parseBankFolder(dir.getFileName()))
         {
             juce::Array<juce::File> files;
             findAudioFiles(dir, files, true);
             sortFilesAlphabetically(files);
-            bankFiles[bankLetter] = files;
+            bankFiles[*bankLetter] = files;
             bankFolderDirs.add(dir);
 
             logger.logLine("Found bank folder: " + dir.getFileName() +

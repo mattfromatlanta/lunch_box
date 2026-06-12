@@ -139,7 +139,7 @@ void BankEditorPanel::autoFillFromFolder(const juce::File&)
 
         for (const auto& a : assignments)
         {
-            int bankIdx = (int)(a.bankLetter - 'a');
+            int bankIdx = static_cast<int>(a.bankLetter - 'a');
             if (bankIdx >= 0 && bankIdx < LunchBoxNamer::NUM_BANKS)
                 banks[bankIdx]->setSlot(a.slotNumber - 1, a.sourceFile);
         }
@@ -199,9 +199,9 @@ void BankEditorPanel::resized()
     auto area = getLocalBounds();
 
     if (banks.size() == 0) return;
-    const float elemH = ((float)area.getHeight() - (LunchBoxNamer::NUM_BANKS - 1) * LunchBoxConstants::BANK_GAP)
-                        / (float)LunchBoxNamer::NUM_BANKS;
-    float y = (float)area.getY();
+    const float elemH = (static_cast<float>(area.getHeight()) - (LunchBoxNamer::NUM_BANKS - 1) * LunchBoxConstants::BANK_GAP)
+                        / static_cast<float>(LunchBoxNamer::NUM_BANKS);
+    float y = static_cast<float>(area.getY());
     for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
     {
         const int top = juce::roundToInt(y);

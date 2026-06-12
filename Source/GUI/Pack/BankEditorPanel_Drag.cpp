@@ -93,11 +93,6 @@ void BankEditorPanel::handleSlotMouseUp(BankSlotComponent*, const juce::MouseEve
     mouseDownCell       = { -1, -1 };
 }
 
-void BankEditorPanel::modifierKeysChanged(const juce::ModifierKeys&)
-{
-    // Drag behaviour no longer depends on modifier keys held during the drag itself
-}
-
 void BankEditorPanel::mouseDown(const juce::MouseEvent&)
 {
     if (dragController.isDragging())
@@ -228,7 +223,6 @@ void BankEditorPanel::clearAllCellPreviews()
             }
 }
 
-void BankEditorPanel::onPreviewRebuild(const LunchBoxDrag::DragOp& /*op*/) {}
 
 void BankEditorPanel::onDragCommitWillBegin()
 {

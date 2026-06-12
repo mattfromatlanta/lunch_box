@@ -2,7 +2,7 @@
 #include "AudioPreviewPlayer.h"
 
 AudioPreviewPlayer::AudioPreviewPlayer()
-    : thumbnailCache(5)
+    : thumbnailCache(64)  // > the 28 thumbnails Bank view keeps alive (14 rows x 2)
 {
     formatManager.registerBasicFormats();
 

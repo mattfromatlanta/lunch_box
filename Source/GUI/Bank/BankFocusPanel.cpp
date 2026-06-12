@@ -396,9 +396,9 @@ void BankFocusPanel::resized()
     auto area = getLocalBounds();
 
     // Bank column: width = one cell width (W/7), height matches Pack bank rows exactly
-    const float bankColWf  = (float)area.getWidth() / 7.0f;
-    const float bankBtnHf  = ((float)area.getHeight() - (LunchBoxNamer::NUM_BANKS - 1) * LunchBoxConstants::BANK_GAP)
-                             / (float)LunchBoxNamer::NUM_BANKS;
+    const float bankColWf  = static_cast<float>(area.getWidth()) / 7.0f;
+    const float bankBtnHf  = (static_cast<float>(area.getHeight()) - (LunchBoxNamer::NUM_BANKS - 1) * LunchBoxConstants::BANK_GAP)
+                             / static_cast<float>(LunchBoxNamer::NUM_BANKS);
     const float totalBankHf = bankBtnHf * LunchBoxNamer::NUM_BANKS
                               + LunchBoxConstants::BANK_GAP * (LunchBoxNamer::NUM_BANKS - 1);
 
@@ -406,7 +406,7 @@ void BankFocusPanel::resized()
     auto bankCol = area.removeFromLeft(bankColW);
     area.removeFromLeft(juce::roundToInt(LunchBoxConstants::BANK_GAP));
 
-    float y = (float)bankCol.getY();
+    float y = static_cast<float>(bankCol.getY());
     for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
     {
         const int top = juce::roundToInt(y);
@@ -417,9 +417,9 @@ void BankFocusPanel::resized()
 
     // Slot rows: derived from totalBankHf so they scale in exact sync with bank buttons
     const float rowHf = (totalBankHf - (LunchBoxNamer::SLOTS_PER_BANK - 1) * LunchBoxConstants::SLOT_ROW_GAP)
-                        / (float)LunchBoxNamer::SLOTS_PER_BANK;
+                        / static_cast<float>(LunchBoxNamer::SLOTS_PER_BANK);
 
-    y = (float)area.getY();
+    y = static_cast<float>(area.getY());
     for (int i = 0; i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         const int top = juce::roundToInt(y);

@@ -89,19 +89,19 @@ namespace LunchBoxColours
         g.reduceClipRegion(clip);
         g.setColour(WHITE_CREAM.withAlpha(0.5f));
 
-        const float C  = (float)originInRoot.x - (float)originInRoot.y + phase;
+        const float C  = static_cast<float>(originInRoot.x) - static_cast<float>(originInRoot.y) + phase;
         const float bx = bounds.getX();
         const float by = bounds.getY();
         const float bw = bounds.getWidth();
         const float bh = bounds.getHeight();
 
-        const int kMin = (int)std::floor((bx - by - bh - sw + C) / period) - 1;
-        const int kMax = (int)std::ceil ((bx - by + bw      + C) / period) + 1;
+        const int kMin = static_cast<int>(std::floor((bx - by - bh - sw + C) / period)) - 1;
+        const int kMax = static_cast<int>(std::ceil ((bx - by + bw      + C) / period)) + 1;
 
         juce::Path stripes;
         for (int k = kMin; k <= kMax; ++k)
         {
-            const float d = (float)k * period - C;
+            const float d = static_cast<float>(k) * period - C;
             stripes.startNewSubPath (d + by,           by);
             stripes.lineTo          (d + sw + by,      by);
             stripes.lineTo          (d + sw + by + bh, by + bh);

@@ -45,7 +45,7 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     logger.logLine("   Original: " +
                    juce::String(numChannels) + " channel(s), " +
                    juce::String(bitsPerSample) + "-bit, " +
-                   juce::String((int)sampleRate) + " Hz, " +
+                   juce::String(static_cast<int>(sampleRate)) + " Hz, " +
                    juce::String(durationSeconds, 1) + "s");
 
     if (numChannels > MAX_CHANNELS)
@@ -70,7 +70,7 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     logger.logLine("   Target:   " +
                    juce::String(numChannels) + " channel(s), " +
                    juce::String(TARGET_BIT_DEPTH) + "-bit, " +
-                   juce::String((int)TARGET_SAMPLE_RATE) + " Hz");
+                   juce::String(static_cast<int>(TARGET_SAMPLE_RATE)) + " Hz");
     logger.logLine("   Output:   " + outputFile.getFullPathName());
 
     result = performConversion(outputFile, reader.get());
@@ -141,7 +141,7 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
 
         while (samplesWritten < totalOutputSamples)
         {
-            int samplesToRead = juce::jmin(bufferSize, (int)(totalOutputSamples - samplesWritten));
+            int samplesToRead = juce::jmin(bufferSize, static_cast<int>(totalOutputSamples - samplesWritten));
 
             juce::AudioSourceChannelInfo channelInfo;
             channelInfo.buffer = &buffer;

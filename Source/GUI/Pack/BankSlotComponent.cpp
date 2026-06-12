@@ -37,7 +37,7 @@ namespace
 }
 
 BankSlotComponent::BankSlotComponent(char bank, int slot)
-    : bankLetter(bank >= 'a' ? (char)(bank - ('a' - 'A')) : bank)
+    : bankLetter(bank >= 'a' ? static_cast<char>(bank - ('a' - 'A')) : bank)
     , slotNumber(slot)
 {
     setTooltip(LunchBoxLabels::kTipSlotPack);
@@ -46,6 +46,9 @@ BankSlotComponent::BankSlotComponent(char bank, int slot)
         juce::String::fromUTF8(BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
     if (xml != nullptr)
         arrowDrawable = juce::Drawable::createFromSVG(*xml);
+    if (arrowDrawable != nullptr)  // recolour once — paint() shouldn't copy the SVG tree
+        arrowDrawable->replaceColour(juce::Colours::black,
+                                     LunchBoxColours::getLabelBg(bankBorderColour(bankLetter)));
 }
 
 void BankSlotComponent::setSample(const juce::File& file)
@@ -144,17 +147,14 @@ void BankSlotComponent::paint(juce::Graphics& g)
         if (arrowDrawable != nullptr)
         {
             juce::Rectangle<float> arrowBounds(x, cy - iconH * 0.5f, iconW, iconH);
-            auto drawable = arrowDrawable->createCopy();
-            drawable->replaceColour(juce::Colours::black, iconColour);
-
             auto transform = juce::RectanglePlacement(juce::RectanglePlacement::centred)
-                                 .getTransformToFit(drawable->getDrawableBounds(), arrowBounds);
+                                 .getTransformToFit(arrowDrawable->getDrawableBounds(), arrowBounds);
 
             if (dragRoleDisplace < 0)  // displaced content moves to lower index → left arrow ←
                 transform = transform.followedBy(juce::AffineTransform::scale(
                     -1.0f, 1.0f, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
 
-            drawable->draw(g, 1.0f, transform);
+            arrowDrawable->draw(g, 1.0f, transform);
         }
         x += iconW + gap;
 
@@ -170,7 +170,7 @@ void BankSlotComponent::paint(juce::Graphics& g)
 
     if (displayFilled)
     {
-        const int pillW = (int)((getWidth() - 4) * 0.6f);
+        const int pillW = static_cast<int>((getWidth() - 4) * 0.6f);
         const int pillH = static_cast<int>(g.getCurrentFont().getHeight()) + 8;
         const float pillR = pillH / 2.0f;
         auto pill = juce::Rectangle<int>(pillW, pillH).withCentre(getLocalBounds().getCentre()).toFloat();

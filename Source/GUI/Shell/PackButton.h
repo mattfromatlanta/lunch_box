@@ -16,11 +16,12 @@ struct PackButton : public juce::TextButton, private juce::Timer
         startTimerHz(60);
     }
 
-    void paint(juce::Graphics& g) override
+    void paintButton(juce::Graphics& g, bool shouldDrawButtonAsHighlighted,
+                     bool shouldDrawButtonAsDown) override
     {
         getLookAndFeel().drawButtonBackground(g, *this,
-            findColour(isDown() ? buttonOnColourId : buttonColourId),
-            isOver(), isDown());
+            findColour(shouldDrawButtonAsDown ? buttonOnColourId : buttonColourId),
+            shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
 
         auto bounds = getLocalBounds().toFloat();
         auto colour = findColour(textColourOffId).withMultipliedAlpha(isEnabled() ? 1.0f : 0.5f);

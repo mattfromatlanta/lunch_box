@@ -83,7 +83,6 @@ public:
     // --- juce::Component ---
     void paint(juce::Graphics& g) override;
     void resized() override;
-    void modifierKeysChanged(const juce::ModifierKeys& mods) override;
 
     // --- juce::FileDragAndDropTarget ---
     bool isInterestedInFileDrag(const juce::StringArray& files) override;

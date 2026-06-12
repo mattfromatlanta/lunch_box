@@ -92,7 +92,7 @@ namespace LunchBoxLabels
 
     inline constexpr const char* kMenuChangeOutput    = "Change Output Folder...";
     inline constexpr const char* kMenuShowRuntimeLogs = "Show Runtime Logs";
-    inline constexpr const char* kMenuShowLogFolder   = "Show Log Folder in Finder";
+    inline constexpr const char* kMenuShowLogFolder   = "Show Log Folder";
     inline constexpr const char* kMenuClearStatusLog  = "Clear Status Log";
 
     // ── ApplicationCommand info (name / description) ───────

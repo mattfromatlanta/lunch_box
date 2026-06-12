@@ -54,7 +54,7 @@ namespace BankFocusImpl
                 const float circleR = 14.0f;
                 juce::GlyphArrangement glyphs;
                 glyphs.addFittedText(font, btn.getButtonText(),
-                    0.0f, 0.0f, (float) btn.getWidth(), (float) btn.getHeight(),
+                    0.0f, 0.0f, static_cast<float>(btn.getWidth()), static_cast<float>(btn.getHeight()),
                     juce::Justification::centred, 1);
                 auto charBounds = glyphs.getBoundingBox(0, -1, true);
                 float charCentreX = charBounds.getCentreX() - 0.5f;

@@ -72,7 +72,7 @@ void WaveformDisplay::paint(juce::Graphics& g)
     double posRatio = player.getCurrentPositionRatio();
     if (posRatio > 0.0)
     {
-        float posX = (float)(bounds.getWidth() * posRatio);
+        float posX = static_cast<float>(bounds.getWidth() * posRatio);
         g.setColour(cursorColour);
         g.drawLine(posX, 0.0f, posX, bounds.getHeight(), 1.5f);
     }

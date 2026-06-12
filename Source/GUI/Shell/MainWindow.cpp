@@ -63,8 +63,8 @@ struct LunchBoxTooltipWindow : public juce::TooltipWindow
     {
         if (g_tooltipsSuppressed)
             return {};
-        const auto elapsed = (juce::int64) juce::Time::getApproximateMillisecondCounter()
-                           - (juce::int64) lastMoveMs;
+        const auto elapsed = static_cast<juce::int64>(juce::Time::getApproximateMillisecondCounter())
+                           - static_cast<juce::int64>(lastMoveMs);
         if (elapsed < 200)
             return {};
         return juce::TooltipWindow::getTipFor (c);

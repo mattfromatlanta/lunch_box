@@ -74,8 +74,8 @@ void PreviewPanel::loadFile(const juce::File& file)
 
     // Update info label: filename + duration
     double duration = player.getDurationSeconds();
-    int mins = (int)(duration / 60.0);
-    int secs = (int)(duration) % 60;
+    int mins = static_cast<int>(duration / 60.0);
+    int secs = static_cast<int>(duration) % 60;
     juce::String info = LunchBoxLabels::kPreviewLabelPrefix + file.getFileNameWithoutExtension()
                       + "  (" + juce::String::formatted("%d:%02d", mins, secs) + ")";
     fileInfoLabel.setText(info, juce::dontSendNotification);

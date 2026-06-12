@@ -89,7 +89,6 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
     void mouseDown(const juce::MouseEvent& e) override;
-    void modifierKeysChanged(const juce::ModifierKeys& mods) override;
 
     // juce::FileDragAndDropTarget
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
@@ -115,7 +114,6 @@ public:
     void                    setCellDragRoleDisplaceWithSource(LunchBoxDrag::GridCell dest, int dir,
                                                               LunchBoxDrag::GridCell src) override;
     void                    clearAllCellPreviews() override;
-    void                    onPreviewRebuild(const LunchBoxDrag::DragOp& op) override;
     void                    onDragCommitWillBegin() override;
     void                    onDragCommitFinished(const juce::Array<LunchBoxDrag::GridCell>& newSelection,
                                                 const juce::Array<LunchBoxDrag::GridCell>& oldSources) override;

@@ -27,6 +27,9 @@ FocusedSlotRow::FocusedSlotRow(int slot,
         juce::String::fromUTF8(BinaryData::arrow_icon_svg, BinaryData::arrow_icon_svgSize));
     if (xml != nullptr)
         arrowDrawable = juce::Drawable::createFromSVG(*xml);
+    if (arrowDrawable != nullptr)  // recolour once — paint() shouldn't copy the SVG tree
+        arrowDrawable->replaceColour(juce::Colours::black,
+                                     LunchBoxColours::WHITE_CREAM.withAlpha(0.8f));
 }
 
 FocusedSlotRow::~FocusedSlotRow()
@@ -223,11 +226,8 @@ void FocusedSlotRow::paint(juce::Graphics& g)
         juce::Rectangle<float> arrowBounds(cx - arrowSize * 0.5f, cy - arrowSize * 0.5f,
                                            arrowSize, arrowSize);
 
-        auto drawable = arrowDrawable->createCopy();
-        drawable->replaceColour(juce::Colours::black, LunchBoxColours::WHITE_CREAM.withAlpha(0.8f));
-
         auto transform = juce::RectanglePlacement(juce::RectanglePlacement::centred)
-                             .getTransformToFit(drawable->getDrawableBounds(), arrowBounds);
+                             .getTransformToFit(arrowDrawable->getDrawableBounds(), arrowBounds);
 
         // SVG points right; rotate to point up (−90°) or down (+90°)
         const float angle = (dragRoleDisplace < 0) ? -juce::MathConstants<float>::halfPi
@@ -235,7 +235,7 @@ void FocusedSlotRow::paint(juce::Graphics& g)
         transform = transform.followedBy(
             juce::AffineTransform::rotation(angle, arrowBounds.getCentreX(), arrowBounds.getCentreY()));
 
-        drawable->draw(g, 1.0f, transform);
+        arrowDrawable->draw(g, 1.0f, transform);
     }
 }
 
