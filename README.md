@@ -12,6 +12,10 @@ naming convention.
 |-----------|-----------|
 | ![Pack view — 5-bank × 14-slot grid](assets/screenshots/lunchbox_pack.png) | ![Bank view — single-bank waveform list](assets/screenshots/lunchbox_bank.png) |
 
+| Plays well with others — drag or paste samples straight from Sononym, Finder, or any file browser |
+|---------------------------------------------------------------------------------------------------|
+| ![Lunch Box working alongside the Sononym sample browser](assets/screenshots/lunchbox_friends.jpg) |
+
 ---
 
 ## Features
@@ -76,7 +80,12 @@ lunch_box --help
 
 ## CHOMPI Sampler Overview
 
-The CHOMPI sampler organizes samples into two categories, each with five banks (A-E)
+CHOMPI has two firmwares: **TAPE**, the signature five-bank sampler workflow, and
+**TEMPO**, a groovebox-style firmware with its own sample architecture. **Lunch Box 1.0
+supports and is tested against the TAPE firmware**; TEMPO support is planned for 1.2
+(see [ROADMAP.md](ROADMAP.md)).
+
+Under TAPE, CHOMPI organizes samples into two categories, each with five banks (A-E)
 of 14 slots — 70 samples per category.
 
 | Category | Use |
@@ -176,6 +185,10 @@ logs/lunch_box_log_YYYYMMDD_HHMMSS.txt
 
 ## Known Limitations
 
+- **TAPE firmware only (for now).** Packs are built for CHOMPI's TAPE firmware
+  (five banks, `cubbi`/`jammi` naming). The TEMPO firmware uses a different sample
+  architecture — single bank, `chroma`/`slice` naming, 10-second maximum — and is
+  planned for 1.2 (see [ROADMAP.md](ROADMAP.md)).
 - **Export blocks the UI.** Pack processing currently runs on the UI thread, so the
   window is unresponsive while a pack is written — a few seconds for typical packs
   of one-shots, longer for packs of very long samples. The export itself is safe to

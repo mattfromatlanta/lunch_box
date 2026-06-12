@@ -14,6 +14,16 @@ Plans beyond the current release. Timing is best-effort; items can move.
   undo/clipboard/process shortcuts work at all on Linux/Windows, where there is
   no native menu bar.
 
+## 1.2
+
+- **TEMPO firmware support** — CHOMPI's TEMPO firmware uses a different sample
+  architecture from TAPE: a single bank (A) per sample type, `chroma_a1.wav` /
+  `slice_a1.wav` naming, and samples played from internal memory with a 10-second
+  maximum (16-bit 48kHz stereo WAV). Lunch Box will add a TEMPO export mode —
+  category naming, slot limits, and duration validation — alongside the existing
+  TAPE workflow. (TAPE and TEMPO also use different SD card layouts, so packs are
+  not interchangeable between firmwares.)
+
 ## Later / unscheduled
 
 - **Shared slot-assignment model** — extract the slot grid state out of the view
