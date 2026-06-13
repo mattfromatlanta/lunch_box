@@ -209,6 +209,12 @@ MainComponent::MainComponent()
     commandManager.registerAllCommandsForTarget(this);
     commandManager.setFirstCommandTarget(this);
 
+    // Populate the key-mapping set from each command's default keypresses.
+    // keyPressed() dispatches shortcuts through it directly, so secondary bindings
+    // work on macOS (e.g. Cmd+P, which the menu can't show alongside Cmd+Return)
+    // and all shortcuts work on Linux/Windows, where there is no native menu bar.
+    commandManager.getKeyMappings()->resetToDefaultMappings();
+
     setSize(493, 890);
 
     loadSessionState();
@@ -403,9 +409,23 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
     if (messageOverlay.isVisible())
         return false;
 
+    // While Help is open, block all app hotkeys (including command shortcuts).
+    // Its own listener handles Esc, and a click dismisses it; Cmd+Q stays a
+    // system menu equivalent, so quitting still works.
+    if (helpOverlay.isVisible())
+        return false;
+
     // Don't intercept navigation keys when a text editor has keyboard focus
     if (dynamic_cast<juce::TextEditor*>(origin) != nullptr)
         return false;
+
+    // Dispatch registered command shortcuts (Cmd+Z/C/X/V/A/O/P/F, Cmd+Return, …)
+    // ahead of view navigation. On macOS the menu consumes each command's primary
+    // key equivalent before this point, so this mainly enables secondary bindings;
+    // on Linux/Windows (no menu bar) it's the only path. Command keys all carry a
+    // modifier, so they never shadow the plain-key navigation handled below.
+    if (commandManager.getKeyMappings()->keyPressed(key, origin))
+        return true;
 
     if (key == juce::KeyPress(juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier, 0))
     {
