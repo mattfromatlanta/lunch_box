@@ -5,6 +5,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <functional>
 #include "GuiProcessor.h"
+#include "ExportThread.h"
 #include "LunchBoxFonts.h"
 #include "UIColours.h"
 #include "UIConstants.h"
@@ -15,6 +16,7 @@
 #include "PackButton.h"
 #include "PackNameOverlay.h"
 #include "HelpOverlay.h"
+#include "MessageOverlay.h"
 #include "FooterButtonLAF.h"
 #include "LabelStrings.h"
 #if LUNCH_BOX_MELATONIN_INSPECTOR
@@ -119,6 +121,7 @@ private:
     PackButton      processButton;
     PackNameOverlay packNameOverlay;
     HelpOverlay     helpOverlay;
+    MessageOverlay  messageOverlay;
 
     juce::TextButton fillButton;
     juce::TextButton clearButton;
@@ -180,9 +183,12 @@ private:
 
     // Processing
     void processFilesFromEditors();
-    void updateProcessButtonState();
+    void onExportFinished(const ExportThread::Outcome& outcome);
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
+
+    // Background export (created per run, cleared on completion)
+    std::unique_ptr<ExportThread> exportThread;
 
 #if LUNCH_BOX_MELATONIN_INSPECTOR
     std::unique_ptr<melatonin::Inspector> inspector;

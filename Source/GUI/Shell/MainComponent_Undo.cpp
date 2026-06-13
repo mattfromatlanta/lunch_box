@@ -47,7 +47,6 @@ void MainComponent::applyUndoState(const PackModel::Snapshot& state)
         getActiveEditor()->refreshFromModel();
 
     isApplyingUndoState = false;
-    updateProcessButtonState();
     saveSessionState();
 }
 

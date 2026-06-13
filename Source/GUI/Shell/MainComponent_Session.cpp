@@ -108,8 +108,6 @@ void MainComponent::loadSessionState()
         for (auto& path : missing)
             appendStatus("  Missing: " + path);
     }
-
-    updateProcessButtonState();
 }
 
 // ─── File browser launchers ───────────────────────────────────────────────────

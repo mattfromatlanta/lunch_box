@@ -55,8 +55,6 @@ void MainComponent::setViewMode(ViewMode mode)
         bankFocusPanel->refreshActiveFromModel();
     }
 
-    updateProcessButtonState();
-
     // ── Wipe transition ───────────────────────────────────────────────────────
     auto content = computeContentArea();
     const int w = content.getWidth();

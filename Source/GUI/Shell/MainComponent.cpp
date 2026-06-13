@@ -101,7 +101,6 @@ MainComponent::MainComponent()
 
     cubbiEditor = std::make_unique<BankEditorPanel>(packModel, LunchBoxNamer::Category::Cubbi);
     cubbiEditor->onBeforeChange        = [this] { captureUndoState(); };
-    cubbiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     cubbiEditor->onSlotClicked         = packSlotClicked;
     cubbiEditor->onPreviewStop         = [this] { stopPreview(); };
     cubbiEditor->getStartDirectory     = [this]() -> juce::File { return getSavedFolder("lastCubbiFolder"); };
@@ -112,7 +111,6 @@ MainComponent::MainComponent()
 
     jammiEditor = std::make_unique<BankEditorPanel>(packModel, LunchBoxNamer::Category::Jammi);
     jammiEditor->onBeforeChange        = [this] { captureUndoState(); };
-    jammiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     jammiEditor->onSlotClicked         = packSlotClicked;
     jammiEditor->onPreviewStop         = [this] { stopPreview(); };
     jammiEditor->getStartDirectory     = [this]() -> juce::File { return getSavedFolder("lastJammiFolder"); };
@@ -127,7 +125,6 @@ MainComponent::MainComponent()
         packModel, previewPanel.getFormatManager(), previewPanel.getThumbnailCache());
 
     bankFocusPanel->onBeforeChange       = [this] { captureUndoState(); };
-    bankFocusPanel->onAssignmentsChanged = [this] { updateProcessButtonState(); };
     bankFocusPanel->onSlotClicked        = [this](const juce::File& f) { previewPanel.playFile(f); };
     bankFocusPanel->onPreviewStop        = [this] { stopPreview(); };
     bankFocusPanel->getStartDirectory    = [this]() -> juce::File { return getSavedFolder("lastCubbiFolder"); };
@@ -163,7 +160,8 @@ MainComponent::MainComponent()
     processButton.setColour(juce::TextButton::buttonOnColourId, LunchBoxColours::BUTTON_BG);
     processButton.setColour(juce::TextButton::textColourOffId,  LunchBoxColours::WHITE_CREAM);
     processButton.onClick = [this] { processFiles(); };
-    processButton.setEnabled(false);
+    // Re-enable only once the spin has fully come to rest after an export.
+    processButton.onAnimationStopped = [this] { processButton.setEnabled(true); };
     addAndMakeVisible(processButton);
 
     fillButton.setButtonText(kBtnFill);
@@ -197,6 +195,7 @@ MainComponent::MainComponent()
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
     addChildComponent(packNameOverlay);
     addChildComponent(helpOverlay);
+    addChildComponent(messageOverlay);
 
     // Apply initial mode styling
     styleTabButton(packModeButton, true,  LunchBoxColours::YELLOW);
@@ -222,6 +221,10 @@ MainComponent::MainComponent()
 
 MainComponent::~MainComponent()
 {
+    // Stop any in-progress export cleanly before members are torn down.
+    if (exportThread != nullptr)
+        exportThread->stopThread(4000);
+
     if (auto* top = getTopLevelComponent())
         top->removeKeyListener(this);
 }
@@ -311,6 +314,7 @@ void MainComponent::resized()
 
     packNameOverlay.setBounds(getLocalBounds());
     helpOverlay.setBounds(getLocalBounds());
+    messageOverlay.setBounds(getLocalBounds());
 }
 
 // ─── Mode switching ───────────────────────────────────────────────────────────
@@ -384,7 +388,19 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
 {
     suppressTooltipsUntilMouseMove();
 
+    // Esc cancels an in-progress export (Pack button is spinning).
+    if (key == juce::KeyPress::escapeKey
+        && exportThread != nullptr && exportThread->isThreadRunning())
+    {
+        exportThread->signalThreadShouldExit();
+        return true;
+    }
+
     if (packNameOverlay.isVisible())
+        return false;
+
+    // While the notice is up, let its own listener handle Esc (dismiss).
+    if (messageOverlay.isVisible())
         return false;
 
     // Don't intercept navigation keys when a text editor has keyboard focus

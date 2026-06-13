@@ -15,7 +15,9 @@ void GuiProcessor::setLogCallback(std::function<void(const juce::String&)> callb
 GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
     const juce::Array<BankFolderParser::BankAssignment>& cubbiAssignments,
     const juce::Array<BankFolderParser::BankAssignment>& jammiAssignments,
-    const juce::File& outputFolder)
+    const juce::File& outputFolder,
+    ProgressCallback onProgress,
+    CancelCallback shouldCancel)
 {
     ProcessingResult result;
 
@@ -37,13 +39,23 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
     AudioConverter converter(logger);
     bool overallSuccess = true;
 
+    // Per-file progress across both categories combined.
+    const int total = cubbiAssignments.size() + jammiAssignments.size();
+    int done = 0;
+    auto tick = [&done, total, &onProgress]()
+    {
+        ++done;
+        if (onProgress) onProgress(done, total);
+    };
+
     if (!cubbiAssignments.isEmpty())
     {
         auto r = processor.processCategoryFromAssignments(
             cubbiAssignments, outputFolder,
-            LunchBoxNamer::Category::Cubbi, formatManager, converter);
+            LunchBoxNamer::Category::Cubbi, formatManager, converter, tick, shouldCancel);
 
         result.cubbiFilesProcessed = r.filesConverted;
+        if (r.cancelled) { result.cancelled = true; result.success = false; return result; }
         if (!r.success) overallSuccess = false;
     }
 
@@ -51,9 +63,10 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
     {
         auto r = processor.processCategoryFromAssignments(
             jammiAssignments, outputFolder,
-            LunchBoxNamer::Category::Jammi, formatManager, converter);
+            LunchBoxNamer::Category::Jammi, formatManager, converter, tick, shouldCancel);
 
         result.jammiFilesProcessed = r.filesConverted;
+        if (r.cancelled) { result.cancelled = true; result.success = false; return result; }
         if (!r.success) overallSuccess = false;
     }
 

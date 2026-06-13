@@ -50,6 +50,7 @@ namespace LunchBoxLabels
     inline constexpr const char* kChooseOutputFolder     = "Please select a home folder for your pack.";
 
     // ── Export / overwrite confirmation dialogs ────────────
+    inline constexpr const char* kMsgNoSamples              = "Please add some samples to pack.";
     inline constexpr const char* kDlgFolderNotEmpty         = " is not empty.";
     inline constexpr const char* kDlgFolderNotEmptyBody     = "The export folder already exists:\n";
     inline constexpr const char* kDlgFolderNotEmptyWillDel  = " will be moved to the Trash and replaced.\n\nContinue?";
@@ -61,6 +62,7 @@ namespace LunchBoxLabels
     inline constexpr const char* kStatusProcessStart    = "\n=== Starting CHOMPI Processing ===";
     inline constexpr const char* kStatusProcessComplete = "\n=== Processing Complete ===";
     inline constexpr const char* kStatusProcessFailed   = "\n=== Processing Failed ===";
+    inline constexpr const char* kStatusProcessCancelled = "\n=== Processing Cancelled ===";
     inline constexpr const char* kStatusErrorPrefix     = "Error: ";
     inline constexpr const char* kStatusCubbiLabel      = "  Cubbi: ";
     inline constexpr const char* kStatusJammiLabel      = "  Jammi: ";
