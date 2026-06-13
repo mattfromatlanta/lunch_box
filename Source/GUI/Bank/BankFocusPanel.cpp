@@ -173,7 +173,10 @@ void BankFocusPanel::switchToBank(int bankIdx)
 void BankFocusPanel::switchToCategory(LunchBoxNamer::Category cat)
 {
     if (cat == activeCategory) return;
-    flushRowsToStorage();
+    // Only flush when this panel is visible (rows are authoritative). When hidden,
+    // the model is the source of truth and the rows are a stale snapshot — flushing
+    // them would overwrite any changes made through the Pack view since last shown.
+    if (isVisible()) flushRowsToStorage();
 
     // Persist current focus state before leaving
     const int outIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
