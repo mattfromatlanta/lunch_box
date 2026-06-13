@@ -32,5 +32,8 @@ Plans beyond the current release. Timing is best-effort; items can move.
 - **First-class Linux and Windows support** — both currently compile (Linux in CI)
   but are untested and unpackaged; clipboard import from the system file manager
   is macOS-only.
-
+- **Native drag and drop for macOS** - implement `juce::DragAndDropContainer` to enable 
+  dragging to and from DAWs that use the macOS `NSPasteboard`.
+- **Normalization** - samples normalized to -6db on export.
+  
 Suggestions welcome — open a [discussion](https://github.com/mattfromatlanta/lunch_box/discussions).
