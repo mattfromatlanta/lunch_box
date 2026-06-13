@@ -134,6 +134,12 @@ Examples:
 - Log all errors with context
 - Graceful degradation (skip bad files, continue processing)
 
+**Code Comments:**
+- Write brief comments explaining the purpose of classes, methods, and functions to someone reading the code for the first time
+- Only use comments to document intent; never for WIP notes or change rationale
+- Comments describe the code as it is, not the history of how it got there
+- Favor self-documenting code with clear names over verbose comments
+
 ### Testing
 
 The unit test suite lives in `tests/` (JUCE UnitTest framework, target `lunch_box_tests`):
