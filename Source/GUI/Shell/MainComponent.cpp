@@ -99,7 +99,7 @@ MainComponent::MainComponent()
 
     auto stopPreviewFn = [this] { stopPreview(); };
 
-    cubbiEditor = std::make_unique<BankEditorPanel>(LunchBoxNamer::Category::Cubbi);
+    cubbiEditor = std::make_unique<BankEditorPanel>(packModel, LunchBoxNamer::Category::Cubbi);
     cubbiEditor->onBeforeChange        = [this] { captureUndoState(); };
     cubbiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     cubbiEditor->onSlotClicked         = packSlotClicked;
@@ -110,7 +110,7 @@ MainComponent::MainComponent()
     cubbiEditor->onBackgroundClicked   = stopPreviewFn;
     addAndMakeVisible(cubbiEditor.get());
 
-    jammiEditor = std::make_unique<BankEditorPanel>(LunchBoxNamer::Category::Jammi);
+    jammiEditor = std::make_unique<BankEditorPanel>(packModel, LunchBoxNamer::Category::Jammi);
     jammiEditor->onBeforeChange        = [this] { captureUndoState(); };
     jammiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     jammiEditor->onSlotClicked         = packSlotClicked;
@@ -124,7 +124,7 @@ MainComponent::MainComponent()
     // ── Bank focus mode components ─────────────────────────
 
     bankFocusPanel = std::make_unique<BankFocusPanel>(
-        previewPanel.getFormatManager(), previewPanel.getThumbnailCache());
+        packModel, previewPanel.getFormatManager(), previewPanel.getThumbnailCache());
 
     bankFocusPanel->onBeforeChange       = [this] { captureUndoState(); };
     bankFocusPanel->onAssignmentsChanged = [this] { updateProcessButtonState(); };

@@ -6,6 +6,7 @@
 #include "../Common/ClipboardEntry.h"
 #include "../Common/DragController.h"
 #include "../Common/DragHost.h"
+#include "../Common/PackModel.h"
 #include "../Processing/LunchBoxNamer.h"
 #include "../Processing/BankFolderParser.h"
 
@@ -13,6 +14,10 @@
 // BankEditorPanel - 5×14 grid for one CHOMPI category (Cubbi or Jammi).
 // Composes 5 BankRowComponents (one per bank A–E); footer-level actions
 // (auto-fill, clear, process) are owned by MainComponent.
+//
+// A pure view over the shared PackModel: slot edits are written straight to the
+// model, and refreshFromModel() repopulates the grid widgets from it. The slot
+// components hold only display state.
 //==============================================================================
 
 class BankEditorPanel : public juce::Component,
@@ -30,7 +35,7 @@ public:
         bool operator!=(const Cell& o)    const { return !(*this == o); }
     };
 
-    explicit BankEditorPanel(LunchBoxNamer::Category category);
+    BankEditorPanel(PackModel& model, LunchBoxNamer::Category category);
 
     // Get all filled-slot assignments (used for processing)
     juce::Array<BankFolderParser::BankAssignment> getAssignments() const;
@@ -40,9 +45,9 @@ public:
     void clearAllBanks();
     void autoFillFromFolder(const juce::File& folder);
 
-    // Individual slot access (used for cross-tab sync and undo)
-    void setSlotFile(int bankIdx, int slotIdx, const juce::File& file);
-    juce::File getSlotFile(int bankIdx, int slotIdx) const;
+    // Repopulate every slot widget from the shared model (call when this editor
+    // becomes the visible category, after undo/redo, or after session load).
+    void refreshFromModel();
 
     // Selection / keyboard navigation (driven by MainComponent::keyPressed)
     void clearSelection();
@@ -119,8 +124,13 @@ public:
                                                 const juce::Array<LunchBoxDrag::GridCell>& oldSources) override;
 
 private:
+    PackModel& model;
     LunchBoxNamer::Category category;
     juce::OwnedArray<BankRowComponent> banks;  // A–E
+
+    // True while pushing model values into slot widgets, so the resulting
+    // onSampleChanged callbacks don't write the same value back to the model.
+    bool suppressWriteThrough = false;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 

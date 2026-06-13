@@ -4,28 +4,14 @@
 
 #include "MainComponent.h"
 
-MainComponent::UndoState MainComponent::readCurrentState()
+PackModel::Snapshot MainComponent::readCurrentState()
 {
-    UndoState state;
+    // Bank view holds edits in its visible rows until flushed; make sure the
+    // model is current before snapshotting. (Pack edits write through eagerly.)
     if (viewMode == ViewMode::Bank)
-    {
-        for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-            for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-            {
-                state.cubbiSlots[b][s] = bankFocusPanel->getSlotFile(LunchBoxNamer::Category::Cubbi, b, s);
-                state.jammiSlots[b][s] = bankFocusPanel->getSlotFile(LunchBoxNamer::Category::Jammi, b, s);
-            }
-    }
-    else
-    {
-        for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-            for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-            {
-                state.cubbiSlots[b][s] = cubbiEditor->getSlotFile(b, s);
-                state.jammiSlots[b][s] = jammiEditor->getSlotFile(b, s);
-            }
-    }
-    return state;
+        bankFocusPanel->commitActiveBankToModel();
+
+    return packModel.snapshot();
 }
 
 void MainComponent::captureUndoState()
@@ -47,22 +33,18 @@ void MainComponent::captureUndoState()
     });
 }
 
-void MainComponent::applyUndoState(const UndoState& state)
+void MainComponent::applyUndoState(const PackModel::Snapshot& state)
 {
     isApplyingUndoState = true;
 
-    cubbiEditor->clearAllBanks();
-    jammiEditor->clearAllBanks();
+    packModel.restore(state);
 
-    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-        {
-            cubbiEditor->setSlotFile(b, s, state.cubbiSlots[b][s]);
-            jammiEditor->setSlotFile(b, s, state.jammiSlots[b][s]);
-        }
-
+    // Refresh whichever view is showing; the other repopulates from the model
+    // when it next becomes visible.
     if (viewMode == ViewMode::Bank)
-        syncPackToBankFocus();
+        bankFocusPanel->refreshActiveFromModel();
+    else
+        getActiveEditor()->refreshFromModel();
 
     isApplyingUndoState = false;
     updateProcessButtonState();

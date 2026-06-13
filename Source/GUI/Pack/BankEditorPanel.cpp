@@ -16,8 +16,8 @@
 
 using namespace BankEditorImpl;
 
-BankEditorPanel::BankEditorPanel(LunchBoxNamer::Category cat)
-    : category(cat)
+BankEditorPanel::BankEditorPanel(PackModel& m, LunchBoxNamer::Category cat)
+    : model(m), category(cat)
 {
     const char letters[] = {'a', 'b', 'c', 'd', 'e'};
     for (int i = 0; i < LunchBoxNamer::NUM_BANKS; ++i)
@@ -42,6 +42,14 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
         if (auto* slot = row->getSlotComponent(s))
         {
             slot->onBeforeChange = [this]() { if (onBeforeChange) onBeforeChange(); };
+            // Every slot mutation (drag, drop, browse, clear, paste) funnels
+            // through here — write it straight to the shared model.
+            slot->onSampleChanged = [this, bankIdx, s](BankSlotComponent* src)
+            {
+                if (suppressWriteThrough) return;
+                model.setSlot(category, bankIdx, s, src->getSample());
+                if (onAssignmentsChanged) onAssignmentsChanged();
+            };
             slot->onSlotClicked = [this, bankIdx, s](BankSlotComponent* src)
             {
                 if (onSlotClicked) onSlotClicked({ bankIdx, s }, src->getSample());
@@ -70,37 +78,34 @@ void BankEditorPanel::wireRowCallbacks(BankRowComponent* row, int bankIdx)
 
 juce::Array<BankFolderParser::BankAssignment> BankEditorPanel::getAssignments() const
 {
-    juce::Array<BankFolderParser::BankAssignment> all;
-    for (const auto* bank : banks)
-        all.addArray(bank->getAssignments());
-    return all;
+    return model.getAssignments(category);
 }
 
 int BankEditorPanel::getFilledCount() const
 {
-    int total = 0;
-    for (const auto* bank : banks)
-        total += bank->getFilledCount();
-    return total;
+    return model.getFilledCount(category);
 }
 
 void BankEditorPanel::clearAllBanks()
 {
-    for (auto* bank : banks)
-        bank->clearAllSlots();
+    model.clearCategory(category);
+    refreshFromModel();
 }
 
-void BankEditorPanel::setSlotFile(int bankIdx, int slotIdx, const juce::File& file)
+void BankEditorPanel::refreshFromModel()
 {
-    if (bankIdx >= 0 && bankIdx < banks.size())
-        banks[bankIdx]->setSlot(slotIdx, file);
-}
+    suppressWriteThrough = true;
+    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
+        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
+            if (auto* slot = getSlotAt(b, s))
+            {
+                auto f = model.getSlot(category, b, s);
+                if (f != juce::File{}) slot->setSample(f);
+                else                   slot->clearSample();
+            }
+    suppressWriteThrough = false;
 
-juce::File BankEditorPanel::getSlotFile(int bankIdx, int slotIdx) const
-{
-    if (auto* slot = getSlotAt(bankIdx, slotIdx))
-        return slot->getSample();
-    return juce::File{};
+    if (onAssignmentsChanged) onAssignmentsChanged();
 }
 
 void BankEditorPanel::autoFillFromFolder(const juce::File&)

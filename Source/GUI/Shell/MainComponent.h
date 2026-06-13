@@ -95,6 +95,10 @@ private:
     juce::String     consoleContent { LunchBoxLabels::kConsoleInitial };
     std::unique_ptr<ConsoleWindow> consoleWindow;
 
+    // Single source of truth for all slot assignments. Declared before the
+    // panels so it outlives them — both views hold a reference to it.
+    PackModel packModel;
+
     // ── Pack mode ───────────────────────────────────────────
     WipeTabButton cubbiTabButton;
     WipeTabButton jammiTabButton;
@@ -141,10 +145,6 @@ private:
     std::unique_ptr<juce::ImageComponent> bankTransitionOverlay;
     void animateBankCategorySwitch(bool showCubbi);
 
-    // Cross-tab data sync
-    void syncPackToBankFocus();
-    void syncBankFocusToPack();
-
     // Helpers
     juce::File getResolvedOutputFolder();
     BankEditorPanel* getActiveEditor();  // returns the visible Pack-mode editor
@@ -158,21 +158,15 @@ private:
     // Session persistence
     void loadSessionState();
 
-    // Undo / redo
-    struct UndoState
-    {
-        juce::File cubbiSlots[LunchBoxNamer::NUM_BANKS][LunchBoxNamer::SLOTS_PER_BANK];
-        juce::File jammiSlots[LunchBoxNamer::NUM_BANKS][LunchBoxNamer::SLOTS_PER_BANK];
-    };
-
+    // Undo / redo — each step is a full snapshot of the shared PackModel.
     static constexpr int MAX_UNDO_STEPS = 10;
-    juce::Array<UndoState> undoStack;
-    juce::Array<UndoState> redoStack;
+    juce::Array<PackModel::Snapshot> undoStack;
+    juce::Array<PackModel::Snapshot> redoStack;
     bool isApplyingUndoState = false;
 
-    UndoState readCurrentState();
+    PackModel::Snapshot readCurrentState();
     void captureUndoState();
-    void applyUndoState(const UndoState& state);
+    void applyUndoState(const PackModel::Snapshot& state);
     void performUndo();
     void performRedo();
 

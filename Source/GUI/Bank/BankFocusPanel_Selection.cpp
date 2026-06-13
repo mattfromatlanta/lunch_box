@@ -67,7 +67,6 @@ void BankFocusPanel::selectRowRange(int from, int to)
 juce::Array<ClipboardEntry> BankFocusPanel::getSelectedClipboard()
 {
     flushRowsToStorage();
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
 
     juce::Array<int> sorted = selection;
     std::sort(sorted.begin(), sorted.end());
@@ -75,19 +74,18 @@ juce::Array<ClipboardEntry> BankFocusPanel::getSelectedClipboard()
     const int anchor = sorted.isEmpty() ? 0 : sorted[0];
     juce::Array<ClipboardEntry> entries;
     for (int idx : sorted)
-        entries.add({ slots[catIdx][activeBank][idx], idx - anchor, 0 });
+        entries.add({ model.getSlot(activeCategory, activeBank, idx), idx - anchor, 0 });
     return entries;
 }
 
 void BankFocusPanel::pasteClipboard(const juce::Array<ClipboardEntry>& entries)
 {
     if (entries.isEmpty()) return;
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     for (const auto& e : entries)
     {
         int slot = focusedRowIdx + e.rowOffset;
         if (slot < 0 || slot >= LunchBoxNamer::SLOTS_PER_BANK) continue;
-        slots[catIdx][activeBank][slot] = e.file;
+        model.setSlot(activeCategory, activeBank, slot, e.file);
     }
     populateRowsFromStorage();
     if (onAssignmentsChanged) onAssignmentsChanged();

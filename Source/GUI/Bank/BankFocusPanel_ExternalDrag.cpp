@@ -45,12 +45,11 @@ void BankFocusPanel::filesDropped(const juce::StringArray& files, int x, int y)
 
     if (onBeforeChange) onBeforeChange();
 
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     for (int i = 0; i < files.size() && startRow + i < LunchBoxNamer::SLOTS_PER_BANK; ++i)
     {
         juce::File f(files[i]);
         if (f.existsAsFile())
-            slots[catIdx][activeBank][startRow + i] = f;
+            model.setSlot(activeCategory, activeBank, startRow + i, f);
     }
 
     populateRowsFromStorage();

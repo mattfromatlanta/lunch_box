@@ -115,6 +115,8 @@ target_sources(lunch_box
         Source/GUI/Common/DragHost.h
         Source/GUI/Common/DragController.h
         Source/GUI/Common/DragController.cpp
+        Source/GUI/Common/PackModel.h
+        Source/GUI/Common/PackModel.cpp
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/Processing/AudioConverter.h
@@ -200,7 +202,9 @@ target_sources(lunch_box_tests
         Source/Processing/BankFolderParser.h
         Source/Processing/BankFolderParser.cpp
         Source/GUI/Common/DragModel.h
-        Source/GUI/Common/DragModel.cpp)
+        Source/GUI/Common/DragModel.cpp
+        Source/GUI/Common/PackModel.h
+        Source/GUI/Common/PackModel.cpp)
 
 target_link_libraries(lunch_box_tests
     PRIVATE

@@ -54,7 +54,7 @@ void MainComponent::processFiles()
                 {
                     appendStatus(LunchBoxLabels::kStatusProcessStart);
                     if (viewMode == ViewMode::Bank)
-                        syncBankFocusToPack();
+                        bankFocusPanel->commitActiveBankToModel();
                     processFilesFromEditors();
                     processButton.setEnabled(true);
                 };
@@ -176,13 +176,8 @@ void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult&
 
 void MainComponent::updateProcessButtonState()
 {
-    bool ready = false;
-    if (viewMode == ViewMode::Pack)
-        ready = (cubbiEditor->getFilledCount() + jammiEditor->getFilledCount()) > 0;
-    else  // Bank
-        ready = (bankFocusPanel->getFilledCount(LunchBoxNamer::Category::Cubbi)
-               + bankFocusPanel->getFilledCount(LunchBoxNamer::Category::Jammi)) > 0;
-
+    const bool ready = (packModel.getFilledCount(LunchBoxNamer::Category::Cubbi)
+                      + packModel.getFilledCount(LunchBoxNamer::Category::Jammi)) > 0;
     processButton.setEnabled(ready);
 }
 

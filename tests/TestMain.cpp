@@ -8,6 +8,7 @@
 #include "BankFolderParserTests.cpp"
 #include "FileSystemHelperTests.cpp"
 #include "DragModelTests.cpp"
+#include "PackModelTests.cpp"
 
 int main ()
 {

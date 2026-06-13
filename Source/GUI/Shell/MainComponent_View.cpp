@@ -18,11 +18,10 @@ void MainComponent::setViewMode(ViewMode mode)
         isTransitioning = false;
     }
 
-    // Sync data between modes
+    // Leaving Bank view: flush its in-flight row edits to the shared model so
+    // the incoming Pack editor shows them. (Pack edits write through eagerly.)
     if (viewMode == ViewMode::Bank && mode != ViewMode::Bank)
-        syncBankFocusToPack();
-    if (mode == ViewMode::Bank && viewMode != ViewMode::Bank)
-        syncPackToBankFocus();
+        bankFocusPanel->commitActiveBankToModel();
 
     viewMode = mode;
 
@@ -37,6 +36,7 @@ void MainComponent::setViewMode(ViewMode mode)
         setCategoryTab(showCubbiEditor);
         // Translate Bank focus → Pack cell so the incoming editor lands on the right slot
         auto* incoming = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
+        incoming->refreshFromModel();
         incoming->setFocusCellAndSelect({ bankFocusPanel->getActiveBank(),
                                           bankFocusPanel->getFocusedRow() });
     }
@@ -50,6 +50,9 @@ void MainComponent::setViewMode(ViewMode mode)
         // Translate Pack focus → Bank bank+row so the incoming panel lands on the right slot
         auto fc = (showCubbiEditor ? cubbiEditor.get() : jammiEditor.get())->getFocusCell();
         bankFocusPanel->setActiveFocus(fc.row, fc.col);
+        // Show current model state for the active bank (switchToCategory/setActiveFocus
+        // skip repopulation when category/bank are unchanged).
+        bankFocusPanel->refreshActiveFromModel();
     }
 
     updateProcessButtonState();
@@ -109,41 +112,6 @@ void MainComponent::setViewMode(ViewMode mode)
             safeThis->isTransitioning = false;
             safeThis->resized();
         });
-    }
-}
-
-void MainComponent::syncPackToBankFocus()
-{
-    bankFocusPanel->clearAll();
-
-    for (const auto& a : cubbiEditor->getAssignments())
-    {
-        int bankIdx = static_cast<int>(a.bankLetter - 'a');
-        bankFocusPanel->setSlot(LunchBoxNamer::Category::Cubbi, bankIdx, a.slotNumber - 1, a.sourceFile);
-    }
-
-    for (const auto& a : jammiEditor->getAssignments())
-    {
-        int bankIdx = static_cast<int>(a.bankLetter - 'a');
-        bankFocusPanel->setSlot(LunchBoxNamer::Category::Jammi, bankIdx, a.slotNumber - 1, a.sourceFile);
-    }
-}
-
-void MainComponent::syncBankFocusToPack()
-{
-    cubbiEditor->clearAllBanks();
-    jammiEditor->clearAllBanks();
-
-    for (const auto& a : bankFocusPanel->getAssignments(LunchBoxNamer::Category::Cubbi))
-    {
-        int bankIdx = static_cast<int>(a.bankLetter - 'a');
-        cubbiEditor->setSlotFile(bankIdx, a.slotNumber - 1, a.sourceFile);
-    }
-
-    for (const auto& a : bankFocusPanel->getAssignments(LunchBoxNamer::Category::Jammi))
-    {
-        int bankIdx = static_cast<int>(a.bankLetter - 'a');
-        jammiEditor->setSlotFile(bankIdx, a.slotNumber - 1, a.sourceFile);
     }
 }
 
@@ -216,6 +184,7 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
 
             auto* outgoing = showCubbiEditor ? cubbiEditor.get() : jammiEditor.get();
             auto* incoming = showCubbi       ? cubbiEditor.get() : jammiEditor.get();
+            incoming->refreshFromModel();
 
             // Jammi is "right" of Cubbi: going to Jammi = dir +1, going to Cubbi = dir -1
             const int  dir       = showCubbi ? -1 : 1;
@@ -244,6 +213,7 @@ void MainComponent::setCategoryTab(bool showCubbi, bool animate)
         {
             styleTabButton(cubbiTabButton, showCubbi,  LunchBoxColours::PURPLE);
             styleTabButton(jammiTabButton, !showCubbi, LunchBoxColours::PURPLE);
+            (showCubbi ? cubbiEditor.get() : jammiEditor.get())->refreshFromModel();
             cubbiEditor->setVisible(showCubbi);
             jammiEditor->setVisible(!showCubbi);
         }
