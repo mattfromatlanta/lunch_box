@@ -1,0 +1,18 @@
+.air/
+.claude/
+.vscode/
+.cache/
+build/
+test_builds/
+dev_assets/
+.DS_Store
+
+# Log files
+logs/*.txt
+
+# Converted audio files (keep directory structure, ignore WAV files)
+converted/**/*.wav
+converted/**/*.WAV
+converted/sononym.*
+# Release artifacts (distribute via GitHub Releases, not the repo)
+LunchBox-*.zip

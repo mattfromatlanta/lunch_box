@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, "1.0" ]
+  pull_request:
+    branches: [ main, "1.0" ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Clone JUCE
+        run: git clone --branch 8.0.12 --depth 1 https://github.com/juce-framework/JUCE.git ../JUCE
+
+      - name: Configure
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cd build && make -j$(sysctl -n hw.ncpu)
+
+      - name: Test
+        run: ./build/lunch_box_tests_artefacts/Release/lunch_box_tests
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libfreetype6-dev libx11-dev libxcomposite-dev \
+            libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev \
+            libxrender-dev libwebkit2gtk-4.1-dev libglu1-mesa-dev mesa-common-dev
+
+      - name: Clone JUCE
+        run: git clone --branch 8.0.12 --depth 1 https://github.com/juce-framework/JUCE.git ../JUCE
+
+      - name: Configure
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cd build && make -j$(nproc)
+
+      - name: Test
+        run: ./build/lunch_box_tests_artefacts/Release/lunch_box_tests
