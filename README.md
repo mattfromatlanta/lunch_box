@@ -235,4 +235,4 @@ Made by **Matt from Atlanta**
 ## Acknowledgements
 
 - [JUCE Framework](https://juce.com/) -- cross-platform C++ application framework
-- [CHOMPI](https://creditor.technology) -- the sampler hardware this tool is built for
+- [CHOMPI](https://www.chompiclub.com) -- the sampler hardware this tool is built for
