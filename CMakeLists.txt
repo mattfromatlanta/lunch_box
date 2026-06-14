@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(lunch_box VERSION 1.0.0)
+project(lunch_box VERSION 1.1.0)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
