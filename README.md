@@ -26,6 +26,8 @@ naming convention.
 - **Dual Categories** — Process Cubbi (percussive) and Jammi (chromatic) samples independently
 - **Waveform Preview** — Click-to-play preview. Waveform previews in bank mode
 - **Drag and Drop** — Drag folders or individual files directly onto slots
+- **Peak Normalization** — Samples normalized to -6 dB on export (on by default; `--no-normalize` in CLI)
+- **Background Export** — Conversion runs off the UI thread; the window stays responsive and exports can be cancelled
 - **Undo / Redo** — 10-step history across all view modes
 - **Keyboard Navigation** — Full keyboard control (Cmd+Z/C/X/V/A, arrows, Tab, Space, Enter)
 - **Safe Operations** — Never modifies original files
@@ -34,9 +36,11 @@ naming convention.
 
 ## Latest Release
 
-[Lunch Box 1.0](https://github.com/mattfromatlanta/lunch_box/releases/tag/v1.0.0)
+[Lunch Box 1.1](https://github.com/mattfromatlanta/lunch_box/releases/tag/v1.1.0)
 
 _Compiled for macOS and tested for Sequoia 15.7.3_
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
 
@@ -88,7 +92,7 @@ lunch_box --help
 ## CHOMPI Sampler Overview
 
 CHOMPI has two firmwares: **TAPE**, the signature five-bank sampler workflow, and
-**TEMPO**, a groovebox-style firmware with its own sample architecture. **Lunch Box 1.0
+**TEMPO**, a groovebox-style firmware with its own sample architecture. **Lunch Box
 supports and is tested against the TAPE firmware**; TEMPO support is planned for 1.2
 (see [ROADMAP.md](ROADMAP.md)).
 
@@ -121,6 +125,7 @@ convention so your library drops straight onto the hardware.
 | **Sample rate** | Any             | 48kHz               |
 | **Channels**  | Mono / Stereo     | Preserved           |
 | **Max duration** | 120 sec        | 120 sec             |
+| **Level**     | Any               | -6 dB peak (normalization on by default) |
 
 ---
 
@@ -167,6 +172,7 @@ lunch_box/
 +-- CMakeLists.txt
 +-- README.md
 +-- HOW_TO.md                          # Detailed user guide
++-- CHANGELOG.md                       # Release history
 +-- CONTRIBUTING.md
 +-- CODE_OF_CONDUCT.md
 +-- LICENSE
@@ -193,12 +199,6 @@ In the app, **Settings → Show Log Folder** opens it directly.
   (five banks, `cubbi`/`jammi` naming). The TEMPO firmware uses a different sample
   architecture — single bank, `chroma`/`slice` naming, 10-second maximum — and is
   planned for 1.2 (see [ROADMAP.md](ROADMAP.md)).
-- **Export blocks the UI.** Pack processing currently runs on the UI thread, so the
-  window is unresponsive while a pack is written — a few seconds for typical packs
-  of one-shots, longer for packs of very long samples. The export itself is safe to
-  interrupt: packs are written to a staging folder and only swapped into place when
-  complete, and a replaced pack goes to the Trash rather than being deleted.
-  A background-threaded export with progress is planned for 1.1 (see [ROADMAP.md](ROADMAP.md)).
 - **macOS is the supported platform.** The Linux build compiles in CI but is untested;
   Windows hasn't been tried. Clipboard import (paste files from Finder) is macOS-only.
 

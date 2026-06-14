@@ -42,9 +42,11 @@ AudioConverter  LunchBoxNamer  Logger
 | Module | Purpose | Key Files |
 |--------|---------|-----------|
 | **LunchBoxProcessor** | Orchestrates CHOMPI workflow | Processing/LunchBoxProcessor.h/cpp |
-| **AudioConverter** | Format conversion (16-bit 48kHz) | Processing/AudioConverter.h/cpp |
+| **AudioConverter** | Format conversion (16-bit 48kHz) + optional -6 dB peak normalization | Processing/AudioConverter.h/cpp |
 | **LunchBoxNamer** | CHOMPI naming (cubbi_a1.wav, etc.) | Processing/LunchBoxNamer.h/cpp |
 | **BankFolderParser** | Bank subfolder detection + assignment | Processing/BankFolderParser.h/cpp |
+| **PackModel** | Single source of truth for all slot assignments ([category][bank][slot]); Pack and Bank are pure views over it | GUI/Common/PackModel.h/cpp |
+| **ExportThread** | Runs a pack export off the message thread (stage-then-swap, cancellable) | GUI/Shell/ExportThread.h/cpp |
 | **Logger** | Timestamped log files | Logger.h/cpp |
 | **FileSystemHelper** | File utilities, format extension list | FileSystemHelper.h/cpp |
 | **CliProcessor** | CLI interface and argument parsing | CLI/CliProcessor.h/cpp |
@@ -69,8 +71,10 @@ Command line args → CliProcessor → AudioConfiguration → LunchBoxProcessor 
 
 **GUI Mode:**
 ```
-Slot assignments → GuiProcessor → AudioConfiguration → LunchBoxProcessor → Output files
+PackModel (slot assignments) → ExportThread → GuiProcessor → LunchBoxProcessor → Output files
 ```
+The Pack grid and Bank focus list are pure views over `PackModel`; export runs on a
+background thread and stages output before atomically swapping it into place.
 
 **Shared:** Both modes use `AudioConfiguration` struct and call the same `LunchBoxProcessor::processSamples()`.
 
@@ -147,6 +151,7 @@ The unit test suite lives in `tests/` (JUCE UnitTest framework, target `lunch_bo
 - `BankFolderParserTests.cpp` — bank subfolder detection
 - `FileSystemHelperTests.cpp` — file utilities
 - `DragModelTests.cpp` — drag-and-drop model logic
+- `PackModelTests.cpp` — shared slot-assignment model (set/clear/snapshot/assignments)
 
 **When adding features:**
 - Add unit tests for new functions
@@ -234,13 +239,14 @@ lunch_box/
 │   │   └── CliProcessor.h/cpp         # CLI argument parsing + processing
 │   ├── GUI/
 │   │   ├── Shell/                     # MainWindow, MainComponent (+ split TUs),
-│   │   │                              # AppMenuBar, GuiProcessor, ConsoleWindow,
-│   │   │                              # ClipboardHelper, overlays, footer buttons
+│   │   │                              # AppMenuBar, GuiProcessor, ExportThread,
+│   │   │                              # ConsoleWindow, ClipboardHelper, overlays,
+│   │   │                              # footer buttons
 │   │   ├── Pack/                      # BankEditorPanel (+ split TUs),
 │   │   │                              # BankRowComponent, BankSlotComponent
 │   │   ├── Bank/                      # BankFocusPanel (+ split TUs), FocusedSlotRow
-│   │   ├── Common/                    # DragModel, DragController, DragHost,
-│   │   │                              # ClipboardEntry
+│   │   ├── Common/                    # PackModel, DragModel, DragController,
+│   │   │                              # DragHost, ClipboardEntry
 │   │   ├── Preview/                   # PreviewPanel, AudioPreviewPlayer,
 │   │   │                              # WaveformDisplay
 │   │   └── Style/                     # UIColours, UIConstants, LunchBoxFonts,

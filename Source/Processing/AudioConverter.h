@@ -42,9 +42,6 @@ private:
     static constexpr double MAX_DURATION_SECONDS = 120.0;  // 2-minute limit per CHOMPI spec
     static constexpr double NORMALIZE_TARGET_DBFS = -6.0;  // matches CHOMPI CLUB's converter
 
-    // Helper methods
-    bool needsConversion(const juce::AudioFormatReader* reader) const;
-
     // Peak gain (linear) to bring this file to NORMALIZE_TARGET_DBFS, or 1.0 if
     // normalization is off or the file is silent.
     double computeNormalizationGain(juce::AudioFormatReader* reader) const;

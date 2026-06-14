@@ -28,17 +28,6 @@ double AudioConverter::computeNormalizationGain(juce::AudioFormatReader* reader)
     return targetLinear / static_cast<double>(peak);
 }
 
-bool AudioConverter::needsConversion(const juce::AudioFormatReader* reader) const
-{
-    if (reader == nullptr)
-        return false;
-
-    bool bitDepthDiffers = (reader->bitsPerSample != TARGET_BIT_DEPTH);
-    bool sampleRateDiffers = ! juce::exactlyEqual(reader->sampleRate, TARGET_SAMPLE_RATE);
-
-    return bitDepthDiffers || sampleRateDiffers;
-}
-
 AudioConverter::ConversionResult AudioConverter::convertFileWithName(
     const juce::File& sourceFile,
     const juce::File& outputFolder,
