@@ -50,7 +50,11 @@ public:
     // Pass nullptr to disable
     void setLogCallback(std::function<void(const juce::String&)> callback);
 
+    // Peak-normalize each sample to -6 dB on export (on by default).
+    void setNormalize(bool shouldNormalize) { normalize = shouldNormalize; }
+
 private:
     Logger logger;
     juce::AudioFormatManager formatManager;
+    bool normalize = true;
 };

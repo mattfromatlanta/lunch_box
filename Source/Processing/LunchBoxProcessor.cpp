@@ -10,7 +10,7 @@ LunchBoxProcessor::LunchBoxProcessor(Logger& loggerToUse)
 bool LunchBoxProcessor::processSamples(const AudioConfiguration& config,
                                      juce::AudioFormatManager& formatManager)
 {
-    AudioConverter converter(logger);
+    AudioConverter converter(logger, config.normalize);
 
     // Ensure output folder exists
     if (!FileSystemHelper::ensureDirectoryExists(config.outputFolder, logger))

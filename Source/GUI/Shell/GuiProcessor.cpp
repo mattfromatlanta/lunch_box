@@ -36,7 +36,7 @@ GuiProcessor::ProcessingResult GuiProcessor::processFilesFromAssignments(
     }
 
     LunchBoxProcessor processor(logger);
-    AudioConverter converter(logger);
+    AudioConverter converter(logger, normalize);
     bool overallSuccess = true;
 
     // Per-file progress across both categories combined.

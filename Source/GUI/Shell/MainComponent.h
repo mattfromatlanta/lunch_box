@@ -65,9 +65,11 @@ public:
     void showLogFolder();
     void clearStatusLog();
     void setShowRuntimeLogs(bool shouldShow);
+    void setNormalizeEnabled(bool shouldNormalize);
 
     void saveSessionState();
     bool getShowRuntimeLogs() const { return showRuntimeLogs; }
+    bool getNormalizeEnabled() const { return normalizeEnabled; }
     bool getConsoleVisible()  const { return consoleVisible; }
     void toggleConsole();
 
@@ -138,6 +140,7 @@ private:
     int lastInternalCopyChangeCount = -1;          // NSPasteboard changeCount at last internal copy
 
     bool showRuntimeLogs = false;
+    bool normalizeEnabled = true;
 
     // Mode switching
     void setViewMode(ViewMode mode);

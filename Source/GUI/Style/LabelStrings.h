@@ -92,6 +92,7 @@ namespace LunchBoxLabels
 
     inline constexpr const char* kMenuChangeOutput    = "Change Output Folder...";
     inline constexpr const char* kMenuShowRuntimeLogs = "Show Runtime Logs";
+    inline constexpr const char* kMenuNormalize       = "Normalize to -6 dB";
     inline constexpr const char* kMenuShowLogFolder   = "Show Log Folder";
     inline constexpr const char* kMenuClearStatusLog  = "Clear Status Log";
 

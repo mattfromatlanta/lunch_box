@@ -28,6 +28,7 @@ private:
         showLogFolder    = 4,
         clearStatusLog   = 5,
         showRuntimeLogs  = 6,
+        normalizeToggle  = 7,
     };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AppMenuBar)

@@ -209,6 +209,18 @@ void MainComponent::appendStatus(const juce::String& message)
     }
 }
 
+void MainComponent::setNormalizeEnabled(bool shouldNormalize)
+{
+    normalizeEnabled = shouldNormalize;
+    if (processor != nullptr)
+        processor->setNormalize(normalizeEnabled);
+    if (auto* prefs = appProperties.getUserSettings())
+    {
+        prefs->setValue("normalizeToTarget", normalizeEnabled);
+        prefs->saveIfNeeded();
+    }
+}
+
 void MainComponent::setShowRuntimeLogs(bool shouldShow)
 {
     showRuntimeLogs = shouldShow;

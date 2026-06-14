@@ -22,7 +22,8 @@ public:
         juce::String message;  // Status or error message
     };
 
-    explicit AudioConverter(Logger& loggerToUse);
+    // normalizeToTarget: peak-normalize each file to NORMALIZE_TARGET_DBFS on export.
+    explicit AudioConverter(Logger& loggerToUse, bool normalizeToTarget = true);
 
     // Convert a single audio file with custom output filename
     ConversionResult convertFileWithName(const juce::File& sourceFile,
@@ -32,18 +33,25 @@ public:
 
 private:
     Logger& logger;
+    bool normalizeEnabled;
 
     // Target format constants
     static constexpr int TARGET_BIT_DEPTH = 16;
     static constexpr double TARGET_SAMPLE_RATE = 48000.0;
     static constexpr int MAX_CHANNELS = 2;
     static constexpr double MAX_DURATION_SECONDS = 120.0;  // 2-minute limit per CHOMPI spec
+    static constexpr double NORMALIZE_TARGET_DBFS = -6.0;  // matches CHOMPI CLUB's converter
 
     // Helper methods
     bool needsConversion(const juce::AudioFormatReader* reader) const;
 
+    // Peak gain (linear) to bring this file to NORMALIZE_TARGET_DBFS, or 1.0 if
+    // normalization is off or the file is silent.
+    double computeNormalizationGain(juce::AudioFormatReader* reader) const;
+
     ConversionResult performConversion(const juce::File& outputFile,
-                                       juce::AudioFormatReader* reader);
+                                       juce::AudioFormatReader* reader,
+                                       double gain);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioConverter)
 };

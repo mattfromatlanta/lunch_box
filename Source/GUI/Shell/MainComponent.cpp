@@ -34,6 +34,9 @@ MainComponent::MainComponent()
 
     lastPackName = getSavedString("lastPackName", lastPackName);
 
+    if (auto* prefs = appProperties.getUserSettings())
+        normalizeEnabled = prefs->getBoolValue("normalizeToTarget", true);
+
     // Header icons
     {
         auto loadSvgDrawable = [](const char* data, int size) -> std::unique_ptr<juce::Drawable>
@@ -192,6 +195,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(clearButton);
 
     processor = std::make_unique<GuiProcessor>();
+    processor->setNormalize(normalizeEnabled);
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
     addChildComponent(packNameOverlay);
     addChildComponent(helpOverlay);
