@@ -2,6 +2,7 @@
 .claude/
 .vscode/
 .cache/
+.idea/
 build/
 test_builds/
 dev_assets/
