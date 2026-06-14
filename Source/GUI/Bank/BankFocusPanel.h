@@ -7,6 +7,7 @@
 #include "../Common/ClipboardEntry.h"
 #include "../Common/DragController.h"
 #include "../Common/DragHost.h"
+#include "../Common/PackModel.h"
 #include "../Processing/LunchBoxNamer.h"
 #include "../Processing/BankFolderParser.h"
 
@@ -15,9 +16,9 @@
 //
 // Shows one bank at a time as a vertical list of 14 FocusedSlotRows.
 // Bank selector (A-E) is a left column; Cubbi/Jammi toggle is at the top.
-// Stores all data internally (slots[2][5][14]) so assignments are preserved
-// when switching banks/categories. Synced with BankEditorPanel on tab switch
-// by MainComponent.
+// A pure view over the shared PackModel: the visible rows are populated from
+// the model for the active bank/category, and edits are written back to it.
+// No data is stored here, so Pack and Bank views never need to be synced.
 //==============================================================================
 
 class BankFocusPanel : public juce::Component,
@@ -25,7 +26,7 @@ class BankFocusPanel : public juce::Component,
                        public DragHost
 {
 public:
-    BankFocusPanel(juce::AudioFormatManager& fmt, juce::AudioThumbnailCache& cache);
+    BankFocusPanel(PackModel& model, juce::AudioFormatManager& fmt, juce::AudioThumbnailCache& cache);
     ~BankFocusPanel() override;
 
     // --- Data access ---
@@ -34,12 +35,17 @@ public:
     // Note: flushes active row state to storage before reading
     juce::Array<BankFolderParser::BankAssignment> getAssignments(LunchBoxNamer::Category cat);
 
-    // Set a specific slot (used by MainComponent for cross-tab sync)
-    void setSlot(LunchBoxNamer::Category cat, int bankIdx, int slotIdx, const juce::File& file);
-    juce::File getSlotFile(LunchBoxNamer::Category cat, int bankIdx, int slotIdx);
     void clearAll();
 
     int getFilledCount(LunchBoxNamer::Category cat);
+
+    // Repopulate the visible rows from the model (active bank/category). Call
+    // when entering Bank view, after undo/redo, or after session load.
+    void refreshActiveFromModel();
+
+    // Write the visible rows back to the model. Call before reading the model
+    // through another view (e.g. just before export) so pending edits are saved.
+    void commitActiveBankToModel();
 
     // --- Bulk operations on the active bank ---
     void autoFillActiveFromFiles(const juce::Array<juce::File>& files);
@@ -111,12 +117,12 @@ public:
                                                 const juce::Array<LunchBoxDrag::GridCell>& oldSources) override;
 
 private:
+    // Single source of truth for all slot assignments (owned by MainComponent).
+    PackModel& model;
+
     // Shared audio resources (from AudioPreviewPlayer, owned by MainComponent)
     juce::AudioFormatManager&  formatManager;
     juce::AudioThumbnailCache& thumbnailCache;
-
-    // All slot data: [category][bank][slot]
-    juce::File slots[2][LunchBoxNamer::NUM_BANKS][LunchBoxNamer::SLOTS_PER_BANK];
 
     // Per-category persisted focus state (saved/restored on category toggle)
     struct CategoryFocusState

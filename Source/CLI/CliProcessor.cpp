@@ -32,7 +32,9 @@ int CliProcessor::installCliTool()
 
     juce::String script = "#!/bin/bash\nexec \"" + binary.getFullPathName() + "\" \"$@\"\n";
 
-    if (!installTarget.replaceWithText(script))
+    // Force LF line endings: replaceWithText() defaults to CRLF, which would put
+    // a stray \r in the shebang ("bad interpreter: /bin/bash^M").
+    if (!installTarget.replaceWithText(script, false, false, "\n"))
     {
         logger.logLine("Error: Could not write to " + installTarget.getFullPathName());
         logger.logLine("Try: sudo \"" + binary.getFullPathName() + "\" --install");
@@ -56,6 +58,7 @@ void CliProcessor::displayUsage()
     logger.logLine("  --cubbi, --c <path>    Process cubbi samples (percussive/loop/SFX)");
     logger.logLine("  --jammi, --j <path>    Process jammi samples (tuned/chromatic)");
     logger.logLine("  --output, --o <path>   Output directory (default: ./converted/)");
+    logger.logLine("  --no-normalize         Skip -6 dB peak normalization (on by default)");
     logger.logLine("  --install              Install 'lunch_box' command to /usr/local/bin");
     logger.logLine("  --help, -h             Show this help message");
     logger.logLine("");
@@ -113,6 +116,10 @@ bool CliProcessor::initializeApplication(const juce::StringArray& args)
                 logger.logLine("Error: --jammi requires a folder path");
                 return false;
             }
+        }
+        else if (arg == "--no-normalize")
+        {
+            config.normalize = false;
         }
         else if (arg == "--output" || arg == "--o")
         {

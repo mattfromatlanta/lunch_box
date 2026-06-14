@@ -58,9 +58,9 @@ void MainComponent::saveSessionState()
         for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
         {
             props->setValue("session_cubbi_b" + juce::String(b) + "_s" + juce::String(s),
-                            state.cubbiSlots[b][s].getFullPathName());
+                            state.slots[0][b][s].getFullPathName());
             props->setValue("session_jammi_b" + juce::String(b) + "_s" + juce::String(s),
-                            state.jammiSlots[b][s].getFullPathName());
+                            state.slots[1][b][s].getFullPathName());
         }
 
     props->saveIfNeeded();
@@ -86,8 +86,9 @@ void MainComponent::loadSessionState()
                 juce::File f(path);
                 if (f.existsAsFile())
                 {
-                    auto* editor = (cat == 0) ? cubbiEditor.get() : jammiEditor.get();
-                    editor->setSlotFile(b, s, f);
+                    auto category = (cat == 0) ? LunchBoxNamer::Category::Cubbi
+                                               : LunchBoxNamer::Category::Jammi;
+                    packModel.setSlot(category, b, s, f);
                 }
                 else
                 {
@@ -96,14 +97,17 @@ void MainComponent::loadSessionState()
             }
         }
 
+    // Push the restored model into the visible Pack editors; Bank repopulates
+    // from the model when it next becomes visible.
+    cubbiEditor->refreshFromModel();
+    jammiEditor->refreshFromModel();
+
     if (!missing.isEmpty())
     {
         appendStatus("Session restore: " + juce::String(missing.size()) + " file(s) not available:");
         for (auto& path : missing)
             appendStatus("  Missing: " + path);
     }
-
-    updateProcessButtonState();
 }
 
 // ─── File browser launchers ───────────────────────────────────────────────────

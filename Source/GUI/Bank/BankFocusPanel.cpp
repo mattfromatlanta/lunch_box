@@ -18,9 +18,10 @@
 using namespace BankFocusImpl;
 
 
-BankFocusPanel::BankFocusPanel(juce::AudioFormatManager& fmt,
+BankFocusPanel::BankFocusPanel(PackModel& m,
+                                juce::AudioFormatManager& fmt,
                                 juce::AudioThumbnailCache& cache)
-    : formatManager(fmt), thumbnailCache(cache)
+    : model(m), formatManager(fmt), thumbnailCache(cache)
 {
     // Bank selector buttons A-E
     const char bankLetters[] = { 'A', 'B', 'C', 'D', 'E' };
@@ -69,87 +70,41 @@ juce::Array<BankFolderParser::BankAssignment>
 BankFocusPanel::getAssignments(LunchBoxNamer::Category cat)
 {
     if (!isPopulating) flushRowsToStorage();
-
-    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    const char bankLetters[] = { 'a', 'b', 'c', 'd', 'e' };
-    juce::Array<BankFolderParser::BankAssignment> result;
-
-    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-    {
-        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-        {
-            const auto& f = slots[catIdx][b][s];
-            if (f != juce::File{})
-            {
-                BankFolderParser::BankAssignment a;
-                a.sourceFile     = f;
-                a.bankLetter     = bankLetters[b];
-                a.slotNumber     = s + 1;
-                a.fromBankFolder = false;
-                result.add(a);
-            }
-        }
-    }
-    return result;
-}
-
-void BankFocusPanel::setSlot(LunchBoxNamer::Category cat, int bankIdx, int slotIdx,
-                              const juce::File& file)
-{
-    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    if (bankIdx < 0 || bankIdx >= LunchBoxNamer::NUM_BANKS)    return;
-    if (slotIdx < 0 || slotIdx >= LunchBoxNamer::SLOTS_PER_BANK) return;
-    slots[catIdx][bankIdx][slotIdx] = file;
-
-    // Refresh visible rows if this is the active bank/category
-    if (cat == activeCategory && bankIdx == activeBank)
-        populateRowsFromStorage();
-}
-
-juce::File BankFocusPanel::getSlotFile(LunchBoxNamer::Category cat, int bankIdx, int slotIdx)
-{
-    if (!isPopulating) flushRowsToStorage();
-    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    if (bankIdx < 0 || bankIdx >= LunchBoxNamer::NUM_BANKS)    return juce::File{};
-    if (slotIdx < 0 || slotIdx >= LunchBoxNamer::SLOTS_PER_BANK) return juce::File{};
-    return slots[catIdx][bankIdx][slotIdx];
+    return model.getAssignments(cat);
 }
 
 void BankFocusPanel::clearAll()
 {
-    for (int c = 0; c < 2; ++c)
-        for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-            for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-                slots[c][b][s] = juce::File{};
+    model.clearAll();
     populateRowsFromStorage();
 }
 
 int BankFocusPanel::getFilledCount(LunchBoxNamer::Category cat)
 {
     if (!isPopulating) flushRowsToStorage();
+    return model.getFilledCount(cat);
+}
 
-    const int catIdx = (cat == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    int count = 0;
-    for (int b = 0; b < LunchBoxNamer::NUM_BANKS; ++b)
-        for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-            if (slots[catIdx][b][s] != juce::File{}) ++count;
-    return count;
+void BankFocusPanel::refreshActiveFromModel()
+{
+    populateRowsFromStorage();
+    updateRowVisuals();
+}
+
+void BankFocusPanel::commitActiveBankToModel()
+{
+    flushRowsToStorage();
 }
 
 // ─── Bulk operations ──────────────────────────────────────────────────────────
 
 void BankFocusPanel::autoFillActiveFromFiles(const juce::Array<juce::File>& files)
 {
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
-    auto& bank = slots[catIdx][activeBank];
-
     int fileIdx = 0;
     for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK && fileIdx < files.size(); ++s)
     {
-        if (bank[s] == juce::File{})
-        {
-            bank[s] = files[fileIdx++];
-        }
+        if (model.getSlot(activeCategory, activeBank, s) == juce::File{})
+            model.setSlot(activeCategory, activeBank, s, files[fileIdx++]);
     }
 
     int overflow = files.size() - fileIdx;
@@ -159,9 +114,8 @@ void BankFocusPanel::autoFillActiveFromFiles(const juce::Array<juce::File>& file
 
 void BankFocusPanel::clearActiveBank()
 {
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-        slots[catIdx][activeBank][s] = juce::File{};
+        model.setSlot(activeCategory, activeBank, s, juce::File{});
 }
 
 void BankFocusPanel::triggerAutoFill()
@@ -219,7 +173,7 @@ void BankFocusPanel::switchToBank(int bankIdx)
 void BankFocusPanel::switchToCategory(LunchBoxNamer::Category cat)
 {
     if (cat == activeCategory) return;
-    flushRowsToStorage();
+    if (isVisible()) flushRowsToStorage();
 
     // Persist current focus state before leaving
     const int outIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
@@ -264,20 +218,18 @@ void BankFocusPanel::setActiveFocus(int bankIdx, int rowIdx)
 
 void BankFocusPanel::flushRowsToStorage()
 {
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
-        slots[catIdx][activeBank][s] = rows[s]->getSample();
+        model.setSlot(activeCategory, activeBank, s, rows[s]->getSample());
 }
 
 void BankFocusPanel::populateRowsFromStorage()
 {
-    const int catIdx = (activeCategory == LunchBoxNamer::Category::Cubbi) ? 0 : 1;
     const juce::Colour bankCol = bankColourForIndex(activeBank);
     isPopulating = true;
     for (int s = 0; s < LunchBoxNamer::SLOTS_PER_BANK; ++s)
     {
         rows[s]->setBankColour(bankCol);
-        rows[s]->setSample(slots[catIdx][activeBank][s]);
+        rows[s]->setSample(model.getSlot(activeCategory, activeBank, s));
     }
     isPopulating = false;
     if (onAssignmentsChanged) onAssignmentsChanged();
@@ -285,11 +237,15 @@ void BankFocusPanel::populateRowsFromStorage()
 
 // ─── Row callbacks ────────────────────────────────────────────────────────────
 
-void BankFocusPanel::wireRowCallbacks(FocusedSlotRow* row, int /*rowIdx*/)
+void BankFocusPanel::wireRowCallbacks(FocusedSlotRow* row, int rowIdx)
 {
-    row->onSampleChanged = [this](FocusedSlotRow*)
+    // Each row edit (browse, drop, clear, paste) writes straight to the model
+    // for the active bank/category, keeping the single source of truth current.
+    row->onSampleChanged = [this, rowIdx](FocusedSlotRow* r)
     {
-        if (!isPopulating && onAssignmentsChanged) onAssignmentsChanged();
+        if (isPopulating) return;
+        model.setSlot(activeCategory, activeBank, rowIdx, r->getSample());
+        if (onAssignmentsChanged) onAssignmentsChanged();
     };
 
     row->onSlotClicked = [this](FocusedSlotRow* r)

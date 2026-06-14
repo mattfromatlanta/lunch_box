@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(lunch_box VERSION 1.0.0)
+project(lunch_box VERSION 1.1.0)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -74,6 +74,8 @@ target_sources(lunch_box
         Source/GUI/Shell/ConsoleWindow.h
         Source/GUI/Shell/GuiProcessor.h
         Source/GUI/Shell/GuiProcessor.cpp
+        Source/GUI/Shell/ExportThread.h
+        Source/GUI/Shell/ExportThread.cpp
         Source/GUI/Shell/ClipboardHelper.h
         Source/GUI/Shell/WipeTabButton.h
         Source/GUI/Shell/PackButton.h
@@ -81,6 +83,8 @@ target_sources(lunch_box
         Source/GUI/Shell/PackNameOverlay.cpp
         Source/GUI/Shell/HelpOverlay.h
         Source/GUI/Shell/HelpOverlay.cpp
+        Source/GUI/Shell/MessageOverlay.h
+        Source/GUI/Shell/MessageOverlay.cpp
         Source/GUI/Pack/BankSlotComponent.h
         Source/GUI/Pack/BankSlotComponent.cpp
         Source/GUI/Pack/BankRowComponent.h
@@ -115,6 +119,8 @@ target_sources(lunch_box
         Source/GUI/Common/DragHost.h
         Source/GUI/Common/DragController.h
         Source/GUI/Common/DragController.cpp
+        Source/GUI/Common/PackModel.h
+        Source/GUI/Common/PackModel.cpp
         Source/FileSystemHelper.h
         Source/FileSystemHelper.cpp
         Source/Processing/AudioConverter.h
@@ -200,7 +206,9 @@ target_sources(lunch_box_tests
         Source/Processing/BankFolderParser.h
         Source/Processing/BankFolderParser.cpp
         Source/GUI/Common/DragModel.h
-        Source/GUI/Common/DragModel.cpp)
+        Source/GUI/Common/DragModel.cpp
+        Source/GUI/Common/PackModel.h
+        Source/GUI/Common/PackModel.cpp)
 
 target_link_libraries(lunch_box_tests
     PRIVATE

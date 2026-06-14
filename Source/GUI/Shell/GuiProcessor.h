@@ -26,23 +26,35 @@ public:
     struct ProcessingResult
     {
         bool success = false;
+        bool cancelled = false;
         int cubbiFilesProcessed = 0;
         int jammiFilesProcessed = 0;
         juce::String message;
     };
 
+    // Reports progress as (filesDone, filesTotal); polled predicate aborts the run.
+    using ProgressCallback = std::function<void(int, int)>;
+    using CancelCallback   = std::function<bool()>;
+
     // Process pre-built per-slot bank assignments edited in the GUI grid.
     // CLI mode does its own folder-scan path inside CliProcessor.
+    // onProgress/shouldCancel are optional (used by the background export thread).
     ProcessingResult processFilesFromAssignments(
         const juce::Array<BankFolderParser::BankAssignment>& cubbiAssignments,
         const juce::Array<BankFolderParser::BankAssignment>& jammiAssignments,
-        const juce::File& outputFolder);
+        const juce::File& outputFolder,
+        ProgressCallback onProgress = {},
+        CancelCallback shouldCancel = {});
 
     // Set a callback to receive all Logger output (for GUI runtime log)
     // Pass nullptr to disable
     void setLogCallback(std::function<void(const juce::String&)> callback);
 
+    // Peak-normalize each sample to -6 dB on export (on by default).
+    void setNormalize(bool shouldNormalize) { normalize = shouldNormalize; }
+
 private:
     Logger logger;
     juce::AudioFormatManager formatManager;
+    bool normalize = true;
 };

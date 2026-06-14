@@ -21,6 +21,10 @@ namespace
         "When you Fill to a Pack from a folder, samples that are organized into A, B, "
         "C, D, and E sub-folders will be arranged that way in Lunch Box automatically.";
 
+    const char* kSection4 =
+        "Samples are normalized to -6 dB on export. You can turn this off in the "
+        "Settings menu under \"Normalize to -6 dB\".";
+
     struct HotkeyRow { const char* key; const char* desc; };
 
     constexpr HotkeyRow kHotkeys[] = {
@@ -122,6 +126,8 @@ int HelpOverlay::computeDialogHeight() const
     h += SECTION_GAP;
     h += measureParagraph(kSection3, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
     h += SECTION_GAP;
+    h += measureParagraph(kSection4, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)));
+    h += SECTION_GAP;
     h += (int)std::ceil(juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)).getHeight());  // "Hotkeys" label
     h += 8;
     h += NUM_HOTKEY_ROWS * HOTKEY_ROW_H;
@@ -171,6 +177,8 @@ void HelpOverlay::paint(juce::Graphics& g)
     drawParagraph(kSection2, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)), textCol);
     y += SECTION_GAP;
     drawParagraph(kSection3, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)), textCol);
+    y += SECTION_GAP;
+    drawParagraph(kSection4, juce::Font(juce::FontOptions{}.withTypeface(LunchBoxFonts::regular()).withHeight(18.0f)), textCol);
     y += SECTION_GAP;
 
     // ── Hotkeys header ────────────────────────────────────────────────────

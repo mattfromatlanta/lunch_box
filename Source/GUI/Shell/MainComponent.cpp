@@ -34,6 +34,9 @@ MainComponent::MainComponent()
 
     lastPackName = getSavedString("lastPackName", lastPackName);
 
+    if (auto* prefs = appProperties.getUserSettings())
+        normalizeEnabled = prefs->getBoolValue("normalizeToTarget", true);
+
     // Header icons
     {
         auto loadSvgDrawable = [](const char* data, int size) -> std::unique_ptr<juce::Drawable>
@@ -99,9 +102,8 @@ MainComponent::MainComponent()
 
     auto stopPreviewFn = [this] { stopPreview(); };
 
-    cubbiEditor = std::make_unique<BankEditorPanel>(LunchBoxNamer::Category::Cubbi);
+    cubbiEditor = std::make_unique<BankEditorPanel>(packModel, LunchBoxNamer::Category::Cubbi);
     cubbiEditor->onBeforeChange        = [this] { captureUndoState(); };
-    cubbiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     cubbiEditor->onSlotClicked         = packSlotClicked;
     cubbiEditor->onPreviewStop         = [this] { stopPreview(); };
     cubbiEditor->getStartDirectory     = [this]() -> juce::File { return getSavedFolder("lastCubbiFolder"); };
@@ -110,9 +112,8 @@ MainComponent::MainComponent()
     cubbiEditor->onBackgroundClicked   = stopPreviewFn;
     addAndMakeVisible(cubbiEditor.get());
 
-    jammiEditor = std::make_unique<BankEditorPanel>(LunchBoxNamer::Category::Jammi);
+    jammiEditor = std::make_unique<BankEditorPanel>(packModel, LunchBoxNamer::Category::Jammi);
     jammiEditor->onBeforeChange        = [this] { captureUndoState(); };
-    jammiEditor->onAssignmentsChanged  = [this] { updateProcessButtonState(); };
     jammiEditor->onSlotClicked         = packSlotClicked;
     jammiEditor->onPreviewStop         = [this] { stopPreview(); };
     jammiEditor->getStartDirectory     = [this]() -> juce::File { return getSavedFolder("lastJammiFolder"); };
@@ -124,10 +125,9 @@ MainComponent::MainComponent()
     // ── Bank focus mode components ─────────────────────────
 
     bankFocusPanel = std::make_unique<BankFocusPanel>(
-        previewPanel.getFormatManager(), previewPanel.getThumbnailCache());
+        packModel, previewPanel.getFormatManager(), previewPanel.getThumbnailCache());
 
     bankFocusPanel->onBeforeChange       = [this] { captureUndoState(); };
-    bankFocusPanel->onAssignmentsChanged = [this] { updateProcessButtonState(); };
     bankFocusPanel->onSlotClicked        = [this](const juce::File& f) { previewPanel.playFile(f); };
     bankFocusPanel->onPreviewStop        = [this] { stopPreview(); };
     bankFocusPanel->getStartDirectory    = [this]() -> juce::File { return getSavedFolder("lastCubbiFolder"); };
@@ -163,7 +163,8 @@ MainComponent::MainComponent()
     processButton.setColour(juce::TextButton::buttonOnColourId, LunchBoxColours::BUTTON_BG);
     processButton.setColour(juce::TextButton::textColourOffId,  LunchBoxColours::WHITE_CREAM);
     processButton.onClick = [this] { processFiles(); };
-    processButton.setEnabled(false);
+    // Re-enable only once the spin has fully come to rest after an export.
+    processButton.onAnimationStopped = [this] { processButton.setEnabled(true); };
     addAndMakeVisible(processButton);
 
     fillButton.setButtonText(kBtnFill);
@@ -194,9 +195,11 @@ MainComponent::MainComponent()
     addAndMakeVisible(clearButton);
 
     processor = std::make_unique<GuiProcessor>();
+    processor->setNormalize(normalizeEnabled);
     addChildComponent(previewPanel);  // kept but hidden — will be re-introduced later
     addChildComponent(packNameOverlay);
     addChildComponent(helpOverlay);
+    addChildComponent(messageOverlay);
 
     // Apply initial mode styling
     styleTabButton(packModeButton, true,  LunchBoxColours::YELLOW);
@@ -210,6 +213,12 @@ MainComponent::MainComponent()
     commandManager.registerAllCommandsForTarget(this);
     commandManager.setFirstCommandTarget(this);
 
+    // Populate the key-mapping set from each command's default keypresses.
+    // keyPressed() dispatches shortcuts through it directly, so secondary bindings
+    // work on macOS (e.g. Cmd+P, which the menu can't show alongside Cmd+Return)
+    // and all shortcuts work on Linux/Windows, where there is no native menu bar.
+    commandManager.getKeyMappings()->resetToDefaultMappings();
+
     setSize(493, 890);
 
     loadSessionState();
@@ -222,6 +231,10 @@ MainComponent::MainComponent()
 
 MainComponent::~MainComponent()
 {
+    // Stop any in-progress export cleanly before members are torn down.
+    if (exportThread != nullptr)
+        exportThread->stopThread(4000);
+
     if (auto* top = getTopLevelComponent())
         top->removeKeyListener(this);
 }
@@ -311,6 +324,7 @@ void MainComponent::resized()
 
     packNameOverlay.setBounds(getLocalBounds());
     helpOverlay.setBounds(getLocalBounds());
+    messageOverlay.setBounds(getLocalBounds());
 }
 
 // ─── Mode switching ───────────────────────────────────────────────────────────
@@ -384,12 +398,38 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* origi
 {
     suppressTooltipsUntilMouseMove();
 
+    // Esc cancels an in-progress export (Pack button is spinning).
+    if (key == juce::KeyPress::escapeKey
+        && exportThread != nullptr && exportThread->isThreadRunning())
+    {
+        exportThread->signalThreadShouldExit();
+        return true;
+    }
+
     if (packNameOverlay.isVisible())
+        return false;
+
+    // While the notice is up, let its own listener handle Esc (dismiss).
+    if (messageOverlay.isVisible())
+        return false;
+
+    // While Help is open, block all app hotkeys (including command shortcuts).
+    // Its own listener handles Esc, and a click dismisses it; Cmd+Q stays a
+    // system menu equivalent, so quitting still works.
+    if (helpOverlay.isVisible())
         return false;
 
     // Don't intercept navigation keys when a text editor has keyboard focus
     if (dynamic_cast<juce::TextEditor*>(origin) != nullptr)
         return false;
+
+    // Dispatch registered command shortcuts (Cmd+Z/C/X/V/A/O/P/F, Cmd+Return, …)
+    // ahead of view navigation. On macOS the menu consumes each command's primary
+    // key equivalent before this point, so this mainly enables secondary bindings;
+    // on Linux/Windows (no menu bar) it's the only path. Command keys all carry a
+    // modifier, so they never shadow the plain-key navigation handled below.
+    if (commandManager.getKeyMappings()->keyPressed(key, origin))
+        return true;
 
     if (key == juce::KeyPress(juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier, 0))
     {

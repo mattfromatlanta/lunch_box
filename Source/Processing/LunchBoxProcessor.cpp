@@ -10,7 +10,7 @@ LunchBoxProcessor::LunchBoxProcessor(Logger& loggerToUse)
 bool LunchBoxProcessor::processSamples(const AudioConfiguration& config,
                                      juce::AudioFormatManager& formatManager)
 {
-    AudioConverter converter(logger);
+    AudioConverter converter(logger, config.normalize);
 
     // Ensure output folder exists
     if (!FileSystemHelper::ensureDirectoryExists(config.outputFolder, logger))
@@ -69,13 +69,16 @@ LunchBoxProcessor::ProcessingResult LunchBoxProcessor::processCategoryFromAssign
     const juce::File& outputFolder,
     LunchBoxNamer::Category category,
     juce::AudioFormatManager& formatManager,
-    AudioConverter& converter)
+    AudioConverter& converter,
+    ProgressCallback onFileProcessed,
+    CancelCallback shouldCancel)
 {
     juce::String categoryName = LunchBoxNamer::categoryToString(category);
     logger.logLine("Processing " + categoryName + " samples (advanced mode)...");
     logger.logLine("");
 
-    return runConversions(assignments, outputFolder, category, formatManager, converter);
+    return runConversions(assignments, outputFolder, category, formatManager, converter,
+                          std::move(onFileProcessed), std::move(shouldCancel));
 }
 
 LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
@@ -83,7 +86,9 @@ LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
     const juce::File& outputFolder,
     LunchBoxNamer::Category category,
     juce::AudioFormatManager& formatManager,
-    AudioConverter& converter)
+    AudioConverter& converter,
+    ProgressCallback onFileProcessed,
+    CancelCallback shouldCancel)
 {
     ProcessingResult result;
     juce::String categoryName   = LunchBoxNamer::categoryToString(category);
@@ -102,6 +107,13 @@ LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
 
     for (const auto& assignment : assignments)
     {
+        if (shouldCancel && shouldCancel())
+        {
+            result.cancelled = true;
+            logger.logLine(categoryName + " conversion cancelled.");
+            return result;
+        }
+
         juce::String outputFileName = categoryPrefix + "_" +
                                       juce::String::charToString(assignment.bankLetter) +
                                       juce::String(assignment.slotNumber) + ".wav";
@@ -122,6 +134,8 @@ LunchBoxProcessor::ProcessingResult LunchBoxProcessor::runConversions(
         {
             result.errors++;
         }
+
+        if (onFileProcessed) onFileProcessed();
 
         logger.logLine("");
     }

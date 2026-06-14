@@ -5,6 +5,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <functional>
 #include "GuiProcessor.h"
+#include "ExportThread.h"
 #include "LunchBoxFonts.h"
 #include "UIColours.h"
 #include "UIConstants.h"
@@ -15,6 +16,7 @@
 #include "PackButton.h"
 #include "PackNameOverlay.h"
 #include "HelpOverlay.h"
+#include "MessageOverlay.h"
 #include "FooterButtonLAF.h"
 #include "LabelStrings.h"
 #if LUNCH_BOX_MELATONIN_INSPECTOR
@@ -63,9 +65,11 @@ public:
     void showLogFolder();
     void clearStatusLog();
     void setShowRuntimeLogs(bool shouldShow);
+    void setNormalizeEnabled(bool shouldNormalize);
 
     void saveSessionState();
     bool getShowRuntimeLogs() const { return showRuntimeLogs; }
+    bool getNormalizeEnabled() const { return normalizeEnabled; }
     bool getConsoleVisible()  const { return consoleVisible; }
     void toggleConsole();
 
@@ -95,6 +99,10 @@ private:
     juce::String     consoleContent { LunchBoxLabels::kConsoleInitial };
     std::unique_ptr<ConsoleWindow> consoleWindow;
 
+    // Single source of truth for all slot assignments. Declared before the
+    // panels so it outlives them — both views hold a reference to it.
+    PackModel packModel;
+
     // ── Pack mode ───────────────────────────────────────────
     WipeTabButton cubbiTabButton;
     WipeTabButton jammiTabButton;
@@ -115,6 +123,7 @@ private:
     PackButton      processButton;
     PackNameOverlay packNameOverlay;
     HelpOverlay     helpOverlay;
+    MessageOverlay  messageOverlay;
 
     juce::TextButton fillButton;
     juce::TextButton clearButton;
@@ -131,6 +140,7 @@ private:
     int lastInternalCopyChangeCount = -1;          // NSPasteboard changeCount at last internal copy
 
     bool showRuntimeLogs = false;
+    bool normalizeEnabled = true;
 
     // Mode switching
     void setViewMode(ViewMode mode);
@@ -140,10 +150,6 @@ private:
     bool isTransitioning = false;
     std::unique_ptr<juce::ImageComponent> bankTransitionOverlay;
     void animateBankCategorySwitch(bool showCubbi);
-
-    // Cross-tab data sync
-    void syncPackToBankFocus();
-    void syncBankFocusToPack();
 
     // Helpers
     juce::File getResolvedOutputFolder();
@@ -158,21 +164,15 @@ private:
     // Session persistence
     void loadSessionState();
 
-    // Undo / redo
-    struct UndoState
-    {
-        juce::File cubbiSlots[LunchBoxNamer::NUM_BANKS][LunchBoxNamer::SLOTS_PER_BANK];
-        juce::File jammiSlots[LunchBoxNamer::NUM_BANKS][LunchBoxNamer::SLOTS_PER_BANK];
-    };
-
+    // Undo / redo — each step is a full snapshot of the shared PackModel.
     static constexpr int MAX_UNDO_STEPS = 10;
-    juce::Array<UndoState> undoStack;
-    juce::Array<UndoState> redoStack;
+    juce::Array<PackModel::Snapshot> undoStack;
+    juce::Array<PackModel::Snapshot> redoStack;
     bool isApplyingUndoState = false;
 
-    UndoState readCurrentState();
+    PackModel::Snapshot readCurrentState();
     void captureUndoState();
-    void applyUndoState(const UndoState& state);
+    void applyUndoState(const PackModel::Snapshot& state);
     void performUndo();
     void performRedo();
 
@@ -186,9 +186,12 @@ private:
 
     // Processing
     void processFilesFromEditors();
-    void updateProcessButtonState();
+    void onExportFinished(const ExportThread::Outcome& outcome);
     void appendStatus(const juce::String& message);
     void appendProcessingResult(const GuiProcessor::ProcessingResult& result, const juce::File& outputFolder);
+
+    // Background export (created per run, cleared on completion)
+    std::unique_ptr<ExportThread> exportThread;
 
 #if LUNCH_BOX_MELATONIN_INSPECTOR
     std::unique_ptr<melatonin::Inspector> inspector;

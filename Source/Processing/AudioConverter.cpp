@@ -1,20 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "AudioConverter.h"
 
-AudioConverter::AudioConverter(Logger& loggerToUse)
-    : logger(loggerToUse)
+AudioConverter::AudioConverter(Logger& loggerToUse, bool normalizeToTarget)
+    : logger(loggerToUse), normalizeEnabled(normalizeToTarget)
 {
 }
 
-bool AudioConverter::needsConversion(const juce::AudioFormatReader* reader) const
+double AudioConverter::computeNormalizationGain(juce::AudioFormatReader* reader) const
 {
-    if (reader == nullptr)
-        return false;
+    if (!normalizeEnabled || reader == nullptr || reader->lengthInSamples <= 0)
+        return 1.0;
 
-    bool bitDepthDiffers = (reader->bitsPerSample != TARGET_BIT_DEPTH);
-    bool sampleRateDiffers = ! juce::exactlyEqual(reader->sampleRate, TARGET_SAMPLE_RATE);
+    const int numChannels = static_cast<int>(reader->numChannels);
+    juce::HeapBlock<juce::Range<float>> levels(numChannels);
+    reader->readMaxLevels(0, reader->lengthInSamples, levels, numChannels);
 
-    return bitDepthDiffers || sampleRateDiffers;
+    // Channel-linked peak: the largest magnitude across both channels, so the
+    // stereo balance is preserved.
+    float peak = 0.0f;
+    for (int c = 0; c < numChannels; ++c)
+        peak = juce::jmax(peak, std::abs(levels[c].getStart()), std::abs(levels[c].getEnd()));
+
+    if (peak <= 0.0f)
+        return 1.0;  // silent — nothing to normalize
+
+    const double targetLinear = std::pow(10.0, NORMALIZE_TARGET_DBFS / 20.0);
+    return targetLinear / static_cast<double>(peak);
 }
 
 AudioConverter::ConversionResult AudioConverter::convertFileWithName(
@@ -73,7 +84,12 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
                    juce::String(static_cast<int>(TARGET_SAMPLE_RATE)) + " Hz");
     logger.logLine("   Output:   " + outputFile.getFullPathName());
 
-    result = performConversion(outputFile, reader.get());
+    const double gain = computeNormalizationGain(reader.get());
+    if (! juce::approximatelyEqual(gain, 1.0))
+        logger.logLine("   Normalize: " + juce::String(juce::Decibels::gainToDecibels(gain), 1)
+                       + " dB gain to reach " + juce::String(NORMALIZE_TARGET_DBFS, 1) + " dB peak");
+
+    result = performConversion(outputFile, reader.get(), gain);
 
     return result;
 }
@@ -81,7 +97,8 @@ AudioConverter::ConversionResult AudioConverter::convertFileWithName(
 
 AudioConverter::ConversionResult AudioConverter::performConversion(
     const juce::File& outputFile,
-    juce::AudioFormatReader* reader)
+    juce::AudioFormatReader* reader,
+    double gain)
 {
     ConversionResult result;
 
@@ -150,6 +167,9 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
 
             resamplingSource.getNextAudioBlock(channelInfo);
 
+            if (! juce::approximatelyEqual(gain, 1.0))
+                buffer.applyGain(0, samplesToRead, static_cast<float>(gain));
+
             if (!writer->writeFromAudioSampleBuffer(buffer, 0, samplesToRead))
             {
                 result.message = "Error: Failed to write audio data";
@@ -163,14 +183,39 @@ AudioConverter::ConversionResult AudioConverter::performConversion(
 
         resamplingSource.releaseResources();
     }
-    else
+    else if (juce::approximatelyEqual(gain, 1.0))
     {
-        // No sample rate conversion needed - direct copy with bit depth conversion
+        // No sample rate conversion or gain — direct copy with bit depth conversion
         if (!writer->writeFromAudioReader(*reader, 0, reader->lengthInSamples))
         {
             result.message = "Error: Failed to write audio data";
             logger.logLine("   " + result.message);
             return result;
+        }
+    }
+    else
+    {
+        // No resampling, but apply normalization gain block by block.
+        const int bufferSize = 4096;
+        juce::AudioBuffer<float> buffer(numChannels, bufferSize);
+        juce::int64 pos = 0;
+
+        while (pos < reader->lengthInSamples)
+        {
+            const int numThisBlock = static_cast<int>(
+                juce::jmin(static_cast<juce::int64>(bufferSize), reader->lengthInSamples - pos));
+
+            reader->read(&buffer, 0, numThisBlock, pos, true, true);
+            buffer.applyGain(0, numThisBlock, static_cast<float>(gain));
+
+            if (!writer->writeFromAudioSampleBuffer(buffer, 0, numThisBlock))
+            {
+                result.message = "Error: Failed to write audio data";
+                logger.logLine("   " + result.message);
+                return result;
+            }
+
+            pos += numThisBlock;
         }
     }
 

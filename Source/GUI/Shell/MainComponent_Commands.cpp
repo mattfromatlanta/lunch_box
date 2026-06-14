@@ -76,6 +76,13 @@ void MainComponent::getCommandInfo(juce::CommandID id, juce::ApplicationCommandI
 
 bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo& info)
 {
+    // While Help is open, swallow every command. This is the one chokepoint both
+    // the macOS menu key-equivalents and the key-mapping dispatch funnel through,
+    // so it blocks shortcuts the keyPressed() guard can't see. (Cmd+Q is a system
+    // menu item, not one of ours, so quitting still works.)
+    if (helpOverlay.isVisible())
+        return true;
+
     switch (info.commandID)
     {
         case cmdUndo:        performUndo();   return true;

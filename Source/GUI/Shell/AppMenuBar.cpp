@@ -56,6 +56,10 @@ juce::PopupMenu AppMenuBar::getMenuForIndex(int menuIndex, const juce::String&)
             menu.addCommandItem(&mainComponent->commandManager, MainComponent::cmdToggleConsole);
 
         menu.addItem(showRuntimeLogs, LunchBoxLabels::kMenuShowRuntimeLogs, true, runtimeLogsOn);
+
+        bool normalizeOn = (mainComponent != nullptr) && mainComponent->getNormalizeEnabled();
+        menu.addItem(normalizeToggle, LunchBoxLabels::kMenuNormalize, true, normalizeOn);
+
         menu.addSeparator();
         menu.addItem(showLogFolder,   LunchBoxLabels::kMenuShowLogFolder);
         menu.addItem(clearStatusLog,  LunchBoxLabels::kMenuClearStatusLog);
@@ -76,6 +80,7 @@ void AppMenuBar::menuItemSelected(int menuItemID, int /*topLevelMenuIndex*/)
         case showLogFolder:     mainComponent->showLogFolder();       break;
         case clearStatusLog:    mainComponent->clearStatusLog();      break;
         case showRuntimeLogs:   mainComponent->setShowRuntimeLogs(!mainComponent->getShowRuntimeLogs()); break;
+        case normalizeToggle:   mainComponent->setNormalizeEnabled(!mainComponent->getNormalizeEnabled()); break;
         default: break;
     }
 }

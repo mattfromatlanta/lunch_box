@@ -18,4 +18,5 @@ struct AudioConfiguration
     juce::File outputFolder;
     bool hasCubbi = false;
     bool hasJammi = false;
+    bool normalize = true;   // peak-normalize each sample to -6 dB on export
 };

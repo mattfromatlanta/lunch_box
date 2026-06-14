@@ -9,15 +9,21 @@
 
 void MainComponent::processFiles()
 {
-    processButton.setEnabled(false);
+    // Nothing to export → show a brief notice instead of disabling the button.
+    if (viewMode == ViewMode::Bank)
+        bankFocusPanel->commitActiveBankToModel();
+
+    if (packModel.getFilledCount(LunchBoxNamer::Category::Cubbi)
+      + packModel.getFilledCount(LunchBoxNamer::Category::Jammi) == 0)
+    {
+        messageOverlay.show(LunchBoxLabels::kMsgNoSamples);
+        return;
+    }
 
     packNameOverlay.onResult = [this](bool confirmed, juce::String packName)
     {
         if (!confirmed || packName.isEmpty())
-        {
-            processButton.setEnabled(true);
             return;
-        }
 
         lastPackName = packName;
         saveString("lastPackName", lastPackName);
@@ -35,10 +41,7 @@ void MainComponent::processFiles()
         {
             auto f = chooser.getResult();
             if (!f.isDirectory())
-            {
-                processButton.setEnabled(true);
                 return;
-            }
 
             auto homeDir = juce::File::getSpecialLocation(juce::File::userHomeDirectory);
             bool outsideHome = (f != homeDir && !f.isAChildOf(homeDir));
@@ -54,9 +57,10 @@ void MainComponent::processFiles()
                 {
                     appendStatus(LunchBoxLabels::kStatusProcessStart);
                     if (viewMode == ViewMode::Bank)
-                        syncBankFocusToPack();
+                        bankFocusPanel->commitActiveBankToModel();
+                    // Launches the background export; processButton is re-enabled
+                    // in onExportFinished() when the thread completes.
                     processFilesFromEditors();
-                    processButton.setEnabled(true);
                 };
 
                 if (!packFolder.exists())
@@ -90,9 +94,9 @@ void MainComponent::processFiles()
                     LunchBoxLabels::kDlgFolderNotEmptyBody + packFolder.getFullPathName() + "\n\n"
                     + countStr + LunchBoxLabels::kDlgFolderNotEmptyWillDel,
                     nullptr,
-                    juce::ModalCallbackFunction::create([this, runExport](int res2) mutable
+                    juce::ModalCallbackFunction::create([runExport](int res2) mutable
                     {
-                        if (res2 == 0) { processButton.setEnabled(true); return; }
+                        if (res2 == 0) return;
                         runExport();
                     }));
             };
@@ -105,9 +109,9 @@ void MainComponent::processFiles()
                     "\"" + f.getFullPathName() + LunchBoxLabels::kDlgOutsideHomeBody
                     + "A \"" + packName + LunchBoxLabels::kDlgOutsideHomeSuffix,
                     nullptr,
-                    juce::ModalCallbackFunction::create([this, continueWithFolder](int res2) mutable
+                    juce::ModalCallbackFunction::create([continueWithFolder](int res2) mutable
                     {
-                        if (res2 == 0) { processButton.setEnabled(true); return; }
+                        if (res2 == 0) return;
                         continueWithFolder();
                     }));
                 return;
@@ -134,31 +138,51 @@ void MainComponent::processFilesFromEditors()
         .getSiblingFile("." + outputFolder.getFileName() + ".exporting")
         .getNonexistentSibling(false);
 
-    auto result = processor->processFilesFromAssignments(
-        cubbiAssignments, jammiAssignments, stagingFolder);
+    // Run the conversion off the message thread so the UI stays responsive. The
+    // Pack button spins while it runs (no progress dialog); Esc cancels. The
+    // button stays disabled until onExportFinished() re-enables it.
+    exportThread = std::make_unique<ExportThread>(
+        *processor, cubbiAssignments, jammiAssignments, stagingFolder, outputFolder);
 
-    if (!result.success)
+    juce::Component::SafePointer<MainComponent> safeThis(this);
+    exportThread->onFinished = [safeThis](const ExportThread::Outcome& outcome)
     {
-        stagingFolder.deleteRecursively();
+        if (safeThis != nullptr)
+            safeThis->onExportFinished(outcome);
+    };
+
+    // Deactivate the button now and keep it disabled until the spin animation
+    // has fully come to rest (PackButton::onAnimationStopped re-enables it).
+    processButton.setEnabled(false);
+    processButton.startSpin();
+    exportThread->startThread();
+}
+
+void MainComponent::onExportFinished(const ExportThread::Outcome& outcome)
+{
+    processButton.stopSpin();
+
+    if (outcome.cancelled)
+    {
+        appendStatus(LunchBoxLabels::kStatusProcessCancelled);
+    }
+    else if (!outcome.success)
+    {
         appendStatus(LunchBoxLabels::kStatusProcessFailed);
-        appendStatus(LunchBoxLabels::kStatusErrorPrefix + result.message);
-        return;
+        appendStatus(juce::String(LunchBoxLabels::kStatusErrorPrefix) + outcome.errorMessage);
+    }
+    else
+    {
+        appendProcessingResult(outcome.result, outcome.outputFolder);
     }
 
-    if (outputFolder.exists() && !outputFolder.moveToTrash())
-        outputFolder.deleteRecursively();   // e.g. volumes with no Trash
-
-    if (!stagingFolder.moveFileTo(outputFolder))
+    // Tear down the finished thread, deferred so we're clear of its run() frame.
+    juce::Component::SafePointer<MainComponent> safeThis(this);
+    juce::MessageManager::callAsync([safeThis]
     {
-        appendStatus(LunchBoxLabels::kStatusProcessFailed);
-        appendStatus(juce::String(LunchBoxLabels::kStatusErrorPrefix)
-                     + "Could not move the finished pack into place. The exported files are in: "
-                     + stagingFolder.getFullPathName());
-        return;
-    }
-
-    appendProcessingResult(result, outputFolder);
-    processButton.triggerSuccessAnimation();
+        if (safeThis != nullptr)
+            safeThis->exportThread.reset();
+    });
 }
 
 void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult& result,
@@ -174,18 +198,6 @@ void MainComponent::appendProcessingResult(const GuiProcessor::ProcessingResult&
     appendStatus(LunchBoxLabels::kStatusOutputLabel + outputFolder.getFullPathName());
 }
 
-void MainComponent::updateProcessButtonState()
-{
-    bool ready = false;
-    if (viewMode == ViewMode::Pack)
-        ready = (cubbiEditor->getFilledCount() + jammiEditor->getFilledCount()) > 0;
-    else  // Bank
-        ready = (bankFocusPanel->getFilledCount(LunchBoxNamer::Category::Cubbi)
-               + bankFocusPanel->getFilledCount(LunchBoxNamer::Category::Jammi)) > 0;
-
-    processButton.setEnabled(ready);
-}
-
 void MainComponent::appendStatus(const juce::String& message)
 {
     consoleContent += message + "\n";
@@ -194,6 +206,18 @@ void MainComponent::appendStatus(const juce::String& message)
         consoleWindow->editor.moveCaretToEnd();
         consoleWindow->editor.insertTextAtCaret(message + "\n");
         consoleWindow->editor.moveCaretToEnd();
+    }
+}
+
+void MainComponent::setNormalizeEnabled(bool shouldNormalize)
+{
+    normalizeEnabled = shouldNormalize;
+    if (processor != nullptr)
+        processor->setNormalize(normalizeEnabled);
+    if (auto* prefs = appProperties.getUserSettings())
+    {
+        prefs->setValue("normalizeToTarget", normalizeEnabled);
+        prefs->saveIfNeeded();
     }
 }
 
